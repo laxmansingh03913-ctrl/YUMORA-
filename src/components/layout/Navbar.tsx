@@ -35,8 +35,8 @@ const NAV_LINKS = [
   { name: "Novels", href: "/novels", icon: BookOpen },
   { name: "Comics", href: "/comics", icon: ImageIcon },
   { name: "Contests", href: "/contests", icon: Trophy, badge: "$500" },
-  { name: "Community", href: "/community", icon: Users },
-  { name: "Library", href: "/library", icon: Bookmark },
+  { name: "Community", href: "/community", icon: Users, className: "hidden xl:flex" },
+  { name: "Library", href: "/library", icon: Bookmark, className: "hidden 2xl:flex" },
 ];
 
 const LANGUAGES: { code: LanguageCode; label: string; flag: string }[] = [
@@ -62,8 +62,39 @@ export function Navbar() {
   const [isNotifsOpen, setIsNotifsOpen] = useState(false);
   const [currentLang, setCurrentLang] = useState<LanguageCode>("en");
 
+  const userMenuRef = React.useRef<HTMLDivElement>(null);
+  const notifsRef = React.useRef<HTMLDivElement>(null);
+  const langRef = React.useRef<HTMLDivElement>(null);
+
   useEffect(() => {
     setMounted(true);
+
+    const handleClickOutside = (e: MouseEvent) => {
+      if (userMenuRef.current && !userMenuRef.current.contains(e.target as Node)) {
+        setIsUserMenuOpen(false);
+      }
+      if (notifsRef.current && !notifsRef.current.contains(e.target as Node)) {
+        setIsNotifsOpen(false);
+      }
+      if (langRef.current && !langRef.current.contains(e.target as Node)) {
+        setIsLangOpen(false);
+      }
+    };
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setIsUserMenuOpen(false);
+        setIsNotifsOpen(false);
+        setIsLangOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
   }, []);
 
   // Don't render full navbar on pure reading chapter route for maximum immersion
@@ -81,10 +112,10 @@ export function Navbar() {
   return (
     <>
       <header className="sticky top-0 z-40 w-full border-b border-zinc-200/80 dark:border-zinc-800/80 bg-white/80 dark:bg-zinc-950/80 backdrop-blur-xl transition-colors">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
+        <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-2 sm:gap-4">
           {/* Logo & Main Nav */}
-          <div className="flex items-center gap-6 lg:gap-8">
-            <Link href="/" className="flex items-center gap-2.5 group">
+          <div className="flex items-center gap-4 lg:gap-6 xl:gap-8 min-w-0">
+            <Link href="/" className="flex items-center gap-2 group flex-shrink-0">
               <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-rose-600 via-rose-500 to-indigo-600 flex items-center justify-center font-black text-white text-lg shadow-lg shadow-rose-500/25 group-hover:scale-105 transition transform">
                 Y
               </div>
@@ -99,14 +130,14 @@ export function Navbar() {
             </Link>
 
             {/* Desktop Navigation Links */}
-            <nav className="hidden md:flex items-center gap-1">
+            <nav className="hidden md:flex items-center gap-0.5 lg:gap-1">
               {NAV_LINKS.map((link) => {
                 const isActive = pathname === link.href || pathname.startsWith(link.href + "/");
                 return (
                   <Link
                     key={link.name}
                     href={link.href}
-                    className={`px-3 py-1.5 rounded-lg text-sm font-medium transition flex items-center gap-1.5 relative ${
+                    className={`px-2.5 lg:px-3 py-1.5 rounded-lg text-xs lg:text-sm font-medium transition flex items-center gap-1.5 relative whitespace-nowrap ${link.className || ""} ${
                       isActive
                         ? "text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/40 font-semibold"
                         : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-900"
@@ -141,7 +172,7 @@ export function Navbar() {
             </button>
 
             {/* Language Switcher Dropdown */}
-            <div className="relative">
+            <div className="relative" ref={langRef}>
               <button
                 onClick={() => setIsLangOpen(!isLangOpen)}
                 className="p-2 rounded-xl text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-900 transition flex items-center gap-1"
@@ -153,7 +184,7 @@ export function Navbar() {
 
               {isLangOpen && (
                 <div
-                  className="absolute right-0 mt-2 w-40 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-xl py-2 z-50 animate-in fade-in"
+                  className="absolute right-0 top-full mt-2 w-40 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-xl py-2 z-50 animate-in fade-in"
                   onClick={() => setIsLangOpen(false)}
                 >
                   <p className="px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-zinc-400">
@@ -198,7 +229,7 @@ export function Navbar() {
               const unreadCount = mounted ? notifs.filter((n) => !n.isRead).length : 0;
 
               return (
-                <div className="relative">
+                <div className="relative" ref={notifsRef}>
                   <button
                     onClick={() => setIsNotifsOpen(!isNotifsOpen)}
                     className="p-2 rounded-xl text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-900 transition relative"
@@ -214,7 +245,7 @@ export function Navbar() {
 
                   {isNotifsOpen && (
                     <div
-                      className="absolute right-0 mt-2 w-80 sm:w-96 rounded-3xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-2xl p-4 z-50 animate-in fade-in space-y-3"
+                      className="absolute right-0 top-full mt-2 w-80 sm:w-96 max-w-[calc(100vw-24px)] rounded-3xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-2xl p-4 z-50 animate-in fade-in space-y-3 origin-top-right"
                     >
                       <div className="flex items-center justify-between pb-2 border-b border-zinc-100 dark:border-zinc-800">
                         <div className="flex items-center gap-2">
@@ -284,129 +315,169 @@ export function Navbar() {
 
             {/* User Profile / Auth Buttons */}
             {user ? (
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1.5 sm:gap-2">
                 <Link
                   href="/creator"
-                  className="hidden sm:flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-rose-600 via-rose-500 to-indigo-600 hover:from-rose-500 hover:to-indigo-500 text-white font-bold text-xs shadow-md shadow-rose-600/20 transition transform hover:scale-[1.02] active:scale-[0.98] whitespace-nowrap"
+                  className="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-rose-600 via-rose-500 to-indigo-600 hover:from-rose-500 hover:to-indigo-500 text-white font-bold text-xs shadow-md shadow-rose-600/20 transition transform hover:scale-[1.02] active:scale-[0.98] whitespace-nowrap"
                   title="Open Creator Studio Dashboard"
                 >
                   <PenTool className="w-3.5 h-3.5" />
                   <span>Studio</span>
                 </Link>
 
-                <div className="relative">
+                <div className="relative" ref={userMenuRef}>
                   <button
                     onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-                    className="flex items-center gap-2 p-1 pl-1.5 rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 transition"
+                    aria-label="User account menu"
+                    className="flex items-center gap-1.5 p-1 pl-1.5 rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 transition"
                   >
-                  <img
-                    src={user.avatar}
-                    alt={user.name}
-                    className="w-7 h-7 rounded-full object-cover ring-1 ring-rose-500/50"
-                  />
-                  <span className="text-xs font-semibold text-zinc-800 dark:text-zinc-200 hidden lg:inline max-w-[100px] truncate">
-                    {user.name.split(" ")[0]}
-                  </span>
-                  <span
-                    className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full uppercase ${
-                      role === "ADMIN"
-                        ? "bg-amber-100 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400"
-                        : role === "CREATOR"
-                        ? "bg-indigo-100 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400"
-                        : "bg-rose-100 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400"
-                    }`}
-                  >
-                    {role || "READER"}
-                  </span>
-                  <ChevronDown className="w-3.5 h-3.5 text-zinc-400 mr-1" />
-                </button>
+                    <img
+                      src={user.avatar}
+                      alt={user.name}
+                      className="w-7 h-7 rounded-full object-cover ring-1 ring-rose-500/50"
+                    />
+                    <span className="text-xs font-semibold text-zinc-800 dark:text-zinc-200 hidden 2xl:inline max-w-[90px] truncate">
+                      {user.name.split(" ")[0]}
+                    </span>
+                    <span
+                      className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full uppercase hidden sm:inline ${
+                        role === "ADMIN"
+                          ? "bg-amber-100 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400"
+                          : role === "CREATOR"
+                          ? "bg-indigo-100 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400"
+                          : "bg-rose-100 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400"
+                      }`}
+                    >
+                      {role || "READER"}
+                    </span>
+                    <ChevronDown className="w-3.5 h-3.5 text-zinc-400 mr-0.5" />
+                  </button>
 
-                {/* Dropdown Menu */}
-                {isUserMenuOpen && (
-                  <div
-                    className="absolute right-0 mt-2 w-64 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-2xl py-2 z-50 animate-in fade-in"
-                    onClick={() => setIsUserMenuOpen(false)}
-                  >
-                    <div className="px-4 py-2.5 border-b border-zinc-100 dark:border-zinc-800">
-                      <p className="text-xs font-bold text-zinc-900 dark:text-zinc-100 truncate">
-                        {user.name}
-                      </p>
-                      <p className="text-[11px] text-zinc-500 dark:text-zinc-400 truncate">
-                        @{user.username}
-                      </p>
-                    </div>
-
-                    {/* Fast Role Switcher */}
-                    <div className="p-2 border-b border-zinc-100 dark:border-zinc-800">
-                      <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 px-2 mb-1.5 flex items-center gap-1">
-                        <Sparkles className="w-3 h-3 text-amber-500" /> Switch Demo Role
-                      </p>
-                      <div className="grid grid-cols-3 gap-1 px-1">
-                        {(["READER", "CREATOR", "ADMIN"] as Role[]).map((r) => (
-                          <button
-                            key={r}
-                            onClick={() => switchRole(r)}
-                            className={`px-2 py-1 rounded-lg text-[10px] font-bold transition ${
-                              role === r
-                                ? "bg-rose-600 text-white shadow-xs"
-                                : "bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100"
-                            }`}
-                          >
-                            {r}
-                          </button>
-                        ))}
+                  {/* Account Dropdown Menu */}
+                  {isUserMenuOpen && (
+                    <div
+                      className="absolute right-0 top-full mt-2.5 w-72 sm:w-80 max-w-[calc(100vw-24px)] rounded-3xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-2xl z-50 animate-in fade-in zoom-in-95 origin-top-right overflow-hidden"
+                    >
+                      {/* User Header */}
+                      <div className="px-4 py-3.5 border-b border-zinc-100 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-950/50 flex items-center gap-3">
+                        <img
+                          src={user.avatar}
+                          alt={user.name}
+                          className="w-10 h-10 rounded-full object-cover ring-2 ring-rose-500/40 flex-shrink-0"
+                        />
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-1.5">
+                            <p className="text-xs font-bold text-zinc-900 dark:text-zinc-100 truncate">
+                              {user.name}
+                            </p>
+                            <span
+                              className={`text-[8px] font-extrabold px-1.5 py-0.2 rounded-full uppercase ${
+                                role === "ADMIN"
+                                  ? "bg-amber-500/10 text-amber-500"
+                                  : role === "CREATOR"
+                                  ? "bg-indigo-500/10 text-indigo-400"
+                                  : "bg-rose-500/10 text-rose-500"
+                              }`}
+                            >
+                              {role || "READER"}
+                            </span>
+                          </div>
+                          <p className="text-[11px] text-zinc-500 dark:text-zinc-400 truncate">
+                            @{user.username}
+                          </p>
+                        </div>
                       </div>
-                    </div>
 
-                    <div className="p-1 text-xs">
-                      {role === "CREATOR" && (
+                      {/* Fast Role Switcher */}
+                      <div className="p-3 border-b border-zinc-100 dark:border-zinc-800">
+                        <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 mb-1.5 flex items-center gap-1">
+                          <Sparkles className="w-3 h-3 text-amber-500" /> Switch Demo Role
+                        </p>
+                        <div className="grid grid-cols-3 gap-1.5">
+                          {(["READER", "CREATOR", "ADMIN"] as Role[]).map((r) => (
+                            <button
+                              key={r}
+                              onClick={() => {
+                                switchRole(r);
+                                setIsUserMenuOpen(false);
+                              }}
+                              className={`px-2 py-1.5 rounded-xl text-[10px] font-bold transition text-center ${
+                                role === r
+                                  ? "bg-gradient-to-r from-rose-600 to-indigo-600 text-white shadow-xs"
+                                  : "bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100"
+                              }`}
+                            >
+                              {r}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Navigation Links */}
+                      <div className="p-1.5 text-xs space-y-0.5">
                         <Link
                           href="/creator"
-                          className="flex items-center gap-2 px-3 py-2 rounded-xl text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition"
+                          onClick={() => setIsUserMenuOpen(false)}
+                          className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition font-medium"
                         >
                           <PenTool className="w-4 h-4 text-indigo-400" />
-                          <span>Creator Dashboard</span>
+                          <span>Creator Studio Dashboard</span>
                         </Link>
-                      )}
 
-                      {role === "ADMIN" && (
                         <Link
-                          href="/admin"
-                          className="flex items-center gap-2 px-3 py-2 rounded-xl text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition"
+                          href="/creator/upload"
+                          onClick={() => setIsUserMenuOpen(false)}
+                          className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition font-medium"
                         >
-                          <Shield className="w-4 h-4 text-amber-400" />
-                          <span>Admin Moderation</span>
+                          <Sparkles className="w-4 h-4 text-rose-400" />
+                          <span>Upload New Story / Comic</span>
                         </Link>
-                      )}
 
-                      <Link
-                        href={`/creator/${user.username}`}
-                        className="flex items-center gap-2 px-3 py-2 rounded-xl text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition"
-                      >
-                        <Layers className="w-4 h-4 text-zinc-400" />
-                        <span>My Public Profile</span>
-                      </Link>
+                        {role === "ADMIN" && (
+                          <Link
+                            href="/admin"
+                            onClick={() => setIsUserMenuOpen(false)}
+                            className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition font-medium"
+                          >
+                            <Shield className="w-4 h-4 text-amber-400" />
+                            <span>Admin Moderation</span>
+                          </Link>
+                        )}
 
-                      <Link
-                        href="/library"
-                        className="flex items-center gap-2 px-3 py-2 rounded-xl text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition"
-                      >
-                        <Bookmark className="w-4 h-4 text-rose-400" />
-                        <span>My Library & History</span>
-                      </Link>
+                        <Link
+                          href={`/creator/${user.username}`}
+                          onClick={() => setIsUserMenuOpen(false)}
+                          className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition font-medium"
+                        >
+                          <Layers className="w-4 h-4 text-zinc-400" />
+                          <span>My Public Profile</span>
+                        </Link>
+
+                        <Link
+                          href="/library"
+                          onClick={() => setIsUserMenuOpen(false)}
+                          className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition font-medium"
+                        >
+                          <Bookmark className="w-4 h-4 text-rose-400" />
+                          <span>My Library & Reading History</span>
+                        </Link>
+                      </div>
+
+                      {/* Sign Out */}
+                      <div className="p-1.5 border-t border-zinc-100 dark:border-zinc-800 text-xs">
+                        <button
+                          onClick={() => {
+                            logout();
+                            setIsUserMenuOpen(false);
+                          }}
+                          className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition text-left font-bold"
+                        >
+                          <LogOut className="w-4 h-4" />
+                          <span>Sign Out</span>
+                        </button>
+                      </div>
                     </div>
-
-                    <div className="p-1 border-t border-zinc-100 dark:border-zinc-800 text-xs">
-                      <button
-                        onClick={logout}
-                        className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition text-left font-medium"
-                      >
-                        <LogOut className="w-4 h-4" />
-                        <span>Sign Out</span>
-                      </button>
-                    </div>
-                  </div>
-                )}
+                  )}
                 </div>
               </div>
             ) : (
