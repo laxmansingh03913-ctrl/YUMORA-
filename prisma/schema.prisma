@@ -1,0 +1,370 @@
+// Prisma schema for Yumora - Global Novel & Comics Creator Platform
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  READER
+  CREATOR
+  ADMIN
+}
+
+enum ContentStatus {
+  DRAFT
+  SCHEDULED
+  PUBLISHED
+  ONGOING
+  COMPLETED
+  HIATUS
+}
+
+enum ContentRating {
+  EVERYONE
+  TEEN
+  MATURE
+}
+
+enum ContentType {
+  NOVEL
+  COMIC
+  ANIMATION
+}
+
+enum ContestStatus {
+  UPCOMING
+  ACTIVE
+  JUDGING
+  COMPLETED
+}
+
+enum ReportStatus {
+  PENDING
+  REVIEWED
+  RESOLVED
+  DISMISSED
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  username      String    @unique
+  email         String    @unique
+  passwordHash  String?
+  role          Role      @default(READER)
+  avatar        String?
+  banner        String?
+  bio           String?
+  country       String?
+  website       String?
+  twitter       String?
+  isVerified    Boolean   @default(false)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  novels        Novel[]
+  comics        Comic[]
+  comments      Comment[]
+  likes         Like[]
+  bookmarks     Bookmark[]
+  ratings       Rating[]
+  readingProgress ReadingProgress[]
+  contestSubmissions ContestSubmission[]
+  communityPosts CommunityPost[]
+  communityComments CommunityComment[]
+  reportsFiled  Report[] @relation("Reporter")
+
+  followers     Follow[]  @relation("UserFollowers")
+  following     Follow[]  @relation("UserFollowing")
+
+  @@index([username])
+  @@index([email])
+}
+
+model Follow {
+  id          String   @id @default(cuid())
+  followerId  String
+  followingId String
+  createdAt   DateTime @default(now())
+
+  follower    User     @relation("UserFollowers", fields: [followerId], references: [id], onDelete: Cascade)
+  following   User     @relation("UserFollowing", fields: [followingId], references: [id], onDelete: Cascade)
+
+  @@unique([followerId, followingId])
+}
+
+model Novel {
+  id            String        @id @default(cuid())
+  creatorId     String
+  title         String
+  slug          String        @unique
+  description   String        @db.Text
+  coverUrl      String
+  bannerUrl     String?
+  genre         String
+  secondaryGenre String?
+  tags          String[]
+  language      String        @default("en")
+  status        ContentStatus @default(ONGOING)
+  contentRating ContentRating @default(EVERYONE)
+  views         Int           @default(0)
+  reads         Int           @default(0)
+  rating        Float         @default(0.0)
+  totalRatings  Int           @default(0)
+  isFeatured    Boolean       @default(false)
+  isEditorPick  Boolean       @default(false)
+  isPremium     Boolean       @default(false)
+  hasCopyright  Boolean       @default(true)
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  creator       User          @relation(fields: [creatorId], references: [id], onDelete: Cascade)
+  chapters      Chapter[]
+
+  @@index([slug])
+  @@index([genre])
+  @@index([language])
+  @@index([creatorId])
+  @@index([status])
+}
+
+model Chapter {
+  id            String        @id @default(cuid())
+  novelId       String
+  chapterNumber Int
+  title         String
+  content       String        @db.Text
+  status        ContentStatus @default(PUBLISHED)
+  wordCount     Int           @default(0)
+  isFree        Boolean       @default(true)
+  publishedAt   DateTime      @default(now())
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  novel         Novel         @relation(fields: [novelId], references: [id], onDelete: Cascade)
+
+  @@unique([novelId, chapterNumber])
+  @@index([novelId])
+}
+
+model Comic {
+  id            String        @id @default(cuid())
+  creatorId     String
+  title         String
+  slug          String        @unique
+  description   String        @db.Text
+  coverUrl      String
+  bannerUrl     String?
+  genre         String
+  tags          String[]
+  language      String        @default("en")
+  status        ContentStatus @default(ONGOING)
+  contentRating ContentRating @default(EVERYONE)
+  views         Int           @default(0)
+  reads         Int           @default(0)
+  rating        Float         @default(0.0)
+  totalRatings  Int           @default(0)
+  isFeatured    Boolean       @default(false)
+  isEditorPick  Boolean       @default(false)
+  isPremium     Boolean       @default(false)
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  creator       User          @relation(fields: [creatorId], references: [id], onDelete: Cascade)
+  episodes      ComicEpisode[]
+
+  @@index([slug])
+  @@index([genre])
+  @@index([creatorId])
+}
+
+model ComicEpisode {
+  id            String        @id @default(cuid())
+  comicId       String
+  episodeNumber Int
+  title         String
+  thumbnailUrl  String?
+  imageUrls     String[]
+  status        ContentStatus @default(PUBLISHED)
+  publishedAt   DateTime      @default(now())
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  comic         Comic         @relation(fields: [comicId], references: [id], onDelete: Cascade)
+
+  @@unique([comicId, episodeNumber])
+  @@index([comicId])
+}
+
+model Comment {
+  id            String      @id @default(cuid())
+  userId        String
+  contentId     String
+  contentType   ContentType @default(NOVEL)
+  chapterNumber Int?
+  text          String      @db.Text
+  likes         Int         @default(0)
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([contentId, contentType])
+  @@index([userId])
+}
+
+model Like {
+  id          String      @id @default(cuid())
+  userId      String
+  contentId   String
+  contentType ContentType @default(NOVEL)
+  createdAt   DateTime    @default(now())
+
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, contentId, contentType])
+  @@index([contentId, contentType])
+}
+
+model Bookmark {
+  id          String      @id @default(cuid())
+  userId      String
+  contentId   String
+  contentType ContentType @default(NOVEL)
+  createdAt   DateTime    @default(now())
+
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, contentId, contentType])
+  @@index([userId])
+}
+
+model ReadingProgress {
+  id                 String      @id @default(cuid())
+  userId             String
+  contentId          String
+  contentType        ContentType @default(NOVEL)
+  chapterId          String?
+  chapterNumber      Int         @default(1)
+  progressPercentage Float       @default(0.0)
+  lastReadAt         DateTime    @default(now())
+
+  user               User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, contentId, contentType])
+  @@index([userId])
+}
+
+model Rating {
+  id          String      @id @default(cuid())
+  userId      String
+  contentId   String
+  contentType ContentType @default(NOVEL)
+  score       Int
+  review      String?     @db.Text
+  createdAt   DateTime    @default(now())
+
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, contentId, contentType])
+  @@index([contentId, contentType])
+}
+
+model Contest {
+  id              String             @id @default(cuid())
+  title           String
+  slug            String             @unique
+  subtitle        String
+  description     String             @db.Text
+  bannerUrl       String
+  prizePool       String
+  prizeStructure  Json
+  startDate       DateTime
+  endDate         DateTime
+  status          ContestStatus      @default(ACTIVE)
+  rules           String             @db.Text
+  judgingCriteria Json
+  eligibleGenres  String[]
+  minChapters     Int                @default(3)
+  createdAt       DateTime           @default(now())
+
+  submissions     ContestSubmission[]
+
+  @@index([slug])
+  @@index([status])
+}
+
+model ContestSubmission {
+  id          String      @id @default(cuid())
+  contestId   String
+  contentId   String
+  contentType ContentType @default(NOVEL)
+  creatorId   String
+  score       Float       @default(0.0)
+  rank        Int?
+  status      String      @default("PENDING")
+  submittedAt DateTime    @default(now())
+
+  contest     Contest     @relation(fields: [contestId], references: [id], onDelete: Cascade)
+  creator     User        @relation(fields: [creatorId], references: [id], onDelete: Cascade)
+
+  @@unique([contestId, contentId, contentType])
+  @@index([contestId])
+  @@index([creatorId])
+}
+
+model Report {
+  id          String       @id @default(cuid())
+  reporterId  String
+  contentId   String
+  contentType ContentType  @default(NOVEL)
+  reason      String
+  description String?      @db.Text
+  status      ReportStatus @default(PENDING)
+  createdAt   DateTime     @default(now())
+  resolvedAt  DateTime?
+
+  reporter    User         @relation("Reporter", fields: [reporterId], references: [id], onDelete: Cascade)
+
+  @@index([status])
+  @@index([contentId])
+}
+
+model CommunityPost {
+  id          String             @id @default(cuid())
+  userId      String
+  category    String
+  title       String
+  content     String             @db.Text
+  tags        String[]
+  upvotes     Int                @default(0)
+  views       Int                @default(0)
+  isPinned    Boolean            @default(false)
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+
+  user        User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  comments    CommunityComment[]
+
+  @@index([category])
+  @@index([userId])
+}
+
+model CommunityComment {
+  id        String        @id @default(cuid())
+  postId    String
+  userId    String
+  text      String        @db.Text
+  upvotes   Int           @default(0)
+  createdAt DateTime      @default(now())
+
+  post      CommunityPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([postId])
+}

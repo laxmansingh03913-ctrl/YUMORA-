@@ -1,0 +1,136 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: #fcfcfd;
+    --foreground: #09090b;
+    --card: #ffffff;
+    --card-foreground: #09090b;
+    --border: #e4e4e7;
+    --muted: #f4f4f5;
+    --muted-foreground: #71717a;
+    --accent: #f43f5e;
+    --accent-hover: #e11d48;
+  }
+
+  .dark {
+    --background: #09090e;
+    --foreground: #f4f4f7;
+    --card: #12121a;
+    --card-foreground: #f4f4f7;
+    --border: #222230;
+    --muted: #1a1a24;
+    --muted-foreground: #a1a1aa;
+    --accent: #f43f5e;
+    --accent-hover: #fb7185;
+  }
+
+  /* Reader themes */
+  .reader-light {
+    --reader-bg: #ffffff;
+    --reader-text: #18181b;
+    --reader-accent: #e11d48;
+    --reader-border: #e4e4e7;
+    --reader-bar: #f4f4f5;
+  }
+
+  .reader-sepia {
+    --reader-bg: #f7f1e5;
+    --reader-text: #3d2f24;
+    --reader-accent: #c2410c;
+    --reader-border: #e6dac6;
+    --reader-bar: #ece1ce;
+  }
+
+  .reader-slate {
+    --reader-bg: #1e293b;
+    --reader-text: #e2e8f0;
+    --reader-accent: #38bdf8;
+    --reader-border: #334155;
+    --reader-bar: #0f172a;
+  }
+
+  .reader-dark {
+    --reader-bg: #0d0d12;
+    --reader-text: #d4d4d8;
+    --reader-accent: #f43f5e;
+    --reader-border: #22222e;
+    --reader-bar: #14141e;
+  }
+
+  .reader-midnight {
+    --reader-bg: #000000;
+    --reader-text: #a1a1aa;
+    --reader-accent: #fb7185;
+    --reader-border: #18181b;
+    --reader-bar: #09090b;
+  }
+}
+
+body {
+  background-color: var(--background);
+  color: var(--foreground);
+  font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  overflow-x: hidden;
+}
+
+/* Glassmorphism */
+.glass-panel {
+  background: rgba(18, 18, 26, 0.75);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.light .glass-panel {
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+/* Custom scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(160, 160, 175, 0.2);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(160, 160, 175, 0.4);
+}
+
+/* Text glow & gradient headers */
+.text-gradient {
+  background: linear-gradient(135deg, #fb7185 0%, #e11d48 50%, #8b5cf6 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.text-gradient-gold {
+  background: linear-gradient(135deg, #fde047 0%, #eab308 50%, #ca8a04 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* Hide Next.js Development Indicators */
+nextjs-portal,
+#__next-build-watcher,
+[data-nextjs-toast],
+[data-nextjs-dialog-overlay],
+[data-nextjs-dev-indicator] {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}

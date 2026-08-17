@@ -1,0 +1,336 @@
+export type Role = 'READER' | 'CREATOR' | 'ADMIN';
+
+export type ContentStatus = 'DRAFT' | 'SCHEDULED' | 'PUBLISHED' | 'ONGOING' | 'COMPLETED' | 'HIATUS';
+
+export type ContentRating = 'EVERYONE' | 'TEEN' | 'MATURE';
+
+export type ContentType = 'NOVEL' | 'COMIC' | 'ANIMATION';
+
+export type LanguageCode = 'en' | 'es' | 'fr' | 'de' | 'pt' | 'ja' | 'ko' | 'hi';
+
+export type MonetizationTier = 'NONE' | 'LEVEL_1_ELIGIBLE' | 'LEVEL_2_ESTABLISHED' | 'LEVEL_3_VERIFIED';
+
+export type MonetizationStatus = 'NOT_APPLIED' | 'IN_PROGRESS' | 'UNDER_REVIEW' | 'ACTIVE' | 'SUSPENDED';
+
+export interface UserProfile {
+  id: string;
+  name: string;
+  username: string;
+  email: string;
+  role: Role;
+  avatar: string;
+  banner?: string;
+  bio: string;
+  country?: string;
+  website?: string;
+  twitter?: string;
+  preferredTypes?: string[];
+  primaryGenres?: string[];
+  agreedToCreatorTerms?: boolean;
+  isCreatorProfileComplete?: boolean;
+  isEmailVerified?: boolean;
+  isAgeVerified?: boolean;
+  monetizationTier?: MonetizationTier;
+  monetizationStatus?: MonetizationStatus;
+  fraudAuditStatus?: 'CLEAN' | 'UNDER_REVIEW' | 'FLAGGED';
+  isVerified: boolean;
+  followersCount: number;
+  followingCount: number;
+  totalReads: number;
+  createdAt: string;
+}
+
+export interface MonetizationEligibility {
+  overallPercentage: number;
+  currentTier: MonetizationTier;
+  status: MonetizationStatus;
+  accountAgeDays: number;
+  isEmailVerified: boolean;
+  isAgeVerified: boolean;
+  isProfileComplete: boolean;
+  hasOriginalityPledge: boolean;
+  violationsCount: number;
+  hasApprovedWork: boolean;
+  publishedChaptersOrEpisodes: number;
+  followersCount: number;
+  followersThreshold: number;
+  genuineReadsCount: number;
+  genuineReadsThreshold: number;
+  engagementsCount: number;
+  engagementsThreshold: number;
+  fraudAuditStatus: 'CLEAN' | 'UNDER_REVIEW' | 'FLAGGED';
+  missingRequirements: string[];
+  canApplyLevel1: boolean;
+  canApplyLevel2: boolean;
+  canApplyLevel3: boolean;
+}
+
+export interface Chapter {
+  id: string;
+  novelId: string;
+  chapterNumber: number;
+  title: string;
+  content: string;
+  status: ContentStatus;
+  wordCount: number;
+  isFree: boolean;
+  publishedAt: string;
+  readTimeMinutes: number;
+}
+
+export interface Novel {
+  id: string;
+  creatorId: string;
+  creator: {
+    id: string;
+    name: string;
+    username: string;
+    avatar: string;
+    isVerified?: boolean;
+  };
+  title: string;
+  slug: string;
+  description: string;
+  coverUrl: string;
+  bannerUrl?: string;
+  genre: string;
+  secondaryGenre?: string;
+  tags: string[];
+  language: LanguageCode;
+  status: ContentStatus;
+  contentRating: ContentRating;
+  views: number;
+  reads: number;
+  likesCount: number;
+  bookmarksCount: number;
+  rating: number;
+  totalRatings: number;
+  isFeatured: boolean;
+  isEditorPick: boolean;
+  isPremium: boolean;
+  chaptersCount: number;
+  chapters: Chapter[];
+  createdAt: string;
+  updatedAt: string;
+  contentWarning?: string;
+}
+
+export interface ComicEpisode {
+  id: string;
+  comicId: string;
+  episodeNumber: number;
+  title: string;
+  thumbnailUrl?: string;
+  imageUrls: string[];
+  status: ContentStatus;
+  publishedAt: string;
+  likesCount: number;
+}
+
+export interface Comic {
+  id: string;
+  creatorId: string;
+  creator: {
+    id: string;
+    name: string;
+    username: string;
+    avatar: string;
+    isVerified?: boolean;
+  };
+  title: string;
+  slug: string;
+  description: string;
+  coverUrl: string;
+  bannerUrl?: string;
+  genre: string;
+  secondaryGenre?: string;
+  tags: string[];
+  language: LanguageCode;
+  format?: 'VERTICAL' | 'PAGE_BASED';
+  readingDirection?: 'VERTICAL' | 'RTL' | 'LTR';
+  subType?: 'WEBTOON' | 'COMIC' | 'MANGA' | 'GRAPHIC_NOVEL' | 'ILLUSTRATED_NOVEL' | 'PDF_BOOK';
+  allowPdfDownload?: boolean;
+  status: ContentStatus;
+  contentRating: ContentRating;
+  contentWarning?: string;
+  views: number;
+  reads: number;
+  likesCount?: number;
+  rating: number;
+  totalRatings: number;
+  isFeatured: boolean;
+  isEditorPick: boolean;
+  isPremium: boolean;
+  episodesCount: number;
+  episodes: ComicEpisode[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Comment {
+  id: string;
+  userId: string;
+  user: {
+    name: string;
+    username: string;
+    avatar: string;
+    isVerified?: boolean;
+  };
+  contentId: string;
+  contentType: ContentType;
+  chapterNumber?: number;
+  text: string;
+  likes: number;
+  isLiked?: boolean;
+  createdAt: string;
+}
+
+export interface Review {
+  id: string;
+  userId: string;
+  user: {
+    name: string;
+    username: string;
+    avatar: string;
+  };
+  contentId: string;
+  contentType: ContentType;
+  score: number;
+  review: string;
+  createdAt: string;
+}
+
+export interface ReadingProgress {
+  contentId: string;
+  contentType: ContentType;
+  chapterId?: string;
+  chapterNumber: number;
+  progressPercentage: number;
+  lastReadAt: string;
+}
+
+export interface Contest {
+  id: string;
+  title: string;
+  slug: string;
+  subtitle: string;
+  description: string;
+  bannerUrl: string;
+  prizePool: string;
+  prizeStructure: {
+    place: string;
+    reward: string;
+    desc: string;
+  }[];
+  startDate: string;
+  endDate: string;
+  status: 'ACTIVE' | 'UPCOMING' | 'JUDGING' | 'COMPLETED';
+  rules: string[];
+  judgingCriteria: {
+    title: string;
+    weight: string;
+    desc: string;
+  }[];
+  eligibleGenres: string[];
+  minChapters: number;
+  submissionCount: number;
+}
+
+export interface ContestSubmission {
+  id: string;
+  contestId: string;
+  contentId: string;
+  contentType: ContentType;
+  novel: Novel;
+  creator: UserProfile;
+  score: number;
+  votes: number;
+  rank?: number;
+  status: 'APPROVED' | 'PENDING' | 'WINNER';
+  submittedAt: string;
+}
+
+export interface CommunityPost {
+  id: string;
+  userId: string;
+  user: {
+    name: string;
+    username: string;
+    avatar: string;
+    badge?: string;
+  };
+  category: 'General' | 'Creator Lounge' | 'Story Feedback' | 'Writing Prompts' | 'Announcements';
+  title: string;
+  content: string;
+  tags: string[];
+  upvotes: number;
+  commentsCount: number;
+  views: number;
+  isPinned?: boolean;
+  createdAt: string;
+  comments?: {
+    id: string;
+    userId: string;
+    user: {
+      name: string;
+      username: string;
+      avatar: string;
+    };
+    text: string;
+    upvotes: number;
+    createdAt: string;
+  }[];
+}
+
+export interface ReportItem {
+  id: string;
+  reporterName: string;
+  contentId: string;
+  contentTitle: string;
+  contentType: ContentType;
+  creatorName: string;
+  reason: 'Copyright Infringement' | 'Inappropriate / NSFW' | 'Hate Speech' | 'Spam / Scam' | 'Other';
+  description: string;
+  status: 'PENDING' | 'REVIEWED' | 'RESOLVED' | 'DISMISSED';
+  createdAt: string;
+}
+
+export interface ReaderSettings {
+  theme: 'light' | 'dark' | 'sepia' | 'slate' | 'midnight';
+  fontFamily: 'serif' | 'sans' | 'mono';
+  fontSize: number; // 14 to 28
+  lineHeight: number; // 1.4, 1.8, 2.2
+  maxWidth: 'narrow' | 'standard' | 'wide' | 'full';
+  autoScrollSpeed: number; // 0 = off
+}
+
+export interface NotificationPreferences {
+  newChapters: boolean;
+  newStories: boolean;
+  newComics: boolean;
+  announcements: boolean;
+}
+
+export interface Follow {
+  id: string;
+  followerId: string;
+  followingId: string;
+  createdAt: string;
+  notificationsEnabled: boolean;
+  preferences?: NotificationPreferences;
+}
+
+export interface NotificationItem {
+  id: string;
+  userId: string; // recipient
+  creatorId: string;
+  creatorName: string;
+  creatorAvatar: string;
+  title: string;
+  message: string;
+  contentUrl: string;
+  type: 'CHAPTER_RELEASE' | 'EPISODE_RELEASE' | 'STORY_RELEASE' | 'ANNOUNCEMENT';
+  isRead: boolean;
+  createdAt: string;
+}
+

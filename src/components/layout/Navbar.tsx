@@ -1,0 +1,437 @@
+"use client";
+
+import React, { useState, useEffect } from "react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import {
+  Compass,
+  BookOpen,
+  Image as ImageIcon,
+  Trophy,
+  Users,
+  PenTool,
+  Bookmark,
+  Search,
+  Moon,
+  Sun,
+  Bell,
+  Sparkles,
+  ChevronDown,
+  LogOut,
+  Shield,
+  Layers,
+  Globe,
+} from "lucide-react";
+import { useAuth } from "@/context/AuthContext";
+import { useTheme } from "@/context/ThemeContext";
+import { dataStore } from "@/lib/data/store";
+import { formatDate } from "@/lib/utils";
+import { SearchModal } from "../ui/SearchModal";
+import { AuthModal } from "../ui/AuthModal";
+import { Role, LanguageCode, NotificationItem } from "@/lib/types";
+
+const NAV_LINKS = [
+  { name: "Discover", href: "/discover", icon: Compass },
+  { name: "Novels", href: "/novels", icon: BookOpen },
+  { name: "Comics", href: "/comics", icon: ImageIcon },
+  { name: "Contests", href: "/contests", icon: Trophy, badge: "$500" },
+  { name: "Community", href: "/community", icon: Users },
+  { name: "Library", href: "/library", icon: Bookmark },
+];
+
+const LANGUAGES: { code: LanguageCode; label: string; flag: string }[] = [
+  { code: "en", label: "English", flag: "🇺🇸" },
+  { code: "es", label: "Español", flag: "🇪🇸" },
+  { code: "fr", label: "Français", flag: "🇫🇷" },
+  { code: "de", label: "Deutsch", flag: "🇩🇪" },
+  { code: "pt", label: "Português", flag: "🇧🇷" },
+  { code: "ja", label: "日本語", flag: "🇯🇵" },
+  { code: "ko", label: "한국어", flag: "🇰🇷" },
+  { code: "hi", label: "हिन्दी", flag: "🇮🇳" },
+];
+
+export function Navbar() {
+  const pathname = usePathname();
+  const { user, role, switchRole, openAuthModal, logout } = useAuth();
+  const { resolvedTheme, setTheme } = useTheme();
+
+  const [mounted, setMounted] = useState(false);
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const [isLangOpen, setIsLangOpen] = useState(false);
+  const [isNotifsOpen, setIsNotifsOpen] = useState(false);
+  const [currentLang, setCurrentLang] = useState<LanguageCode>("en");
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // Don't render full navbar on pure reading chapter route for maximum immersion
+  const isReadingChapter = pathname.includes("/chapter/");
+
+  if (isReadingChapter) {
+    return (
+      <>
+        <SearchModal isOpen={isSearchOpen} onClose={() => setIsSearchOpen(false)} />
+        <AuthModal />
+      </>
+    );
+  }
+
+  return (
+    <>
+      <header className="sticky top-0 z-40 w-full border-b border-zinc-200/80 dark:border-zinc-800/80 bg-white/80 dark:bg-zinc-950/80 backdrop-blur-xl transition-colors">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
+          {/* Logo & Main Nav */}
+          <div className="flex items-center gap-6 lg:gap-8">
+            <Link href="/" className="flex items-center gap-2.5 group">
+              <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-rose-600 via-rose-500 to-indigo-600 flex items-center justify-center font-black text-white text-lg shadow-lg shadow-rose-500/25 group-hover:scale-105 transition transform">
+                Y
+              </div>
+              <div className="flex flex-col">
+                <span className="font-extrabold text-xl tracking-tight bg-gradient-to-r from-zinc-900 via-zinc-800 to-zinc-950 dark:from-white dark:via-zinc-200 dark:to-zinc-400 bg-clip-text text-transparent">
+                  Yumora
+                </span>
+                <span className="text-[9px] uppercase tracking-widest font-semibold text-rose-500 -mt-1 hidden sm:inline">
+                  Story Universe
+                </span>
+              </div>
+            </Link>
+
+            {/* Desktop Navigation Links */}
+            <nav className="hidden md:flex items-center gap-1">
+              {NAV_LINKS.map((link) => {
+                const isActive = pathname === link.href || pathname.startsWith(link.href + "/");
+                return (
+                  <Link
+                    key={link.name}
+                    href={link.href}
+                    className={`px-3 py-1.5 rounded-lg text-sm font-medium transition flex items-center gap-1.5 relative ${
+                      isActive
+                        ? "text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/40 font-semibold"
+                        : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-900"
+                    }`}
+                  >
+                    <link.icon className="w-4 h-4" />
+                    <span>{link.name}</span>
+                    {link.badge && (
+                      <span className="px-1.5 py-0.2 rounded-full text-[10px] font-bold bg-gradient-to-r from-amber-500 to-rose-500 text-white shadow-xs">
+                        {link.badge}
+                      </span>
+                    )}
+                  </Link>
+                );
+              })}
+            </nav>
+          </div>
+
+          {/* Right actions: Search, Create, Lang, Theme, User */}
+          <div className="flex items-center gap-1.5 sm:gap-2.5 flex-shrink-0">
+            {/* Search Trigger */}
+            <button
+              onClick={() => setIsSearchOpen(true)}
+              className="flex items-center gap-2 p-2 xl:px-3.5 xl:py-2 rounded-xl bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200 hover:border-zinc-300 dark:hover:border-zinc-700 transition text-xs sm:text-sm"
+              title="Search Yumora (⌘K)"
+            >
+              <Search className="w-4 h-4 text-zinc-400" />
+              <span className="hidden xl:inline">Search stories...</span>
+              <kbd className="hidden 2xl:inline-block px-1.5 py-0.5 rounded bg-zinc-200 dark:bg-zinc-800 text-[10px] text-zinc-500 font-mono">
+                ⌘K
+              </kbd>
+            </button>
+
+            {/* Language Switcher Dropdown */}
+            <div className="relative">
+              <button
+                onClick={() => setIsLangOpen(!isLangOpen)}
+                className="p-2 rounded-xl text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-900 transition flex items-center gap-1"
+                title="Select Language"
+              >
+                <Globe className="w-4 h-4" />
+                <span className="text-xs font-semibold uppercase">{currentLang}</span>
+              </button>
+
+              {isLangOpen && (
+                <div
+                  className="absolute right-0 mt-2 w-40 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-xl py-2 z-50 animate-in fade-in"
+                  onClick={() => setIsLangOpen(false)}
+                >
+                  <p className="px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-zinc-400">
+                    Story Language
+                  </p>
+                  {LANGUAGES.map((lang) => (
+                    <button
+                      key={lang.code}
+                      onClick={() => setCurrentLang(lang.code)}
+                      className={`w-full px-3 py-1.5 text-left text-xs flex items-center justify-between hover:bg-zinc-100 dark:hover:bg-zinc-800 transition ${
+                        currentLang === lang.code
+                          ? "font-bold text-rose-500 bg-rose-50 dark:bg-rose-950/30"
+                          : "text-zinc-700 dark:text-zinc-300"
+                      }`}
+                    >
+                      <span className="flex items-center gap-2">
+                        <span>{lang.flag}</span>
+                        <span>{lang.label}</span>
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Theme Toggle */}
+            <button
+              onClick={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")}
+              className="p-2 rounded-xl text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-900 transition"
+              title="Toggle Theme"
+            >
+              {resolvedTheme === "dark" ? (
+                <Sun className="w-4 h-4 text-amber-400" />
+              ) : (
+                <Moon className="w-4 h-4 text-zinc-700" />
+              )}
+            </button>
+
+            {/* Notifications (Logged in only) */}
+            {user && (() => {
+              const notifs = mounted ? dataStore.getNotifications(user.id) : [];
+              const unreadCount = mounted ? notifs.filter((n) => !n.isRead).length : 0;
+
+              return (
+                <div className="relative">
+                  <button
+                    onClick={() => setIsNotifsOpen(!isNotifsOpen)}
+                    className="p-2 rounded-xl text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-900 transition relative"
+                    title="Notifications"
+                  >
+                    <Bell className="w-4 h-4" />
+                    {mounted && unreadCount > 0 && (
+                      <span className="absolute top-1 right-1 px-1 min-w-4 h-4 rounded-full bg-rose-500 text-white text-[9px] font-black flex items-center justify-center ring-2 ring-white dark:ring-zinc-950">
+                        {unreadCount}
+                      </span>
+                    )}
+                  </button>
+
+                  {isNotifsOpen && (
+                    <div
+                      className="absolute right-0 mt-2 w-80 sm:w-96 rounded-3xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-2xl p-4 z-50 animate-in fade-in space-y-3"
+                    >
+                      <div className="flex items-center justify-between pb-2 border-b border-zinc-100 dark:border-zinc-800">
+                        <div className="flex items-center gap-2">
+                          <span className="font-black text-xs text-zinc-900 dark:text-zinc-100">
+                            Notifications
+                          </span>
+                          {unreadCount > 0 && (
+                            <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-rose-500/10 text-rose-500">
+                              {unreadCount} new
+                            </span>
+                          )}
+                        </div>
+                        {unreadCount > 0 && (
+                          <button
+                            onClick={() => dataStore.markAllNotificationsRead(user.id)}
+                            className="text-[10px] text-rose-500 hover:text-rose-400 font-bold"
+                          >
+                            Mark all as read
+                          </button>
+                        )}
+                      </div>
+
+                      <div className="max-h-80 overflow-y-auto space-y-2 text-xs divide-y divide-zinc-100 dark:divide-zinc-800/60">
+                        {notifs.length === 0 ? (
+                          <p className="py-6 text-center text-xs text-zinc-400">No notifications yet.</p>
+                        ) : (
+                          notifs.map((n) => (
+                            <Link
+                              key={n.id}
+                              href={n.contentUrl}
+                              onClick={() => {
+                                dataStore.markNotificationRead(n.id);
+                                setIsNotifsOpen(false);
+                              }}
+                              className={`pt-2.5 first:pt-0 pb-1 flex items-start gap-3 rounded-xl transition ${
+                                !n.isRead ? "opacity-100" : "opacity-70 hover:opacity-100"
+                              }`}
+                            >
+                              <img
+                                src={n.creatorAvatar}
+                                alt={n.creatorName}
+                                className="w-8 h-8 rounded-full object-cover border border-zinc-700 flex-shrink-0 mt-0.5"
+                              />
+                              <div className="min-w-0 flex-1 space-y-0.5">
+                                <p className="font-bold text-zinc-900 dark:text-zinc-100 text-xs truncate">
+                                  {n.title}
+                                </p>
+                                <p className="text-[11px] text-zinc-500 dark:text-zinc-400 line-clamp-2 leading-relaxed">
+                                  {n.message}
+                                </p>
+                                <p className="text-[9px] text-zinc-400 pt-0.5">
+                                  {formatDate(n.createdAt)}
+                                </p>
+                              </div>
+                              {!n.isRead && (
+                                <span className="w-2 h-2 rounded-full bg-rose-500 flex-shrink-0 mt-1.5" />
+                              )}
+                            </Link>
+                          ))
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
+
+            {/* User Profile / Auth Buttons */}
+            {user ? (
+              <div className="flex items-center gap-2">
+                <Link
+                  href="/creator"
+                  className="hidden sm:flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-rose-600 via-rose-500 to-indigo-600 hover:from-rose-500 hover:to-indigo-500 text-white font-bold text-xs shadow-md shadow-rose-600/20 transition transform hover:scale-[1.02] active:scale-[0.98] whitespace-nowrap"
+                  title="Open Creator Studio Dashboard"
+                >
+                  <PenTool className="w-3.5 h-3.5" />
+                  <span>Studio</span>
+                </Link>
+
+                <div className="relative">
+                  <button
+                    onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
+                    className="flex items-center gap-2 p-1 pl-1.5 rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 transition"
+                  >
+                  <img
+                    src={user.avatar}
+                    alt={user.name}
+                    className="w-7 h-7 rounded-full object-cover ring-1 ring-rose-500/50"
+                  />
+                  <span className="text-xs font-semibold text-zinc-800 dark:text-zinc-200 hidden lg:inline max-w-[100px] truncate">
+                    {user.name.split(" ")[0]}
+                  </span>
+                  <span
+                    className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full uppercase ${
+                      role === "ADMIN"
+                        ? "bg-amber-100 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400"
+                        : role === "CREATOR"
+                        ? "bg-indigo-100 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400"
+                        : "bg-rose-100 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400"
+                    }`}
+                  >
+                    {role || "READER"}
+                  </span>
+                  <ChevronDown className="w-3.5 h-3.5 text-zinc-400 mr-1" />
+                </button>
+
+                {/* Dropdown Menu */}
+                {isUserMenuOpen && (
+                  <div
+                    className="absolute right-0 mt-2 w-64 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-2xl py-2 z-50 animate-in fade-in"
+                    onClick={() => setIsUserMenuOpen(false)}
+                  >
+                    <div className="px-4 py-2.5 border-b border-zinc-100 dark:border-zinc-800">
+                      <p className="text-xs font-bold text-zinc-900 dark:text-zinc-100 truncate">
+                        {user.name}
+                      </p>
+                      <p className="text-[11px] text-zinc-500 dark:text-zinc-400 truncate">
+                        @{user.username}
+                      </p>
+                    </div>
+
+                    {/* Fast Role Switcher */}
+                    <div className="p-2 border-b border-zinc-100 dark:border-zinc-800">
+                      <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 px-2 mb-1.5 flex items-center gap-1">
+                        <Sparkles className="w-3 h-3 text-amber-500" /> Switch Demo Role
+                      </p>
+                      <div className="grid grid-cols-3 gap-1 px-1">
+                        {(["READER", "CREATOR", "ADMIN"] as Role[]).map((r) => (
+                          <button
+                            key={r}
+                            onClick={() => switchRole(r)}
+                            className={`px-2 py-1 rounded-lg text-[10px] font-bold transition ${
+                              role === r
+                                ? "bg-rose-600 text-white shadow-xs"
+                                : "bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100"
+                            }`}
+                          >
+                            {r}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="p-1 text-xs">
+                      {role === "CREATOR" && (
+                        <Link
+                          href="/creator"
+                          className="flex items-center gap-2 px-3 py-2 rounded-xl text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition"
+                        >
+                          <PenTool className="w-4 h-4 text-indigo-400" />
+                          <span>Creator Dashboard</span>
+                        </Link>
+                      )}
+
+                      {role === "ADMIN" && (
+                        <Link
+                          href="/admin"
+                          className="flex items-center gap-2 px-3 py-2 rounded-xl text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition"
+                        >
+                          <Shield className="w-4 h-4 text-amber-400" />
+                          <span>Admin Moderation</span>
+                        </Link>
+                      )}
+
+                      <Link
+                        href={`/creator/${user.username}`}
+                        className="flex items-center gap-2 px-3 py-2 rounded-xl text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition"
+                      >
+                        <Layers className="w-4 h-4 text-zinc-400" />
+                        <span>My Public Profile</span>
+                      </Link>
+
+                      <Link
+                        href="/library"
+                        className="flex items-center gap-2 px-3 py-2 rounded-xl text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition"
+                      >
+                        <Bookmark className="w-4 h-4 text-rose-400" />
+                        <span>My Library & History</span>
+                      </Link>
+                    </div>
+
+                    <div className="p-1 border-t border-zinc-100 dark:border-zinc-800 text-xs">
+                      <button
+                        onClick={logout}
+                        className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition text-left font-medium"
+                      >
+                        <LogOut className="w-4 h-4" />
+                        <span>Sign Out</span>
+                      </button>
+                    </div>
+                  </div>
+                )}
+                </div>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => openAuthModal("login")}
+                  className="px-3.5 py-2 rounded-xl text-zinc-700 dark:text-zinc-200 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-900 font-bold text-xs sm:text-sm transition whitespace-nowrap"
+                >
+                  Sign In
+                </button>
+                <button
+                  onClick={() => openAuthModal("signup")}
+                  className="px-4 sm:px-5 py-2 rounded-xl bg-gradient-to-r from-rose-600 via-rose-500 to-indigo-600 hover:from-rose-500 hover:to-indigo-500 text-white font-black text-xs sm:text-sm shadow-md shadow-rose-600/30 transition transform hover:scale-[1.03] active:scale-[0.97] whitespace-nowrap flex items-center gap-1.5"
+                >
+                  <span>Sign Up</span>
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      </header>
+
+      {/* Modals */}
+      <SearchModal isOpen={isSearchOpen} onClose={() => setIsSearchOpen(false)} />
+      <AuthModal />
+    </>
+  );
+}
