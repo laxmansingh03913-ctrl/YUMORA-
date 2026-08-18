@@ -35,8 +35,7 @@ const NAV_LINKS = [
   { name: "Novels", href: "/novels", icon: BookOpen },
   { name: "Comics", href: "/comics", icon: ImageIcon },
   { name: "Contests", href: "/contests", icon: Trophy, badge: "$500" },
-  { name: "Community", href: "/community", icon: Users, className: "hidden xl:flex" },
-  { name: "Library", href: "/library", icon: Bookmark, className: "hidden 2xl:flex" },
+  { name: "Community", href: "/community", icon: Users },
 ];
 
 const LANGUAGES: { code: LanguageCode; label: string; flag: string }[] = [
@@ -112,9 +111,9 @@ export function Navbar() {
   return (
     <>
       <header className="sticky top-0 z-40 w-full border-b border-zinc-200/80 dark:border-zinc-800/80 bg-white/80 dark:bg-zinc-950/80 backdrop-blur-xl transition-colors">
-        <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-2 sm:gap-4">
-          {/* Logo & Main Nav */}
-          <div className="flex items-center gap-4 lg:gap-6 xl:gap-8 min-w-0">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-3 lg:gap-5">
+          {/* ZONE 1: LEFT - Logo & Desktop Navigation */}
+          <div className="flex items-center gap-3 lg:gap-4 xl:gap-6 flex-shrink-0">
             <Link href="/" className="flex items-center gap-2 group flex-shrink-0">
               <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-rose-600 via-rose-500 to-indigo-600 flex items-center justify-center font-black text-white text-lg shadow-lg shadow-rose-500/25 group-hover:scale-105 transition transform">
                 Y
@@ -130,21 +129,21 @@ export function Navbar() {
             </Link>
 
             {/* Desktop Navigation Links */}
-            <nav className="hidden md:flex items-center gap-0.5 lg:gap-1">
+            <nav className="hidden md:flex items-center gap-0.5 lg:gap-1 flex-shrink-0">
               {NAV_LINKS.map((link) => {
                 const isActive = pathname === link.href || pathname.startsWith(link.href + "/");
                 return (
                   <Link
                     key={link.name}
                     href={link.href}
-                    className={`px-2.5 lg:px-3 py-1.5 rounded-lg text-xs lg:text-sm font-medium transition flex items-center gap-1.5 relative whitespace-nowrap ${link.className || ""} ${
+                    className={`px-2.5 lg:px-3 py-1.5 rounded-xl text-xs lg:text-sm font-medium transition flex items-center gap-1.5 relative whitespace-nowrap ${
                       isActive
                         ? "text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/40 font-semibold"
                         : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-900"
                     }`}
                   >
-                    <link.icon className="w-4 h-4" />
-                    <span>{link.name}</span>
+                    <link.icon className="w-4 h-4 flex-shrink-0" />
+                    <span className="whitespace-nowrap">{link.name}</span>
                     {link.badge && (
                       <span className="px-1.5 py-0.2 rounded-full text-[10px] font-bold bg-gradient-to-r from-amber-500 to-rose-500 text-white shadow-xs">
                         {link.badge}
@@ -156,20 +155,25 @@ export function Navbar() {
             </nav>
           </div>
 
-          {/* Right actions: Search, Create, Lang, Theme, User */}
-          <div className="flex items-center gap-1.5 sm:gap-2.5 flex-shrink-0">
-            {/* Search Trigger */}
+          {/* ZONE 2: CENTER / FLEXIBLE - Dedicated Search Zone with guaranteed 20-28px separation */}
+          <div className="flex-1 flex items-center justify-center min-w-0 px-3 lg:px-6">
             <button
               onClick={() => setIsSearchOpen(true)}
-              className="flex items-center gap-2 p-2 xl:px-3.5 xl:py-2 rounded-xl bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200 hover:border-zinc-300 dark:hover:border-zinc-700 transition text-xs sm:text-sm"
+              className="w-full min-w-[170px] sm:min-w-[190px] max-w-[280px] flex items-center justify-between gap-2 h-9 sm:h-10 px-3 sm:px-3.5 rounded-xl bg-zinc-100/90 dark:bg-zinc-900/90 border border-zinc-200/90 dark:border-zinc-800/90 text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200 hover:border-zinc-300 dark:hover:border-zinc-700 transition text-xs sm:text-sm shadow-xs flex-shrink"
               title="Search Yumora (⌘K)"
             >
-              <Search className="w-4 h-4 text-zinc-400" />
-              <span className="hidden xl:inline">Search stories...</span>
-              <kbd className="hidden 2xl:inline-block px-1.5 py-0.5 rounded bg-zinc-200 dark:bg-zinc-800 text-[10px] text-zinc-500 font-mono">
+              <div className="flex items-center gap-2 min-w-0 overflow-hidden">
+                <Search className="w-4 h-4 text-zinc-400 flex-shrink-0" />
+                <span className="truncate text-zinc-500 dark:text-zinc-400 text-xs">Search stories...</span>
+              </div>
+              <kbd className="hidden xl:inline-flex items-center px-1.5 py-0.5 rounded bg-zinc-200/80 dark:bg-zinc-800 text-[10px] text-zinc-500 font-mono flex-shrink-0">
                 ⌘K
               </kbd>
             </button>
+          </div>
+
+          {/* ZONE 3: RIGHT - Language, Theme, Notifications, Studio, Profile / Auth */}
+          <div className="flex items-center gap-1.5 sm:gap-2.5 lg:gap-3 flex-shrink-0">
 
             {/* Language Switcher Dropdown */}
             <div className="relative" ref={langRef}>
