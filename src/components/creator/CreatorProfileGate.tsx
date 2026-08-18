@@ -18,10 +18,14 @@ import {
   ExternalLink,
   Layers,
   FileCheck,
+  Camera,
+  Upload,
+  Loader2,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { dataStore } from "@/lib/data/store";
 import { UserProfile } from "@/lib/types";
+import { compressImageToWebP, validateImageFile } from "@/lib/image-processing";
 
 const ALL_GENRES = [
   "Fantasy",
@@ -109,6 +113,47 @@ export function CreatorProfileGate({ onProfileCompleted }: CreatorProfileGatePro
     );
   };
 
+  const avatarFileRef = React.useRef<HTMLInputElement>(null);
+  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
+
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !user) return;
+
+    const validation = validateImageFile(file, { maxSizeBytes: 8 * 1024 * 1024 });
+    if (!validation.valid) {
+      alert(validation.error);
+      return;
+    }
+
+    try {
+      setIsUploadingAvatar(true);
+      const result = await compressImageToWebP(file, {
+        maxWidth: 512,
+        maxHeight: 512,
+        quality: 0.9,
+      });
+
+      const updated = dataStore.updateUserProfile(user.id, {
+        avatar: result.dataUrl,
+      });
+
+      updateProfile(updated);
+      setAvatarError(false);
+      try {
+        confetti({ particleCount: 50, spread: 60, origin: { y: 0.7 } });
+      } catch {
+        // ignore
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Failed to process image. Please try another file.");
+    } finally {
+      setIsUploadingAvatar(false);
+      if (e.target) e.target.value = "";
+    }
+  };
+
   const handleSaveProfile = (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
@@ -163,9 +208,9 @@ export function CreatorProfileGate({ onProfileCompleted }: CreatorProfileGatePro
         <div className="absolute top-0 right-0 w-80 h-80 bg-gradient-to-bl from-rose-500/10 via-indigo-500/5 to-transparent rounded-full blur-3xl pointer-events-none" />
 
         <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6 relative z-10 text-center sm:text-left">
-          {/* Avatar Display (No manual URL field) */}
+          {/* Avatar Display with Custom Photo Upload */}
           <div className="relative group flex-shrink-0">
-            <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-3xl overflow-hidden ring-4 ring-rose-500/30 shadow-2xl bg-gradient-to-br from-rose-600 to-indigo-600 flex items-center justify-center text-white font-black text-3xl">
+            <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-3xl overflow-hidden ring-4 ring-rose-500/30 shadow-2xl bg-gradient-to-br from-rose-600 to-indigo-600 flex items-center justify-center text-white font-black text-3xl relative">
               {user?.avatar && !avatarError ? (
                 <img
                   src={user.avatar}
@@ -176,8 +221,36 @@ export function CreatorProfileGate({ onProfileCompleted }: CreatorProfileGatePro
               ) : (
                 <span>{initials}</span>
               )}
+
+              {/* Upload Hover Overlay */}
+              <button
+                type="button"
+                onClick={() => avatarFileRef.current?.click()}
+                disabled={isUploadingAvatar}
+                className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition duration-200 flex flex-col items-center justify-center gap-1 text-white backdrop-blur-xs cursor-pointer"
+                title="Upload Custom Profile Picture"
+              >
+                {isUploadingAvatar ? (
+                  <Loader2 className="w-5 h-5 animate-spin text-rose-400" />
+                ) : (
+                  <>
+                    <Camera className="w-5 h-5 text-rose-400" />
+                    <span className="text-[9px] font-bold">Change Photo</span>
+                  </>
+                )}
+              </button>
             </div>
-            <div className="absolute -bottom-2 -right-2 px-2 py-0.5 rounded-full text-[9px] font-black uppercase bg-zinc-900 text-rose-400 border border-zinc-700 shadow-md">
+
+            {/* Hidden Avatar File Input */}
+            <input
+              ref={avatarFileRef}
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              className="hidden"
+              onChange={handleAvatarUpload}
+            />
+
+            <div className="absolute -bottom-2 -right-2 px-2 py-0.5 rounded-full text-[9px] font-black uppercase bg-zinc-900 text-rose-400 border border-zinc-700 shadow-md z-10">
               Creator
             </div>
           </div>
@@ -195,11 +268,25 @@ export function CreatorProfileGate({ onProfileCompleted }: CreatorProfileGatePro
 
             <p className="text-xs text-zinc-500 dark:text-zinc-400">
               {user?.avatar && !avatarError
-                ? "Profile photo synced from your authenticated Google / Supabase account"
-                : "Default creator identity active. Custom avatar upload will be available in future releases."}
+                ? "Custom profile photo active. Click image or change photo below to upload a new one."
+                : "Default creator identity active. You can upload a custom profile picture anytime."}
             </p>
 
             <div className="pt-2 flex flex-wrap items-center justify-center sm:justify-start gap-2">
+              <button
+                type="button"
+                onClick={() => avatarFileRef.current?.click()}
+                disabled={isUploadingAvatar}
+                className="px-3 py-1.5 rounded-xl bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 font-bold text-xs transition flex items-center gap-1.5"
+              >
+                {isUploadingAvatar ? (
+                  <Loader2 className="w-3.5 h-3.5 animate-spin text-rose-500" />
+                ) : (
+                  <Upload className="w-3.5 h-3.5 text-rose-500" />
+                )}
+                <span>{isUploadingAvatar ? "Processing..." : "Upload Custom Avatar"}</span>
+              </button>
+
               <span
                 className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider transition ${
                   is100PercentComplete
@@ -218,10 +305,6 @@ export function CreatorProfileGate({ onProfileCompleted }: CreatorProfileGatePro
                     <span>Publishing Locked</span>
                   </>
                 )}
-              </span>
-
-              <span className="px-2.5 py-1 rounded-full text-[11px] font-semibold bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300">
-                Level 1 Storyteller
               </span>
             </div>
           </div>

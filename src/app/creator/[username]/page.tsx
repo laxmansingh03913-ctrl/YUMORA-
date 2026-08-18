@@ -33,6 +33,9 @@ import {
   Copy,
   ExternalLink,
   ShieldCheck,
+  Camera,
+  Upload,
+  Loader2,
 } from "lucide-react";
 import { dataStore } from "@/lib/data/store";
 import { useAuth } from "@/context/AuthContext";
@@ -40,6 +43,7 @@ import { NovelCard } from "@/components/ui/NovelCard";
 import { ComicCard } from "@/components/ui/ComicCard";
 import { formatNumber, formatDate } from "@/lib/utils";
 import { NotificationPreferences, UserProfile, Novel, Comic } from "@/lib/types";
+import { compressImageToWebP, validateImageFile } from "@/lib/image-processing";
 
 const ALL_GENRES = [
   "Fantasy",
@@ -307,6 +311,49 @@ export default function CreatorProfilePage({ params }: CreatorProfileProps) {
     }
   };
 
+  // Custom Avatar Upload for Self
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
+  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
+
+  const handleAvatarFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !user) return;
+
+    const validation = validateImageFile(file, { maxSizeBytes: 8 * 1024 * 1024 });
+    if (!validation.valid) {
+      showToast(`⚠️ ${validation.error}`);
+      return;
+    }
+
+    try {
+      setIsUploadingAvatar(true);
+      const result = await compressImageToWebP(file, {
+        maxWidth: 512,
+        maxHeight: 512,
+        quality: 0.9,
+      });
+
+      const updated = dataStore.updateUserProfile(user.id, {
+        avatar: result.dataUrl,
+      });
+
+      updateProfile(updated);
+      setAvatarError(false);
+      try {
+        confetti({ particleCount: 50, spread: 60, origin: { y: 0.7 } });
+      } catch {
+        // ignore
+      }
+      showToast("✓ Custom profile photo uploaded successfully!");
+    } catch (err) {
+      console.error(err);
+      showToast("Failed to process image. Please try another file.");
+    } finally {
+      setIsUploadingAvatar(false);
+      if (e.target) e.target.value = "";
+    }
+  };
+
   // Save quick edits to public profile
   const handleSaveQuickProfile = (e: React.FormEvent) => {
     e.preventDefault();
@@ -365,7 +412,7 @@ export default function CreatorProfilePage({ params }: CreatorProfileProps) {
             {/* Avatar & Identifiers */}
             <div className="flex flex-col sm:flex-row items-start sm:items-end gap-4 sm:gap-5">
               <div className="relative group">
-                <div className="w-24 h-24 sm:w-32 sm:h-32 md:w-36 md:h-36 rounded-3xl overflow-hidden ring-4 ring-white dark:ring-zinc-950 shadow-2xl bg-gradient-to-br from-rose-600 via-rose-500 to-indigo-600 flex items-center justify-center text-white font-black text-3xl sm:text-4xl flex-shrink-0">
+                <div className="w-24 h-24 sm:w-32 sm:h-32 md:w-36 md:h-36 rounded-3xl overflow-hidden ring-4 ring-white dark:ring-zinc-950 shadow-2xl bg-gradient-to-br from-rose-600 via-rose-500 to-indigo-600 flex items-center justify-center text-white font-black text-3xl sm:text-4xl flex-shrink-0 relative">
                   {creator.avatar && !avatarError ? (
                     <img
                       src={creator.avatar}
@@ -376,11 +423,42 @@ export default function CreatorProfilePage({ params }: CreatorProfileProps) {
                   ) : (
                     <span>{initials}</span>
                   )}
+
+                  {/* Upload Overlay for Self */}
+                  {isSelf && (
+                    <button
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={isUploadingAvatar}
+                      className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition duration-200 flex flex-col items-center justify-center gap-1 text-white backdrop-blur-xs cursor-pointer"
+                      title="Upload Custom Profile Picture"
+                    >
+                      {isUploadingAvatar ? (
+                        <Loader2 className="w-6 h-6 animate-spin text-rose-400" />
+                      ) : (
+                        <>
+                          <Camera className="w-6 h-6 text-rose-400" />
+                          <span className="text-[10px] font-bold">Change Photo</span>
+                        </>
+                      )}
+                    </button>
+                  )}
                 </div>
+
+                {/* Hidden File Input for Avatar Upload */}
+                {isSelf && (
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp"
+                    className="hidden"
+                    onChange={handleAvatarFileChange}
+                  />
+                )}
 
                 {creator.isVerified && (
                   <div
-                    className="absolute -bottom-1.5 -right-1.5 p-1.5 rounded-full bg-zinc-950 ring-2 ring-zinc-900 shadow-md"
+                    className="absolute -bottom-1.5 -right-1.5 p-1.5 rounded-full bg-zinc-950 ring-2 ring-zinc-900 shadow-md z-10"
                     title="Verified Creator"
                   >
                     <CheckCircle2 className="w-5 h-5 text-rose-500 fill-rose-500/20" />
@@ -846,6 +924,40 @@ export default function CreatorProfilePage({ params }: CreatorProfileProps) {
             </div>
 
             <form onSubmit={handleSaveQuickProfile} className="space-y-4">
+              {/* Avatar Upload Preview */}
+              <div className="flex items-center gap-4 p-3 rounded-2xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800">
+                <div className="w-14 h-14 rounded-2xl overflow-hidden bg-gradient-to-br from-rose-600 to-indigo-600 flex items-center justify-center text-white font-black text-lg flex-shrink-0">
+                  {creator.avatar && !avatarError ? (
+                    <img
+                      src={creator.avatar}
+                      alt={editName || creator.name}
+                      onError={() => setAvatarError(true)}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <span>{initials}</span>
+                  )}
+                </div>
+                <div className="flex-1 space-y-1">
+                  <p className="text-xs font-bold text-zinc-900 dark:text-zinc-100">
+                    Profile Avatar
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={isUploadingAvatar}
+                    className="px-3 py-1.5 rounded-xl bg-zinc-200 dark:bg-zinc-800 hover:bg-zinc-300 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 font-bold text-[11px] transition flex items-center gap-1.5"
+                  >
+                    {isUploadingAvatar ? (
+                      <Loader2 className="w-3.5 h-3.5 animate-spin text-rose-500" />
+                    ) : (
+                      <Upload className="w-3.5 h-3.5 text-rose-500" />
+                    )}
+                    <span>{isUploadingAvatar ? "Compressing..." : "Upload New Photo"}</span>
+                  </button>
+                </div>
+              </div>
+
               <div>
                 <label className="block text-xs font-bold text-zinc-700 dark:text-zinc-300 mb-1">
                   Display Name
