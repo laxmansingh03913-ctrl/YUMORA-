@@ -70,59 +70,31 @@ interface PayoutSettings {
 
 const DEFAULT_PAYOUT_SETTINGS: PayoutSettings = {
   method: "UPI",
-  bankAccountHolder: "Aria Thorne",
-  bankName: "HDFC Bank",
-  bankAccountNumber: "•••• •••• 4892",
-  bankIfscSwift: "HDFC0001234",
+  bankAccountHolder: "",
+  bankName: "",
+  bankAccountNumber: "",
+  bankIfscSwift: "",
   bankCountry: "India",
-  upiId: "creator@okhdfcbank",
-  paypalEmail: "aria.creator@yumora.io",
-  autoPayoutEnabled: true,
+  upiId: "",
+  paypalEmail: "",
+  autoPayoutEnabled: false,
 };
 
-const DEFAULT_PAYOUT_HISTORY: PayoutRecord[] = [
-  {
-    id: "pay-1",
-    referenceId: "YM-PAY-89210",
-    amount: 320.0,
-    method: "UPI",
-    destination: "creator@okhdfcbank",
-    date: "2026-02-15",
-    status: "COMPLETED",
-  },
-  {
-    id: "pay-2",
-    referenceId: "YM-PAY-77412",
-    amount: 450.0,
-    method: "BANK",
-    destination: "HDFC Bank (•••• 4892)",
-    date: "2026-01-15",
-    status: "COMPLETED",
-  },
-  {
-    id: "pay-3",
-    referenceId: "YM-PAY-65109",
-    amount: 280.0,
-    method: "UPI",
-    destination: "creator@okhdfcbank",
-    date: "2025-12-15",
-    status: "COMPLETED",
-  },
-];
+const DEFAULT_PAYOUT_HISTORY: PayoutRecord[] = [];
 
 export default function CreatorDashboardPage() {
   const { user } = useAuth();
-  const [novels, setNovels] = useState<Novel[]>(() => dataStore.getNovels());
+  const [novels, setNovels] = useState<Novel[]>(() => dataStore.getNovels().filter(n => n.creatorId === user?.id));
   const [activeTab, setActiveTab] = useState<"works" | "analytics" | "earnings">("works");
 
-  // Computed metrics
-  const totalReads = novels.reduce((acc, n) => acc + n.reads, 0);
-  const totalLikes = novels.reduce((acc, n) => acc + n.likesCount, 0);
-  const totalChapters = novels.reduce((acc, n) => acc + n.chaptersCount, 0);
-  const totalFollowers = user?.followersCount || 14850;
+  // Real Computed metrics from authenticated user's actual stories
+  const totalReads = novels.reduce((acc, n) => acc + (n.reads || 0), 0);
+  const totalLikes = novels.reduce((acc, n) => acc + (n.likesCount || 0), 0);
+  const totalChapters = novels.reduce((acc, n) => acc + (n.chaptersCount || n.chapters?.length || 0), 0);
+  const totalFollowers = user?.followersCount || (user ? dataStore.getFollowerCount(user.id) : 0);
 
-  // Wallet & Payout State
-  const initialBalance = Math.round((totalReads / 1000) * 2.85 + 450);
+  // Real calculated balance (zero mock offset)
+  const initialBalance = totalReads > 0 ? Number(((totalReads / 1000) * 2.85).toFixed(2)) : 0;
   const [availableBalance, setAvailableBalance] = useState<number>(() => {
     if (typeof window !== "undefined" && user?.id) {
       const saved = localStorage.getItem(`yumora_wallet_balance_${user.id}`);
@@ -177,6 +149,14 @@ export default function CreatorDashboardPage() {
   const [editPaypalEmail, setEditPaypalEmail] = useState(payoutSettings.paypalEmail);
   const [editAutoPayout, setEditAutoPayout] = useState(payoutSettings.autoPayoutEnabled);
 
+  // Sync state when user loads
+  useEffect(() => {
+    if (user) {
+      const userStories = dataStore.getNovels().filter(n => n.creatorId === user.id);
+      setNovels(userStories);
+    }
+  }, [user]);
+
   // Sync settings modal with state on open
   useEffect(() => {
     setEditMethod(payoutSettings.method);
@@ -194,6 +174,12 @@ export default function CreatorDashboardPage() {
     setToastMessage(msg);
     setTimeout(() => setToastMessage(null), 3500);
   };
+
+  const isPayoutConfigured = Boolean(
+    (payoutSettings.method === "UPI" && payoutSettings.upiId.trim()) ||
+    (payoutSettings.method === "BANK" && payoutSettings.bankAccountNumber.trim()) ||
+    (payoutSettings.method === "PAYPAL" && payoutSettings.paypalEmail.trim())
+  );
 
   const handleDeleteNovel = (id: string, title: string) => {
     if (window.confirm(`Are you sure you want to delete "${title}"?`)) {
@@ -237,6 +223,14 @@ export default function CreatorDashboardPage() {
   // Execute Withdrawal
   const handleExecuteWithdrawal = (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!isPayoutConfigured) {
+      setIsWithdrawModalOpen(false);
+      setIsSettingsModalOpen(true);
+      showToast("⚠️ Please configure your Payout Method before withdrawing.");
+      return;
+    }
+
     const amount = parseFloat(withdrawAmountInput) || availableBalance;
 
     if (amount < 25) {
@@ -294,6 +288,9 @@ export default function CreatorDashboardPage() {
     }, 1200);
   };
 
+  // Derive Initials for fallback
+  const initials = (user?.name || "Creator").slice(0, 2).toUpperCase();
+
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8 animate-in fade-in">
       {/* Toast Alert */}
@@ -307,22 +304,28 @@ export default function CreatorDashboardPage() {
       {/* Dashboard Top Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6 border-b border-zinc-200 dark:border-zinc-800">
         <div className="flex items-center gap-4">
-          <img
-            src={user?.avatar || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300"}
-            alt={user?.name || "Creator"}
-            className="w-14 h-14 rounded-2xl object-cover ring-2 ring-rose-500/50"
-          />
+          <div className="w-14 h-14 rounded-2xl overflow-hidden ring-2 ring-rose-500/50 bg-gradient-to-br from-rose-600 to-indigo-600 flex items-center justify-center text-white font-black text-xl flex-shrink-0">
+            {user?.avatar ? (
+              <img
+                src={user.avatar}
+                alt={user?.name || "Creator"}
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <span>{initials}</span>
+            )}
+          </div>
           <div>
             <div className="flex items-center gap-2">
               <h1 className="text-2xl font-black text-zinc-900 dark:text-zinc-100">
-                {user?.name || "Aria Thorne"}&apos;s Studio
+                {user?.name || "Creator"}&apos;s Studio
               </h1>
-              <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-indigo-600 text-white">
-                CREATOR
+              <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-indigo-600 text-white uppercase">
+                {user?.role || "CREATOR"}
               </span>
             </div>
             <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
-              Creator Studio & Performance Analytics • Level 4 Verified Author
+              Creator Studio & Performance Analytics • Verified Storyteller
             </p>
           </div>
         </div>
@@ -333,7 +336,7 @@ export default function CreatorDashboardPage() {
             className="px-4 py-2.5 rounded-xl bg-amber-500/10 border border-amber-500/30 hover:bg-amber-500/20 text-amber-500 text-xs font-bold transition flex items-center gap-1.5"
           >
             <Award className="w-4 h-4" />
-            <span>Monthly $500 Contest</span>
+            <span>Active Contests</span>
           </Link>
 
           <Link
@@ -499,35 +502,43 @@ export default function CreatorDashboardPage() {
       {/* TAB 2: READERSHIP ANALYTICS */}
       {activeTab === "analytics" && (
         <div className="space-y-6">
-          <div className="p-6 rounded-3xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 space-y-4">
-            <h3 className="font-bold text-sm text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
-              <TrendingUp className="w-4 h-4 text-rose-500" />
-              <span>Readership & Chapter Completion Funnel</span>
-            </h3>
-
-            <div className="space-y-3 pt-2">
-              {[
-                { ch: "Chapter 1 (Prologue)", percent: 100 },
-                { ch: "Chapter 2 (The Awakening)", percent: 84 },
-                { ch: "Chapter 3 (Shadow Realm)", percent: 72 },
-                { ch: "Chapter 4 (City of Brass)", percent: 66 },
-                { ch: "Chapter 5 (Final Gate)", percent: 59 },
-              ].map((item) => (
-                <div key={item.ch} className="space-y-1">
-                  <div className="flex justify-between text-xs font-semibold text-zinc-600 dark:text-zinc-300">
-                    <span>{item.ch}</span>
-                    <span>{item.percent}%</span>
-                  </div>
-                  <div className="w-full h-3 rounded-full bg-zinc-100 dark:bg-zinc-800 overflow-hidden">
-                    <div
-                      className="h-full bg-gradient-to-r from-rose-600 to-indigo-600 rounded-full"
-                      style={{ width: `${item.percent}%` }}
-                    />
-                  </div>
-                </div>
-              ))}
+          {totalReads === 0 && novels.length === 0 ? (
+            <div className="p-12 text-center rounded-3xl bg-zinc-50 dark:bg-zinc-900/40 border border-zinc-200 dark:border-zinc-800 space-y-3 max-w-md mx-auto">
+              <TrendingUp className="w-10 h-10 text-zinc-400 mx-auto" />
+              <h3 className="font-bold text-sm text-zinc-800 dark:text-zinc-200">
+                No Analytics Data Yet
+              </h3>
+              <p className="text-xs text-zinc-500">
+                Publish your stories to start viewing real-time readership funnel analytics and audience retention graphs.
+              </p>
             </div>
-          </div>
+          ) : (
+            <div className="p-6 rounded-3xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 space-y-4">
+              <h3 className="font-bold text-sm text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
+                <TrendingUp className="w-4 h-4 text-rose-500" />
+                <span>Readership & Chapter Funnel Overview</span>
+              </h3>
+
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 pt-2">
+                <div className="p-4 rounded-2xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 space-y-1">
+                  <p className="text-[11px] text-zinc-400 font-semibold">Total Reads</p>
+                  <p className="text-xl font-black text-zinc-900 dark:text-zinc-100">{formatNumber(totalReads)}</p>
+                </div>
+                <div className="p-4 rounded-2xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 space-y-1">
+                  <p className="text-[11px] text-zinc-400 font-semibold">Total Likes</p>
+                  <p className="text-xl font-black text-rose-500">{formatNumber(totalLikes)}</p>
+                </div>
+                <div className="p-4 rounded-2xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 space-y-1">
+                  <p className="text-[11px] text-zinc-400 font-semibold">Followers</p>
+                  <p className="text-xl font-black text-emerald-500">{formatNumber(totalFollowers)}</p>
+                </div>
+                <div className="p-4 rounded-2xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 space-y-1">
+                  <p className="text-[11px] text-zinc-400 font-semibold">Published Chapters</p>
+                  <p className="text-xl font-black text-indigo-500">{totalChapters}</p>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       )}
 
@@ -570,6 +581,11 @@ export default function CreatorDashboardPage() {
 
                   <button
                     onClick={() => {
+                      if (!isPayoutConfigured) {
+                        setIsSettingsModalOpen(true);
+                        showToast("⚠️ Please configure your UPI or Bank account first.");
+                        return;
+                      }
                       setWithdrawAmountInput(availableBalance.toString());
                       setIsWithdrawModalOpen(true);
                     }}
@@ -601,35 +617,48 @@ export default function CreatorDashboardPage() {
                 <div className="p-4 rounded-2xl bg-zinc-900/90 border border-zinc-800 space-y-1">
                   <p className="text-xs text-zinc-400 font-semibold">Active Payout Destination</p>
                   <div className="flex items-center gap-2 pt-1">
-                    {payoutSettings.method === "UPI" && (
-                      <span className="p-1 rounded-md bg-rose-500/20 text-rose-400">
-                        <Smartphone className="w-4 h-4" />
+                    {isPayoutConfigured ? (
+                      <>
+                        {payoutSettings.method === "UPI" && (
+                          <span className="p-1 rounded-md bg-rose-500/20 text-rose-400">
+                            <Smartphone className="w-4 h-4" />
+                          </span>
+                        )}
+                        {payoutSettings.method === "BANK" && (
+                          <span className="p-1 rounded-md bg-indigo-500/20 text-indigo-400">
+                            <Building2 className="w-4 h-4" />
+                          </span>
+                        )}
+                        {payoutSettings.method === "PAYPAL" && (
+                          <span className="p-1 rounded-md bg-sky-500/20 text-sky-400">
+                            <Globe className="w-4 h-4" />
+                          </span>
+                        )}
+                        <span className="font-bold text-sm text-zinc-100 truncate">
+                          {payoutSettings.method === "UPI"
+                            ? payoutSettings.upiId
+                            : payoutSettings.method === "BANK"
+                            ? `${payoutSettings.bankName} (${payoutSettings.bankAccountNumber.slice(-4)})`
+                            : payoutSettings.paypalEmail}
+                        </span>
+                      </>
+                    ) : (
+                      <span className="text-xs font-bold text-amber-400 flex items-center gap-1">
+                        <AlertTriangle className="w-3.5 h-3.5" />
+                        <span>Not Configured Yet</span>
                       </span>
                     )}
-                    {payoutSettings.method === "BANK" && (
-                      <span className="p-1 rounded-md bg-indigo-500/20 text-indigo-400">
-                        <Building2 className="w-4 h-4" />
-                      </span>
-                    )}
-                    {payoutSettings.method === "PAYPAL" && (
-                      <span className="p-1 rounded-md bg-sky-500/20 text-sky-400">
-                        <Globe className="w-4 h-4" />
-                      </span>
-                    )}
-                    <span className="font-bold text-sm text-zinc-100 truncate">
-                      {payoutSettings.method === "UPI"
-                        ? payoutSettings.upiId || "UPI ID not set"
-                        : payoutSettings.method === "BANK"
-                        ? `${payoutSettings.bankName || "Bank"} (${payoutSettings.bankAccountNumber.slice(-4) || "Set"})`
-                        : payoutSettings.paypalEmail || "PayPal not set"}
-                    </span>
                   </div>
-                  <p className="text-[10px] text-emerald-400 font-semibold">Verified Payout Route ✓</p>
+                  <p className="text-[10px] text-zinc-400">
+                    {isPayoutConfigured ? "Verified Payout Route ✓" : "Click Payout Settings to set up"}
+                  </p>
                 </div>
 
                 <div className="p-4 rounded-2xl bg-zinc-900/90 border border-zinc-800 space-y-1">
                   <p className="text-xs text-zinc-400 font-semibold">Next Scheduled Auto-Payout</p>
-                  <p className="text-xl font-black text-zinc-100">March 15, 2026</p>
+                  <p className="text-xl font-black text-zinc-100">
+                    {payoutSettings.autoPayoutEnabled ? "15th of Next Month" : "Manual Mode"}
+                  </p>
                   <p className="text-[10px] text-zinc-400">
                     {payoutSettings.autoPayoutEnabled
                       ? "Monthly direct auto-deposit enabled"
@@ -665,8 +694,11 @@ export default function CreatorDashboardPage() {
               </div>
 
               {payoutHistory.length === 0 ? (
-                <div className="p-8 text-center text-xs text-zinc-400">
-                  No payout history yet. Once you withdraw earnings, remittance receipts will appear here.
+                <div className="p-8 text-center text-xs text-zinc-400 space-y-1">
+                  <p className="font-bold text-zinc-700 dark:text-zinc-300">No withdrawal transactions yet</p>
+                  <p className="text-[11px] text-zinc-500">
+                    Once you withdraw earnings or auto-payout processes, all transaction receipts will appear here.
+                  </p>
                 </div>
               ) : (
                 <div className="overflow-x-auto">
@@ -786,7 +818,9 @@ export default function CreatorDashboardPage() {
                     </li>
                     <li className="flex items-center gap-2 text-emerald-500 font-semibold">
                       <CheckCircle2 className="w-3.5 h-3.5 flex-shrink-0" />
-                      <span className="text-zinc-700 dark:text-zinc-300">Published Chapters Active</span>
+                      <span className="text-zinc-700 dark:text-zinc-300">
+                        {novels.length > 0 ? `${novels.length} Published Stories` : "0 Stories Published"}
+                      </span>
                     </li>
                   </ul>
                 </div>
@@ -804,8 +838,10 @@ export default function CreatorDashboardPage() {
                       </span>
                     </li>
                     <li className="flex items-center justify-between">
-                      <span className="text-zinc-600 dark:text-zinc-400">Followers Threshold</span>
-                      <span className="font-bold text-emerald-500">Passed ✓</span>
+                      <span className="text-zinc-600 dark:text-zinc-400">Followers</span>
+                      <span className="font-bold text-zinc-900 dark:text-zinc-100">
+                        {formatNumber(totalFollowers)}
+                      </span>
                     </li>
                   </ul>
                 </div>
@@ -996,7 +1032,7 @@ export default function CreatorDashboardPage() {
                         required
                         value={editBankName}
                         onChange={(e) => setEditBankName(e.target.value)}
-                        placeholder="e.g. HDFC Bank, Chase"
+                        placeholder="e.g. HDFC Bank, State Bank of India, Chase"
                         className="w-full px-3.5 py-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 text-xs text-zinc-900 dark:text-zinc-100 focus:outline-none focus:border-emerald-500"
                       />
                     </div>
@@ -1043,7 +1079,7 @@ export default function CreatorDashboardPage() {
                       required
                       value={editPaypalEmail}
                       onChange={(e) => setEditPaypalEmail(e.target.value)}
-                      placeholder="e.g. creator@email.com"
+                      placeholder="e.g. yourname@email.com"
                       className="w-full px-3.5 py-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 text-xs text-zinc-900 dark:text-zinc-100 focus:outline-none focus:border-emerald-500"
                     />
                   </div>
