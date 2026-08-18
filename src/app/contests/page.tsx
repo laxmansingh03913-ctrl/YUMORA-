@@ -17,7 +17,7 @@ import {
   BookOpen,
 } from "lucide-react";
 import { dataStore } from "@/lib/data/store";
-import { formatNumber } from "@/lib/utils";
+import { formatNumber, formatDate } from "@/lib/utils";
 
 export default function ContestsPage() {
   const contests = dataStore.getContests();
@@ -113,9 +113,14 @@ export default function ContestsPage() {
 
           <div className="lg:col-span-4 flex flex-col items-center lg:items-end justify-center gap-4">
             <div className="p-5 rounded-3xl bg-zinc-900/95 border border-zinc-800 text-center w-full max-w-xs space-y-2">
-              <p className="text-[11px] uppercase font-bold text-zinc-400">Submission Window</p>
+              <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 text-[10px] font-bold uppercase tracking-wider">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
+                <span>Active Cycle</span>
+              </div>
               <p className="text-2xl font-black text-white">Open Now</p>
-              <p className="text-xs text-amber-400 font-semibold">Ends March 31, 2026</p>
+              <p className="text-xs text-amber-400 font-semibold">
+                Ends {contest ? formatDate(contest.endDate) : "Sep 30, 2026"}
+              </p>
             </div>
 
             <button

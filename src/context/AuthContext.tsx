@@ -6,6 +6,7 @@ import { UserProfile, Role } from "../lib/types";
 import { SEED_USERS } from "../lib/data/seed-data";
 import { dataStore } from "../lib/data/store";
 import { supabase } from "../lib/supabase/client";
+import { getAuthCallbackUrl } from "../lib/auth-config";
 
 interface AuthContextType {
   user: UserProfile | null;
@@ -44,6 +45,59 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(false);
   const [mounted, setMounted] = useState(false);
 
+  // Helper to extract or create profile from Supabase user session
+  const syncSupabaseProfile = useCallback((supaUser: {
+    id: string;
+    email?: string;
+    user_metadata?: Record<string, unknown>;
+    email_confirmed_at?: string;
+    confirmed_at?: string;
+  }): UserProfile => {
+    const metadata = (supaUser.user_metadata || {}) as Record<string, string | undefined>;
+    const rawUsername =
+      metadata.username ||
+      metadata.user_name ||
+      supaUser.email?.split("@")[0] ||
+      `user_${supaUser.id.slice(0, 6)}`;
+    const username = rawUsername.toLowerCase().replace(/[^a-z0-9_]/g, "") || `user_${Date.now() % 10000}`;
+
+    let profile =
+      dataStore.getUserById(supaUser.id) ||
+      dataStore.getUserByUsername(username) ||
+      (supaUser.email
+        ? dataStore.getUsers().find((u) => u.email.toLowerCase() === supaUser.email?.toLowerCase())
+        : undefined);
+
+    if (!profile) {
+      profile = {
+        id: supaUser.id,
+        name: metadata.name || metadata.full_name || metadata.user_name || username,
+        username,
+        email: supaUser.email || "",
+        role: (metadata.role as Role) || "CREATOR",
+        avatar:
+          metadata.avatar_url ||
+          metadata.picture ||
+          `https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300&auto=format&fit=crop&q=80`,
+        bio: "Storyteller & reader on Yumora.",
+        country: "Global",
+        isVerified: false,
+        isCreatorProfileComplete: false,
+        isEmailVerified: Boolean(supaUser.email_confirmed_at || supaUser.confirmed_at),
+        isAgeVerified: true,
+        monetizationTier: "NONE",
+        monetizationStatus: "NOT_APPLIED",
+        fraudAuditStatus: "CLEAN",
+        followersCount: 0,
+        followingCount: 0,
+        totalReads: 0,
+        createdAt: new Date().toISOString(),
+      };
+      dataStore.updateUserProfile(profile.id, profile);
+    }
+    return profile;
+  }, []);
+
   // Initialize Session
   useEffect(() => {
     const initAuth = async () => {
@@ -52,7 +106,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         try {
           setUser(JSON.parse(savedUser));
         } catch {
-          setUser(SEED_USERS[0]);
+          // ignore corrupted JSON
         }
       }
 
@@ -60,13 +114,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       try {
         const { data } = await supabase.auth.getSession();
         if (data.session?.user) {
-          const supaUser = data.session.user;
-          const existing =
-            dataStore.getUserById(supaUser.id) ||
-            dataStore.getUserByUsername(supaUser.email?.split("@")[0] || "");
-          if (existing) {
-            setUser(existing);
-            localStorage.setItem("yumora_active_user", JSON.stringify(existing));
+          const profile = syncSupabaseProfile(data.session.user);
+          setUser(profile);
+          try {
+            localStorage.setItem("yumora_active_user", JSON.stringify(profile));
+          } catch {
+            // ignore
           }
         }
       } catch (err) {
@@ -80,47 +133,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     // Listen to Supabase Auth State Changes
     const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (event === "SIGNED_IN" && session?.user) {
-        const supaUser = session.user;
-        const metadata = supaUser.user_metadata || {};
-        const username = (metadata.username || supaUser.email?.split("@")[0] || "user").toLowerCase();
-
-        let profile = dataStore.getUserById(supaUser.id) || dataStore.getUserByUsername(username);
-        if (!profile) {
-          profile = {
-            id: supaUser.id,
-            name: metadata.name || metadata.full_name || username,
-            username,
-            email: supaUser.email || "",
-            role: (metadata.role as Role) || "READER",
-            avatar:
-              metadata.avatar_url ||
-              `https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300&auto=format&fit=crop&q=80`,
-            bio: "New storyteller on Yumora.",
-            country: "Global",
-            isVerified: false,
-            isCreatorProfileComplete: false,
-            isEmailVerified: Boolean(supaUser.email_confirmed_at),
-            isAgeVerified: true,
-            followersCount: 0,
-            followingCount: 0,
-            totalReads: 0,
-            createdAt: new Date().toISOString(),
-          };
-          dataStore.updateUserProfile(profile.id, profile);
-        }
+      if (session?.user && (event === "SIGNED_IN" || event === "INITIAL_SESSION" || event === "TOKEN_REFRESHED" || event === "USER_UPDATED")) {
+        const profile = syncSupabaseProfile(session.user);
         setUser(profile);
-        localStorage.setItem("yumora_active_user", JSON.stringify(profile));
+        try {
+          localStorage.setItem("yumora_active_user", JSON.stringify(profile));
+        } catch {
+          // ignore
+        }
       } else if (event === "SIGNED_OUT") {
         setUser(null);
-        localStorage.removeItem("yumora_active_user");
+        try {
+          localStorage.removeItem("yumora_active_user");
+        } catch {
+          // ignore
+        }
       }
     });
 
     return () => {
       authListener.subscription.unsubscribe();
     };
-  }, []);
+  }, [syncSupabaseProfile]);
 
   const saveUser = useCallback((u: UserProfile | null) => {
     setUser(u);
@@ -375,18 +409,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   // Sign In with OAuth (Google, GitHub, Apple)
   const signInWithOAuth = async (provider: "google" | "github" | "apple") => {
+    setIsLoading(true);
     try {
-      await supabase.auth.signInWithOAuth({
+      const callbackUrl = getAuthCallbackUrl(intendedDestination || undefined);
+      const { error } = await supabase.auth.signInWithOAuth({
         provider,
         options: {
-          redirectTo:
-            typeof window !== "undefined"
-              ? `${window.location.origin}/auth/callback?redirect=${encodeURIComponent(intendedDestination || "/")}`
-              : undefined,
+          redirectTo: callbackUrl,
         },
       });
+      if (error) {
+        console.error("OAuth sign in error:", error.message);
+        setIsLoading(false);
+      }
     } catch (err) {
       console.warn("OAuth sign in notice:", err);
+      setIsLoading(false);
     }
   };
 

@@ -722,7 +722,7 @@ Hana smiled—a rare, genuine expression that made Leo miss his apex by a full f
     ],
   },
   {
-    id: "novel-solo-leveling",
+    id: "novel-shadow-sovereign",
     creatorId: "usr-creator-3",
     creator: {
       id: "usr-creator-3",
@@ -731,14 +731,14 @@ Hana smiled—a rare, genuine expression that made Leo miss his apex by a full f
       avatar: "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=300&auto=format&fit=crop&q=80",
       isVerified: true,
     },
-    title: "Solo Leveling: Shadow Monarch Awakening",
-    slug: "solo-leveling",
-    description: "In a world where dimensional gates connect our world to deadly monster dungeons, the weakest E-rank hunter Sung Jinwoo is left for dead inside a double dungeon. When he awakens, a mysterious floating quest log grants him a unique ability no other hunter possesses: the power to level up infinitely.",
+    title: "Shadow Sovereign: Genesis of the Void",
+    slug: "shadow-sovereign",
+    description: "When celestial rifts shatter the skyline of modern civilization, Silas Vance is betrayed and left to perish in the deepest abyss of the Sunken Catacombs. But within the crushing darkness, he awakens the primordial Codex of the Void, commanding an army of abyssal shadows to rewrite his fate.",
     coverUrl: "https://images.unsplash.com/photo-1563089145-599997674d42?w=600&auto=format&fit=crop&q=80",
     bannerUrl: "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=1400&auto=format&fit=crop&q=80",
     genre: "Fantasy",
     secondaryGenre: "Action",
-    tags: ["Action", "Hunters", "Dungeons", "Level Up", "Shadow Monarch", "Overpowered"],
+    tags: ["Action", "Dark Fantasy", "Rifts", "Supernatural", "Progression", "Shadow Sovereign"],
     language: "en",
     status: "ONGOING",
     contentRating: "TEEN",
@@ -752,82 +752,87 @@ Hana smiled—a rare, genuine expression that made Leo miss his apex by a full f
     isEditorPick: true,
     isPremium: false,
     chaptersCount: 3,
-    createdAt: "2025-01-01T00:00:00Z",
-    updatedAt: "2025-02-15T12:00:00Z",
+    createdAt: "2026-01-01T00:00:00Z",
+    updatedAt: "2026-08-15T12:00:00Z",
     chapters: [
       {
-        id: "ch-sl-1",
-        novelId: "novel-solo-leveling",
+        id: "ch-ss-1",
+        novelId: "novel-shadow-sovereign",
         chapterNumber: 1,
-        title: "Chapter 1: The E-Rank Hunter",
+        title: "Chapter 1: The Forsaken Descent",
         status: "PUBLISHED",
         wordCount: 1420,
         isFree: true,
         readTimeMinutes: 6,
-        publishedAt: "2025-01-01T00:00:00Z",
-        content: `Known throughout the hunter community as the "World's Weakest Hunter," Sung Jinwoo risked his life in low-level D-rank gates just to pay for his mother's medical bills and his sister's tuition.
+        publishedAt: "2026-01-01T00:00:00Z",
+        content: `The warning sirens wailed across Sector 7, their red glare cutting through the midnight fog.
 
-Inside the cavern, the air was damp and smelled of sulfur. The raid party had easily cleared the outer goblins, but at the far end of the cave, an ominous archway led down into an uncharted dual dungeon.
+Silas gripped his fracture-blade, his knuckles white against the battered hilt. While frontline vanguard elites wielded ionized relics and crests of light, scouts like Silas were treated as expendable fodder—sent ahead into uncharted rift fissures to trigger hidden abyssal traps.
 
-"Are we really going in there?" Jinwoo whispered, clutching his chipped standard-issue steel dagger.
+"Keep moving, Vance," barked Commander Vance, shoving him toward the yawning subterranean chasm. "The expedition isn't waiting for a scout who trembles at shadows."
 
-Above the entrance, colossal stone statues held tablets inscribed with ancient runic commandments:
-1. Worship the Lord.
-2. Praise the Lord.
-3. Prove your faith.
+Below them, ancient obsidian pillars spiraled into the void, humming with a frequency that vibrated in Silas's very marrow. Carved upon the black monoliths were glyphs in an unwritten tongue:
 
-As the final hunter stepped over the threshold, the massive stone doors slammed shut with a concussive boom, sealing them inside.`,
+*To the one who steps into the absolute dark, the shadows shall bow.*
+
+Before Silas could warn the vanguard, the stone bridge cracked. As the fissure collapsed into the abyss, Silas plunged alone into the dark.`,
       },
       {
-        id: "ch-sl-2",
-        novelId: "novel-solo-leveling",
+        id: "ch-ss-2",
+        novelId: "novel-shadow-sovereign",
         chapterNumber: 2,
-        title: "Chapter 2: The Double Dungeon of the God Statue",
+        title: "Chapter 2: Trial of the Abyssal Altar",
         status: "PUBLISHED",
         wordCount: 1650,
         isFree: true,
         readTimeMinutes: 7,
-        publishedAt: "2025-01-10T00:00:00Z",
-        content: `The colossal statue seated upon the throne slowly opened its glowing crimson eyes.
+        publishedAt: "2026-01-10T00:00:00Z",
+        content: `Silence reigned at the bottom of the world.
 
-Before anyone could scream, a beam of pure thermal energy swept across the chamber, vaporizing two C-rank hunters instantly into ash.
+Silas dragged himself across the obsidian floor of a colossal subterranean rotunda. Around him stood twelve towering statues of crowned wraiths, each wielding halberds of solid eclipse flame.
 
-"Don't move!" Jinwoo shouted at the top of his lungs. "The statues only attack when you break the commandments!"
+As Silas's blood touched the central runic glyph, the obsidian chamber flared with violet lightning.
 
-Blood dripped down his temple as he calculated the movement angles of the stone executioners. When all seemed lost and the sacrificial altar demanded a final offering, Jinwoo stayed behind to let the surviving party members escape through the exit portal.
+[System Alert: Catalytic Resonance Detected.]
+[Candidate Silas Vance has entered the Primordial Crucible.]
+[Survive the Shadow Convergence or be consumed.]
 
-As the stone blade descended toward his heart, time froze.
+From the stone walls, ethereal specters rose in screaming waves. Silas did not run. With broken ribs and a shattered blade, he stood in defiance against the tide of darkness.
 
-[Notification: You have fulfilled all secret requirements of the Courageous Sacrifice Trial.]
-[You have been chosen as the Player.]
-[Accept the Quest?]`,
+When his fracture-blade shattered into obsidian dust, Silas reached into the darkness itself—and grasped the shadow of his enemy.
+
+[Trial Completed: Indomitable Will Verified.]
+[Awakening Primordial Authority: Sovereign of the Void.]`,
       },
       {
-        id: "ch-sl-3",
-        novelId: "novel-solo-leveling",
+        id: "ch-ss-3",
+        novelId: "novel-shadow-sovereign",
         chapterNumber: 3,
-        title: "Chapter 3: Daily Quest & The Shadow Extraction",
+        title: "Chapter 3: Authority of the Shadow Sovereign",
         status: "PUBLISHED",
         wordCount: 1800,
         isFree: true,
         readTimeMinutes: 8,
-        publishedAt: "2025-01-20T00:00:00Z",
-        content: `Jinwoo woke up in a hospital bed in Seoul, surrounded by baffled doctors. Not a single scar remained on his body.
+        publishedAt: "2026-01-20T00:00:00Z",
+        content: `Silas opened his eyes. The pain in his shattered body had vanished, replaced by an intoxicating, calm resonance of abyssal power.
 
-Floating in front of his eyes was a glowing blue holographic interface that only he could see:
+Hovering before his vision was an ancient dark-gold interface:
 
-[Player: Sung Jinwoo]
-[Level: 1]
-[HP: 100/100 | MP: 10/10]
-[Strength: 10 | Agility: 10 | Sense: 10 | Vitality: 10 | Intelligence: 10]
-[Daily Quest: Preparing to Become Stronger]
-- Push-ups: 0/100
-- Sit-ups: 0/100
-- Squats: 0/100
-- Running: 0/10km
-*Warning: Failure to complete daily quest will result in a penalty zone.*
+[Sovereign: Silas Vance]
+[Domain: Void Shadows | Tier: I]
+[Shadow Dominion: 0 / 100 Legionnaires]
+[Abyssal Mana: 1,200 / 1,200]
+[Active Authority: Shadow Extraction & Dominion Rebirth]
 
-Jinwoo smiled. For the first time in his life, his limits were not carved in stone. He was about to become the Monarch of Shadows.`,
+Silas extended his open hand toward the colossal fallen frost-serpent that had guarded the rift gate.
+
+"Rise," Silas whispered.
+
+The air temperature plummeted forty degrees. From the serpent's frozen silhouette, tendrils of pitch-black smoke twisted into the form of an ethereal dragon-knight with glowing violet eyes, kneeling before Silas with absolute devotion.
+
+Silas looked up through the rift toward the surface world that had abandoned him.
+
+"The hunt begins now."`,
       },
     ],
   },
@@ -905,7 +910,7 @@ export const SEED_CONTESTS: Contest[] = [
     id: "contest-1",
     title: "2026 Global Sci-Fi & Fantasy Story Challenge",
     slug: "2026-global-scifi-fantasy-challenge",
-    subtitle: "$1,000 Total Prize Pool • Monthly International Creator Competition",
+    subtitle: "$1,000 Total Prize Pool • Active International Creator Competition",
     description: "Write an original, gripping fantasy or science fiction story and compete for cash prizes, global editorial features, and future comic adaptation contracts. Judged by community engagement and our international editorial panel.",
     bannerUrl: "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=1400&auto=format&fit=crop&q=80",
     prizePool: "$1,000",
@@ -915,8 +920,8 @@ export const SEED_CONTESTS: Contest[] = [
       { place: "3rd Place", reward: "$150 USD", desc: "Cash Prize + Community Feature" },
       { place: "Community Choice", reward: "$100 USD", desc: "Most Bookmarked & Voted Story" },
     ],
-    startDate: "2025-02-01T00:00:00Z",
-    endDate: "2025-03-31T23:59:59Z",
+    startDate: "2026-08-01T00:00:00Z",
+    endDate: "2026-09-30T23:59:59Z",
     status: "ACTIVE",
     rules: [
       "Submissions must be original works written by the author.",

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useMemo } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import confetti from "canvas-confetti";
@@ -42,12 +42,31 @@ import {
   Download,
   Loader2,
   RefreshCw,
+  Bold,
+  Italic,
+  Heading1,
+  Heading2,
+  Heading3,
+  Quote,
+  Minus,
+  Split,
+  EyeOff,
+  CheckCheck,
+  Maximize2,
+  Type,
 } from "lucide-react";
 import { dataStore } from "@/lib/data/store";
 import { useAuth } from "@/context/AuthContext";
-import { Novel, Comic, ComicEpisode, ContentType, ContentStatus, ContentRating, LanguageCode } from "@/lib/types";
+import { Novel, Comic, ContentStatus, ContentRating, LanguageCode } from "@/lib/types";
 import { slugify, calculateReadTime } from "@/lib/utils";
 import { CreatorProfileGate } from "@/components/creator/CreatorProfileGate";
+import {
+  validateImageFile,
+  compressImageToWebP,
+  formatBytes,
+  MAX_COVER_SIZE_BYTES,
+  MAX_PAGE_SIZE_BYTES,
+} from "@/lib/image-processing";
 
 const CONTENT_WARNING_OPTIONS = [
   "None",
@@ -72,60 +91,103 @@ const SAMPLE_EXTRACTED_PAGES = [
   { id: "page-4", name: "Page 04 (Awakening Surge)", url: "https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=900&auto=format&fit=crop&q=80" },
 ];
 
+interface CompressionInfo {
+  originalSize: number;
+  compressedSize: number;
+  savingsPct: number;
+}
+
 export default function CreatorUploadWizardPage() {
   const router = useRouter();
   const { user } = useAuth();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const pdfInputRef = useRef<HTMLInputElement>(null);
   const imagesBulkInputRef = useRef<HTMLInputElement>(null);
+  const markdownTextareaRef = useRef<HTMLTextAreaElement>(null);
 
-  // 4-Step Progress Flow: 1 (Format) -> 2 (Details) -> 3 (Content / PDF Processing) -> 4 (Review & Publish)
+  // 4-Step Progress Flow: 1 (Format) -> 2 (Details) -> 3 (Content / Novel Markdown) -> 4 (Review & Publish)
   const [step, setStep] = useState<1 | 2 | 3 | 4 | 5>(1);
 
   // Content Medium
   const [formatChoice, setFormatChoice] = useState<
     "NOVEL" | "ILLUSTRATED_NOVEL" | "MANGA" | "WEBTOON" | "COMIC" | "PDF_BOOK"
-  >("MANGA");
-  const [readingDirection, setReadingDirection] = useState<"RTL" | "LTR" | "VERTICAL">("RTL");
+  >("NOVEL");
+  const [readingDirection, setReadingDirection] = useState<"RTL" | "LTR" | "VERTICAL">("LTR");
   const [allowPdfDownload, setAllowPdfDownload] = useState(true);
 
   // Metadata
-  const [title, setTitle] = useState("Kitsune: Shadow of Neo-Edo");
+  const [title, setTitle] = useState("Chronicles of the Astral Weaver");
   const [description, setDescription] = useState(
-    "In the rain-slicked neon alleys of Neo-Edo, a disgraced spirit hunter discovers a cybernetic shrine that can reforge forgotten yokai souls into lethal blade resonance."
+    "In a world where celestial constellations govern mortal souls, an outlaw cartographer discovers a fractured starlight compass capable of reshaping the astral tapestry."
   );
-  const [coverUrl, setCoverUrl] = useState(PRESET_COVERS[0].url);
-  const [genre, setGenre] = useState("Cyberpunk");
-  const [secondaryGenre, setSecondaryGenre] = useState("Action");
-  const [tagInput, setTagInput] = useState("Manga, Cyberpunk, Yokai, Action, Supernatural");
-  const [language, setLanguage] = useState<LanguageCode>("ja");
+  const [coverUrl, setCoverUrl] = useState(PRESET_COVERS[2].url);
+  const [genre, setGenre] = useState("Sci-Fi");
+  const [secondaryGenre, setSecondaryGenre] = useState("Fantasy");
+  const [tagInput, setTagInput] = useState("Sci-Fi, Space Opera, Magic, Starlight, Adventure");
+  const [language, setLanguage] = useState<LanguageCode>("en");
   const [contentStatus, setContentStatus] = useState<ContentStatus>("ONGOING");
   const [contentRating, setContentRating] = useState<ContentRating>("TEEN");
   const [contentWarnings, setContentWarnings] = useState<string[]>(["Mild Violence"]);
   const [isSeries, setIsSeries] = useState(true);
   const [hasCopyright, setHasCopyright] = useState(true);
 
-  // Advanced Cover Drawer
+  // Cover Image Processing & Compression Status
+  const [isCompressingCover, setIsCompressingCover] = useState(false);
+  const [coverCompressionInfo, setCoverCompressionInfo] = useState<CompressionInfo | null>(null);
+  const [coverError, setCoverError] = useState<string | null>(null);
   const [showUrlOption, setShowUrlOption] = useState(false);
 
-  // Upload Tab inside Step 3: "images" | "pdf" | "zip"
-  const [uploadTab, setUploadTab] = useState<"images" | "pdf" | "zip">("pdf");
+  // Comic / Manga Bulk Image Processing
+  const [uploadTab, setUploadTab] = useState<"images" | "pdf" | "zip">("images");
   const [isProcessingPdf, setIsProcessingPdf] = useState(false);
+  const [isCompressingPages, setIsCompressingPages] = useState(false);
+  const [pageCompressionMessage, setPageCompressionMessage] = useState<string | null>(null);
+  const [pagesError, setPagesError] = useState<string | null>(null);
   const [processedFileName, setProcessedFileName] = useState<string | null>(null);
-
-  // Extracted Comic/Manga Pages
-  const [episodeNumber, setEpisodeNumber] = useState(1);
-  const [episodeTitle, setEpisodeTitle] = useState("Chapter 1: The Shrine in the Neon Rain");
-  const [pages, setPages] = useState<{ id: string; name: string; url: string }[]>(
+  const [pages, setPages] = useState<{ id: string; name: string; url: string; size?: string }[]>(
     SAMPLE_EXTRACTED_PAGES
   );
-  const [previewDevice, setPreviewDevice] = useState<"mobile" | "desktop">("mobile");
 
-  // Extracted Novel Chapter State (For Novel & PDF Novel Ingestion)
+  // Novel Markdown Manuscript Studio State
+  const [chapterNumber, setChapterNumber] = useState(1);
   const [chapterTitle, setChapterTitle] = useState("Chapter 1: The Broken Loom of Orion");
   const [chapterContent, setChapterContent] = useState(
-    "The rain in Neo-Edo did not wash away the sin; it only reflected the neon signs in distorted pools of oil.\n\nRen adjusted his breathing mask, his hand resting lightly against the titanium scabbard at his hip. Above him, a holographic dragon curled through the smog."
+    `# Chapter 1: The Broken Loom of Orion
+
+The filaments never hummed unless they were dying.
+
+Lyra leaned over her carbon-slate workbench, her breath frosting against the ambient temperature regulator. Between her calloused fingertips, a hairline strand of ionized pulsar silk pulsed an irregular, frantic violet.
+
+"Hold still," she whispered, touching the phosphor-tipped needle to the junction point.
+
+> *In the lower underbelly of Port Hyperion, noise was a constant pressure—the hydraulic groan of freighter docks, the ozone hiss of leaking atmospheric seals, and the distant shouts of synthetic fuel hawkers.*
+
+A sharp spark jumped across her knuckles. She didn't flinch. Ten years of repairing star-weft had rendered the skin on her palms tough as tempered ceramic.
+
+---
+
+"Another dead conduit?" 
+
+The voice came from the hatchway. Valen stood framed against the amber halogen light of the alley, shaking condensation from his pilot’s duster. His mechanical left eye whirred softly as it adjusted its focal aperture.
+
+"Not dead," Lyra replied without looking up. "Stolen. Someone severed this core while the reactor was still cycling at forty thousand kelvins."`
   );
+
+  // Novel Markdown Studio View Modes
+  const [novelViewMode, setNovelViewMode] = useState<"split" | "edit" | "preview">("split");
+  const [proseFont, setProseFont] = useState<"serif" | "sans" | "mono">("serif");
+  const [proseFontSize, setProseFontSize] = useState<16 | 18 | 20>(18);
+  const [previewTheme, setPreviewTheme] = useState<"dark" | "sepia" | "light">("dark");
+  const [previewDevice, setPreviewDevice] = useState<"mobile" | "desktop">("mobile");
+
+  // Word count & read time
+  const wordCount = useMemo(() => {
+    return chapterContent.trim().split(/\s+/).filter(Boolean).length;
+  }, [chapterContent]);
+
+  const readTime = useMemo(() => {
+    return calculateReadTime(chapterContent);
+  }, [chapterContent]);
 
   // AI Assistant Modal
   const [isAiModalOpen, setIsAiModalOpen] = useState(false);
@@ -136,9 +198,78 @@ export default function CreatorUploadWizardPage() {
   // Draft Toast
   const [draftToast, setDraftToast] = useState(false);
 
-  // Word count & read time
-  const wordCount = chapterContent.trim().split(/\s+/).filter(Boolean).length;
-  const readTime = calculateReadTime(chapterContent);
+  const isVisualMedium =
+    formatChoice === "MANGA" ||
+    formatChoice === "WEBTOON" ||
+    formatChoice === "COMIC" ||
+    formatChoice === "PDF_BOOK";
+
+  // Cover Image Upload with Size Validation & WebP Compression
+  const handleCoverUpload = async (file: File) => {
+    setCoverError(null);
+    const validation = validateImageFile(file, { maxSizeBytes: MAX_COVER_SIZE_BYTES });
+    if (!validation.valid) {
+      setCoverError(validation.error || "Invalid image file.");
+      return;
+    }
+
+    try {
+      setIsCompressingCover(true);
+      const result = await compressImageToWebP(file, { maxWidth: 1600, maxHeight: 2560, quality: 0.88 });
+      setCoverUrl(result.dataUrl);
+      setCoverCompressionInfo({
+        originalSize: result.originalSize,
+        compressedSize: result.compressedSize,
+        savingsPct: result.savingsPct,
+      });
+    } catch (err) {
+      console.error("Cover compression failed:", err);
+      setCoverError("Failed to process cover image. Please try another file.");
+    } finally {
+      setIsCompressingCover(false);
+    }
+  };
+
+  // Bulk Comic Images Upload with Size Validation & WebP Compression
+  const handleBulkImagesUpload = async (files: FileList | File[]) => {
+    setPagesError(null);
+    const fileArray = Array.from(files);
+    if (fileArray.length === 0) return;
+
+    setIsCompressingPages(true);
+    setPageCompressionMessage(`Compressing ${fileArray.length} pages to WebP...`);
+
+    const newPages: { id: string; name: string; url: string; size?: string }[] = [];
+
+    for (let i = 0; i < fileArray.length; i++) {
+      const file = fileArray[i];
+      const validation = validateImageFile(file, { maxSizeBytes: MAX_PAGE_SIZE_BYTES });
+      if (!validation.valid) {
+        setPagesError(`Skipped "${file.name}": ${validation.error}`);
+        continue;
+      }
+
+      try {
+        setPageCompressionMessage(`Processing page ${i + 1} of ${fileArray.length} into WebP...`);
+        const result = await compressImageToWebP(file, { maxWidth: 1800, maxHeight: 3200, quality: 0.85 });
+        newPages.push({
+          id: `page-${Date.now()}-${i}-${Math.random().toString(36).slice(2, 6)}`,
+          name: result.fileName,
+          url: result.dataUrl,
+          size: `${formatBytes(result.compressedSize)} (WebP -${result.savingsPct}%)`,
+        });
+      } catch (err) {
+        console.error("Page compression failed:", err);
+      }
+    }
+
+    if (newPages.length > 0) {
+      setPages((prev) => [...prev, ...newPages]);
+    }
+
+    setIsCompressingPages(false);
+    setPageCompressionMessage(null);
+  };
 
   // PDF Processing Simulator
   const handlePdfUpload = (file: File) => {
@@ -147,17 +278,157 @@ export default function CreatorUploadWizardPage() {
 
     setTimeout(() => {
       setIsProcessingPdf(false);
-      // Simulate high-res extracted pages
       setPages([
-        { id: `page-${Date.now()}-1`, name: `${file.name} - Page 01`, url: SAMPLE_EXTRACTED_PAGES[0].url },
-        { id: `page-${Date.now()}-2`, name: `${file.name} - Page 02`, url: SAMPLE_EXTRACTED_PAGES[1].url },
-        { id: `page-${Date.now()}-3`, name: `${file.name} - Page 03`, url: SAMPLE_EXTRACTED_PAGES[2].url },
-        { id: `page-${Date.now()}-4`, name: `${file.name} - Page 04`, url: SAMPLE_EXTRACTED_PAGES[3].url },
+        { id: `page-${Date.now()}-1`, name: `${file.name} - Page 01.webp`, url: SAMPLE_EXTRACTED_PAGES[0].url, size: "380 KB (WebP)" },
+        { id: `page-${Date.now()}-2`, name: `${file.name} - Page 02.webp`, url: SAMPLE_EXTRACTED_PAGES[1].url, size: "420 KB (WebP)" },
+        { id: `page-${Date.now()}-3`, name: `${file.name} - Page 03.webp`, url: SAMPLE_EXTRACTED_PAGES[2].url, size: "390 KB (WebP)" },
+        { id: `page-${Date.now()}-4`, name: `${file.name} - Page 04.webp`, url: SAMPLE_EXTRACTED_PAGES[3].url, size: "410 KB (WebP)" },
       ]);
-    }, 1500);
+    }, 1200);
   };
 
-  // Move Page Up
+  // Markdown Formatting Toolbar Helpers
+  const insertMarkdown = (before: string, after: string = "", placeholder: string = "text") => {
+    const textarea = markdownTextareaRef.current;
+    if (!textarea) return;
+
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const selectedText = chapterContent.substring(start, end) || placeholder;
+
+    const newText =
+      chapterContent.substring(0, start) +
+      before +
+      selectedText +
+      after +
+      chapterContent.substring(end);
+
+    setChapterContent(newText);
+
+    setTimeout(() => {
+      textarea.focus();
+      textarea.setSelectionRange(start + before.length, start + before.length + selectedText.length);
+    }, 50);
+  };
+
+  // Markdown Prose Parser & Renderer for Live Reader Preview
+  const renderMarkdownPreview = (text: string) => {
+    const paragraphs = text.split(/\n\s*\n/);
+
+    return paragraphs.map((block, idx) => {
+      const trimmed = block.trim();
+      if (!trimmed) return null;
+
+      // Header 1
+      if (trimmed.startsWith("# ")) {
+        return (
+          <h2
+            key={idx}
+            className="text-2xl sm:text-3xl font-black text-zinc-900 dark:text-zinc-50 border-b border-zinc-200 dark:border-zinc-800 pb-3 mb-6 mt-8 tracking-tight"
+          >
+            {trimmed.replace(/^#\s+/, "")}
+          </h2>
+        );
+      }
+
+      // Header 2
+      if (trimmed.startsWith("## ")) {
+        return (
+          <h3
+            key={idx}
+            className="text-xl sm:text-2xl font-bold text-zinc-900 dark:text-zinc-100 mb-4 mt-6 tracking-tight text-indigo-400"
+          >
+            {trimmed.replace(/^##\s+/, "")}
+          </h3>
+        );
+      }
+
+      // Header 3
+      if (trimmed.startsWith("### ")) {
+        return (
+          <h4
+            key={idx}
+            className="text-lg font-bold text-zinc-800 dark:text-zinc-200 mb-3 mt-5"
+          >
+            {trimmed.replace(/^###\s+/, "")}
+          </h4>
+        );
+      }
+
+      // Horizontal Rule / Scene Break
+      if (trimmed === "---" || trimmed === "***" || trimmed === "* * *") {
+        return (
+          <div key={idx} className="my-8 flex items-center justify-center gap-3 text-zinc-400 dark:text-zinc-600 select-none">
+            <span className="w-12 h-px bg-zinc-300 dark:bg-zinc-800" />
+            <span className="text-sm font-serif">✦ ✦ ✦</span>
+            <span className="w-12 h-px bg-zinc-300 dark:bg-zinc-800" />
+          </div>
+        );
+      }
+
+      // Blockquote
+      if (trimmed.startsWith(">")) {
+        const quoteContent = trimmed
+          .split("\n")
+          .map((line) => line.replace(/^>\s?/, ""))
+          .join(" ");
+
+        return (
+          <blockquote
+            key={idx}
+            className="my-5 pl-4 sm:pl-5 py-2 border-l-4 border-indigo-500 bg-indigo-500/5 dark:bg-indigo-500/10 rounded-r-2xl italic text-zinc-700 dark:text-zinc-300 text-sm sm:text-base leading-relaxed"
+          >
+            {renderInlineFormatting(quoteContent)}
+          </blockquote>
+        );
+      }
+
+      // Standard Paragraph with inline formatting
+      return (
+        <p
+          key={idx}
+          className={`leading-relaxed transition-all ${
+            idx === 0 && !trimmed.startsWith("#") ? "first-letter:text-4xl first-letter:font-black first-letter:mr-2 first-letter:float-left first-letter:text-indigo-500" : ""
+          }`}
+        >
+          {renderInlineFormatting(trimmed)}
+        </p>
+      );
+    });
+  };
+
+  // Inline formatting helper for Bold, Italic, Dialogue
+  const renderInlineFormatting = (text: string): React.ReactNode => {
+    // Process markdown formatting: bold **text**, italic *text*, dialogue quotes "..."
+    const parts = text.split(/(\*\*.*?\*\*|\*.*?\*|"[^"]+")/g);
+
+    return parts.map((part, i) => {
+      if (part.startsWith("**") && part.endsWith("**")) {
+        return (
+          <strong key={i} className="font-bold text-zinc-900 dark:text-white">
+            {part.slice(2, -2)}
+          </strong>
+        );
+      }
+      if (part.startsWith("*") && part.endsWith("*")) {
+        return (
+          <em key={i} className="italic text-indigo-300">
+            {part.slice(1, -1)}
+          </em>
+        );
+      }
+      if (part.startsWith('"') && part.endsWith('"')) {
+        return (
+          <span key={i} className="text-amber-300 dark:text-amber-200 font-medium">
+            {part}
+          </span>
+        );
+      }
+      return part;
+    });
+  };
+
+  // Move Page Up / Down
   const movePageUp = (idx: number) => {
     if (idx === 0) return;
     const updated = [...pages];
@@ -167,7 +438,6 @@ export default function CreatorUploadWizardPage() {
     setPages(updated);
   };
 
-  // Move Page Down
   const movePageDown = (idx: number) => {
     if (idx === pages.length - 1) return;
     const updated = [...pages];
@@ -177,27 +447,11 @@ export default function CreatorUploadWizardPage() {
     setPages(updated);
   };
 
-  // Remove Page
   const removePage = (idx: number) => {
     setPages((prev) => prev.filter((_, i) => i !== idx));
   };
 
-  // Content Warnings Toggle
-  const handleToggleWarning = (warn: string) => {
-    if (warn === "None") {
-      setContentWarnings(["None"]);
-      return;
-    }
-    const filtered = contentWarnings.filter((w) => w !== "None");
-    if (filtered.includes(warn)) {
-      const next = filtered.filter((w) => w !== warn);
-      setContentWarnings(next.length === 0 ? ["None"] : next);
-    } else {
-      setContentWarnings([...filtered, warn]);
-    }
-  };
-
-  // Save Draft
+  // Save Draft to localStorage
   const handleSaveDraft = () => {
     const draft = {
       formatChoice,
@@ -213,42 +467,19 @@ export default function CreatorUploadWizardPage() {
       contentStatus,
       contentRating,
       contentWarnings,
-      episodeTitle,
-      pages,
+      chapterNumber,
       chapterTitle,
       chapterContent,
+      pages,
       savedAt: new Date().toISOString(),
     };
-    localStorage.setItem("yumora_creator_draft", JSON.stringify(draft));
-    setDraftToast(true);
-    setTimeout(() => setDraftToast(false), 3000);
-  };
-
-  // AI Assistant Trigger
-  const handleTriggerAi = (mode: "synopsis" | "tags" | "pitch") => {
-    setAiMode(mode);
-    setIsAiModalOpen(true);
-    setIsAiGenerating(true);
-    setAiGeneratedText("");
-
-    setTimeout(() => {
-      setIsAiGenerating(false);
-      if (mode === "synopsis") {
-        setAiGeneratedText(
-          `In the neon-lit shadow of Neo-Edo, a disgraced spirit hunter uncovers a cybernetic shrine that reforges ancient yokai souls into lethal blade resonance. Serialized on Yumora.`
-        );
-      } else if (mode === "tags") {
-        setAiGeneratedText("Manga, Cyberpunk, Yokai, Supernatural, Action, Blade Resonance");
-      } else if (mode === "pitch") {
-        setAiGeneratedText(`"Ghost in the Shell meets Demon Slayer in a stunning dark cyberpunk manga series."`);
-      }
-    }, 800);
-  };
-
-  const handleApplyAiSuggestion = () => {
-    if (aiMode === "synopsis") setDescription(aiGeneratedText);
-    if (aiMode === "tags") setTagInput(aiGeneratedText);
-    setIsAiModalOpen(false);
+    try {
+      localStorage.setItem("yumora_creator_draft", JSON.stringify(draft));
+      setDraftToast(true);
+      setTimeout(() => setDraftToast(false), 3000);
+    } catch {
+      // ignore
+    }
   };
 
   // Final Publish Handler
@@ -259,19 +490,12 @@ export default function CreatorUploadWizardPage() {
     }
 
     if (!title.trim()) {
-      alert("Please enter a title.");
+      alert("Please enter a series title.");
       return;
     }
 
     const slug = slugify(title) || `work-${Date.now()}`;
     const tags = tagInput.split(",").map((t) => t.trim()).filter(Boolean);
-
-    const isVisualMedium =
-      formatChoice === "MANGA" ||
-      formatChoice === "WEBTOON" ||
-      formatChoice === "COMIC" ||
-      formatChoice === "PDF_BOOK" ||
-      formatChoice === "ILLUSTRATED_NOVEL";
 
     if (isVisualMedium) {
       const newComic: Comic = {
@@ -313,8 +537,8 @@ export default function CreatorUploadWizardPage() {
           {
             id: `ep-${Date.now()}-1`,
             comicId: `comic-${Date.now()}`,
-            episodeNumber: 1,
-            title: episodeTitle,
+            episodeNumber: chapterNumber,
+            title: chapterTitle,
             thumbnailUrl: coverUrl,
             imageUrls: pages.map((p) => p.url),
             status: "PUBLISHED",
@@ -323,10 +547,9 @@ export default function CreatorUploadWizardPage() {
           },
         ],
       };
-
       dataStore.saveComic(newComic);
     } else {
-      // Pure Text Novel
+      // Pure Text Serialized Novel
       const newNovel: Novel = {
         id: `novel-${Date.now()}`,
         creatorId: user?.id || "usr-creator-1",
@@ -364,7 +587,7 @@ export default function CreatorUploadWizardPage() {
           {
             id: `ch-${Date.now()}-1`,
             novelId: `novel-${Date.now()}`,
-            chapterNumber: 1,
+            chapterNumber: chapterNumber,
             title: chapterTitle,
             content: chapterContent,
             status: "PUBLISHED",
@@ -389,8 +612,8 @@ export default function CreatorUploadWizardPage() {
 
   const STEPS_NAV = [
     { num: 1, label: "01 Format Choice", title: "Format Choice" },
-    { num: 2, label: "02 Series Details", title: "Series Details" },
-    { num: 3, label: "03 Upload & Process", title: "Content Ingestion" },
+    { num: 2, label: "02 Series Details", title: "Series Details & Cover" },
+    { num: 3, label: "03 Content Studio", title: isVisualMedium ? "Comic / Page Ingestion" : "Novel Markdown Studio" },
     { num: 4, label: "04 Review & Publish", title: "Review & Publish" },
   ];
 
@@ -418,11 +641,11 @@ export default function CreatorUploadWizardPage() {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8 pb-32">
-      {/* Toast */}
+      {/* Draft Toast */}
       {draftToast && (
         <div className="fixed bottom-20 right-6 z-50 p-4 rounded-2xl bg-emerald-950 border border-emerald-500/50 text-emerald-300 text-xs font-bold shadow-2xl flex items-center gap-2 animate-in fade-in slide-in-from-bottom-5">
           <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-          <span>Draft auto-saved successfully to local storage!</span>
+          <span>Draft auto-saved successfully with WebP assets!</span>
         </div>
       )}
 
@@ -431,13 +654,13 @@ export default function CreatorUploadWizardPage() {
         <div>
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-indigo-500/10 text-indigo-500 border border-indigo-500/30 mb-1">
             <Zap className="w-3.5 h-3.5" />
-            <span>Yumora Studio • Universal Creator Ingestion Pipeline</span>
+            <span>Yumora Studio • High-Performance Publishing Pipeline</span>
           </div>
           <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-zinc-900 dark:text-zinc-100">
             Publish to the Story Universe
           </h1>
           <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
-            Architecture: <strong className="text-zinc-700 dark:text-zinc-300">PDF / Images / Manuscript → Ingestion → Universal Web Reader</strong>
+            Features: <strong className="text-zinc-700 dark:text-zinc-300">Client WebP Compression • 10MB/15MB Limits • Live Markdown Studio</strong>
           </p>
         </div>
 
@@ -453,63 +676,74 @@ export default function CreatorUploadWizardPage() {
         </div>
       </div>
 
-      {/* Top 4-Step Progress Navigation */}
-      <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-4 shadow-sm">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+      {/* 4-Step Progress Navigation */}
+      {step <= 4 && (
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4">
           {STEPS_NAV.map((s) => {
             const isActive = step === s.num;
             const isCompleted = step > s.num;
-
             return (
               <button
                 key={s.num}
                 type="button"
                 onClick={() => setStep(s.num as typeof step)}
-                className={`p-3 rounded-xl border text-left transition flex items-center gap-3 ${
+                className={`p-3.5 rounded-2xl border text-left transition ${
                   isActive
-                    ? "bg-indigo-50 dark:bg-indigo-950/40 border-indigo-500 text-indigo-600 dark:text-indigo-400 ring-1 ring-indigo-500/30"
+                    ? "bg-indigo-600/10 border-indigo-500 text-indigo-600 dark:text-indigo-400 shadow-sm"
                     : isCompleted
-                    ? "bg-emerald-50 dark:bg-emerald-950/20 border-emerald-500/40 text-emerald-600 dark:text-emerald-400"
-                    : "bg-zinc-50 dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800/80 text-zinc-500 dark:text-zinc-400 hover:border-zinc-700"
+                    ? "bg-zinc-50 dark:bg-zinc-900/60 border-zinc-200 dark:border-zinc-800 text-emerald-600 dark:text-emerald-400"
+                    : "bg-zinc-50/50 dark:bg-zinc-900/20 border-zinc-200 dark:border-zinc-800/50 text-zinc-400 opacity-60"
                 }`}
               >
-                <div
-                  className={`w-7 h-7 rounded-lg flex items-center justify-center font-bold text-xs flex-shrink-0 ${
-                    isActive
-                      ? "bg-indigo-600 text-white shadow-xs"
-                      : isCompleted
-                      ? "bg-emerald-600 text-white"
-                      : "bg-zinc-200 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400"
-                  }`}
-                >
-                  {isCompleted ? <Check className="w-3.5 h-3.5" /> : `0${s.num}`}
+                <div className="flex items-center justify-between text-xs font-black">
+                  <span>{s.label}</span>
+                  {isCompleted && <Check className="w-3.5 h-3.5 text-emerald-500" />}
                 </div>
-                <div className="min-w-0">
-                  <p className="text-[11px] font-bold truncate">{s.title}</p>
-                  <p className="text-[10px] text-zinc-400 truncate">
-                    {isActive ? "In Progress" : isCompleted ? "Completed" : "Pending"}
-                  </p>
-                </div>
+                <p className="text-[11px] text-zinc-500 mt-0.5 truncate">{s.title}</p>
               </button>
             );
           })}
         </div>
-      </div>
+      )}
 
-      {/* STEP 1: CONTENT TYPE & FORMAT SELECTION */}
+      {/* STEP 1: FORMAT SELECTION */}
       {step === 1 && (
         <div className="p-6 sm:p-8 rounded-3xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 space-y-6 shadow-sm">
           <div>
             <h3 className="text-xl font-black text-zinc-900 dark:text-zinc-100">
-              01 Choose Publishing Medium & Format
+              01 Choose Publication Format
             </h3>
-            <p className="text-xs text-zinc-500 mt-1">
-              Select your story medium. Yumora will optimize the reading interface and upload tools accordingly.
+            <p className="text-xs text-zinc-500 mt-0.5">
+              Select your story&apos;s medium to tailor reading layouts and creator tools
             </p>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {/* 1. Manga */}
+            {/* 1. Serialized Novel */}
+            <button
+              type="button"
+              onClick={() => {
+                setFormatChoice("NOVEL");
+                setReadingDirection("LTR");
+              }}
+              className={`p-6 rounded-2xl border text-left transition space-y-3 ${
+                formatChoice === "NOVEL"
+                  ? "bg-indigo-950/30 border-indigo-500 ring-2 ring-indigo-500/40"
+                  : "bg-zinc-50 dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800 hover:border-zinc-700"
+              }`}
+            >
+              <div className="w-10 h-10 rounded-xl bg-indigo-600 text-white flex items-center justify-center font-bold">
+                <BookOpen className="w-5 h-5" />
+              </div>
+              <h4 className="font-bold text-sm text-zinc-900 dark:text-zinc-100">
+                📖 Serialized Web Novel
+              </h4>
+              <p className="text-xs text-zinc-500 leading-relaxed">
+                Pure text prose chapters with markdown styling, reading typography controls, and real-time word counter.
+              </p>
+            </button>
+
+            {/* 2. Manga (RTL) */}
             <button
               type="button"
               onClick={() => {
@@ -522,18 +756,18 @@ export default function CreatorUploadWizardPage() {
                   : "bg-zinc-50 dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800 hover:border-zinc-700"
               }`}
             >
-              <div className="w-10 h-10 rounded-xl bg-purple-600 text-white flex items-center justify-center font-bold">
+              <div className="w-10 h-10 rounded-xl bg-rose-600 text-white flex items-center justify-center font-bold">
                 <Layers className="w-5 h-5" />
               </div>
               <h4 className="font-bold text-sm text-zinc-900 dark:text-zinc-100">
-                🇯🇵 Manga (Right-to-Left)
+                🗾 Japanese Manga (RTL)
               </h4>
               <p className="text-xs text-zinc-500 leading-relaxed">
-                Classic Japanese page-by-page flow with RTL swipe navigation and black/white or color spreads.
+                Traditional Right-to-Left page turns with spread view and zoom optimization.
               </p>
             </button>
 
-            {/* 2. Webtoon */}
+            {/* 3. Webtoon (Vertical Scroll) */}
             <button
               type="button"
               onClick={() => {
@@ -546,18 +780,18 @@ export default function CreatorUploadWizardPage() {
                   : "bg-zinc-50 dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800 hover:border-zinc-700"
               }`}
             >
-              <div className="w-10 h-10 rounded-xl bg-indigo-600 text-white flex items-center justify-center font-bold">
+              <div className="w-10 h-10 rounded-xl bg-emerald-600 text-white flex items-center justify-center font-bold">
                 <MoveVertical className="w-5 h-5" />
               </div>
               <h4 className="font-bold text-sm text-zinc-900 dark:text-zinc-100">
-                📱 Webtoon (Vertical Scroll)
+                📱 Vertical Webtoon / Manhwa
               </h4>
               <p className="text-xs text-zinc-500 leading-relaxed">
-                Continuous vertical scrolling canvas tailored for mobile webtoons and full-color digital strips.
+                Infinite vertical scroll designed for mobile reading with seamless panel transitions.
               </p>
             </button>
 
-            {/* 3. Western Comic */}
+            {/* 4. Western Comic (LTR) */}
             <button
               type="button"
               onClick={() => {
@@ -574,38 +808,14 @@ export default function CreatorUploadWizardPage() {
                 <ImageIcon className="w-5 h-5" />
               </div>
               <h4 className="font-bold text-sm text-zinc-900 dark:text-zinc-100">
-                🖼️ Western Comic / Graphic Novel
+                🎨 Graphic Novel / Comic
               </h4>
               <p className="text-xs text-zinc-500 leading-relaxed">
-                Standard Left-to-Right page flow for indie comic issues, graphic novels, and art books.
+                Left-to-Right page flow for indie comic issues, graphic novels, and art books.
               </p>
             </button>
 
-            {/* 4. Serialized Novel */}
-            <button
-              type="button"
-              onClick={() => {
-                setFormatChoice("NOVEL");
-                setReadingDirection("LTR");
-              }}
-              className={`p-6 rounded-2xl border text-left transition space-y-3 ${
-                formatChoice === "NOVEL"
-                  ? "bg-rose-950/30 border-rose-500 ring-2 ring-rose-500/40"
-                  : "bg-zinc-50 dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800 hover:border-zinc-700"
-              }`}
-            >
-              <div className="w-10 h-10 rounded-xl bg-rose-600 text-white flex items-center justify-center font-bold">
-                <BookOpen className="w-5 h-5" />
-              </div>
-              <h4 className="font-bold text-sm text-zinc-900 dark:text-zinc-100">
-                📖 Serialized Novel
-              </h4>
-              <p className="text-xs text-zinc-500 leading-relaxed">
-                Pure text prose chapters with custom reading fonts, line-height, and light/dark/sepia themes.
-              </p>
-            </button>
-
-            {/* 5. Illustrated Novel */}
+            {/* 5. Illustrated Light Novel */}
             <button
               type="button"
               onClick={() => {
@@ -622,7 +832,7 @@ export default function CreatorUploadWizardPage() {
                 <Sparkles className="w-5 h-5" />
               </div>
               <h4 className="font-bold text-sm text-zinc-900 dark:text-zinc-100">
-                🎨 Illustrated Light Novel
+                ✨ Illustrated Light Novel
               </h4>
               <p className="text-xs text-zinc-500 leading-relaxed">
                 Text manuscript blended with inline character art and full-page colored illustrations.
@@ -647,17 +857,17 @@ export default function CreatorUploadWizardPage() {
                 <FileType className="w-5 h-5" />
               </div>
               <h4 className="font-bold text-sm text-zinc-900 dark:text-zinc-100">
-                📄 PDF Book / Manga Import
+                📄 PDF Book / Manga Ingestion
               </h4>
               <p className="text-xs text-zinc-500 leading-relaxed">
-                Ingest existing PDF documents into optimized web pages for high-speed online reading.
+                Ingest existing PDF documents into optimized WebP pages for online web reading.
               </p>
             </button>
           </div>
         </div>
       )}
 
-      {/* STEP 2: SERIES DETAILS WITH LIVE SIDE-BY-SIDE PREVIEW */}
+      {/* STEP 2: SERIES DETAILS & COVER UPLOAD (WITH SIZE LIMITS & WEBP AUTO-COMPRESSION) */}
       {step === 2 && (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
           <div className="lg:col-span-7 space-y-6">
@@ -674,17 +884,27 @@ export default function CreatorUploadWizardPage() {
 
                 <button
                   type="button"
-                  onClick={() => handleTriggerAi("synopsis")}
+                  onClick={() => {
+                    setIsAiModalOpen(true);
+                    setIsAiGenerating(true);
+                    setAiGeneratedText("");
+                    setTimeout(() => {
+                      setIsAiGenerating(false);
+                      setAiGeneratedText(
+                        `In a world governed by celestial constellation looms, an outlaw cartographer discovers a fractured starlight compass capable of reshaping the cosmic tapestry.`
+                      );
+                    }, 800);
+                  }}
                   className="px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white text-xs font-bold shadow-md shadow-indigo-500/20 transition flex items-center gap-1.5"
                 >
                   <Wand2 className="w-3.5 h-3.5" />
-                  <span>Improve with AI</span>
+                  <span>AI Polish</span>
                 </button>
               </div>
 
               {/* Title */}
-              <div>
-                <label className="block text-xs font-bold text-zinc-700 dark:text-zinc-300 mb-1.5">
+              <div className="space-y-1.5">
+                <label className="block text-xs font-bold text-zinc-700 dark:text-zinc-300">
                   Series Title *
                 </label>
                 <input
@@ -692,26 +912,16 @@ export default function CreatorUploadWizardPage() {
                   required
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
-                  placeholder="e.g. Kitsune: Shadow of Neo-Edo"
-                  className="w-full px-4 py-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 text-sm font-semibold text-zinc-900 dark:text-zinc-100 focus:outline-none focus:border-indigo-500 transition"
+                  placeholder="e.g. Chronicles of the Astral Weaver"
+                  className="w-full px-4 py-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 text-xs sm:text-sm font-semibold text-zinc-900 dark:text-zinc-100 focus:outline-none focus:border-indigo-500 transition"
                 />
               </div>
 
-              {/* Synopsis */}
-              <div>
-                <div className="flex items-center justify-between mb-1.5">
-                  <label className="text-xs font-bold text-zinc-700 dark:text-zinc-300">
-                    Series Synopsis / Premise *
-                  </label>
-                  <button
-                    type="button"
-                    onClick={() => handleTriggerAi("synopsis")}
-                    className="text-[11px] text-indigo-500 hover:text-indigo-400 font-bold flex items-center gap-1 transition"
-                  >
-                    <Sparkles className="w-3 h-3" />
-                    <span>AI Polish Hook</span>
-                  </button>
-                </div>
+              {/* Description */}
+              <div className="space-y-1.5">
+                <label className="block text-xs font-bold text-zinc-700 dark:text-zinc-300">
+                  Synopsis / Hook *
+                </label>
                 <textarea
                   rows={4}
                   required
@@ -722,14 +932,14 @@ export default function CreatorUploadWizardPage() {
                 />
               </div>
 
-              {/* Cover Artwork Uploader */}
+              {/* COVER ARTWORK UPLOADER (ENFORCING 10MB LIMIT & WEBP COMPRESSION) */}
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
                   <label className="text-xs font-bold text-zinc-700 dark:text-zinc-300">
-                    Series Cover Artwork
+                    Series Cover Artwork (Max 10 MB)
                   </label>
                   <span className="text-[11px] text-zinc-400 font-medium">
-                    Recommended: <strong className="text-zinc-300">1600 × 2560 px</strong> (JPG, PNG, WebP)
+                    Auto-Compresses to <strong className="text-indigo-400">Optimized WebP</strong>
                   </span>
                 </div>
 
@@ -738,41 +948,58 @@ export default function CreatorUploadWizardPage() {
                   ref={fileInputRef}
                   onChange={(e) => {
                     const file = e.target.files?.[0];
-                    if (file) {
-                      const reader = new FileReader();
-                      reader.onload = () => {
-                        if (reader.result) setCoverUrl(reader.result as string);
-                      };
-                      reader.readAsDataURL(file);
-                    }
+                    if (file) handleCoverUpload(file);
                   }}
                   accept="image/jpeg,image/png,image/webp"
                   className="hidden"
                 />
 
+                {coverError && (
+                  <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs flex items-center gap-2">
+                    <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                    <span>{coverError}</span>
+                  </div>
+                )}
+
                 <div className="p-5 rounded-2xl border-2 border-dashed border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-950/50 flex flex-col sm:flex-row items-center gap-5">
                   <div className="relative aspect-[3/4] w-24 sm:w-28 rounded-xl overflow-hidden shadow-md bg-zinc-900 border border-zinc-700 flex-shrink-0">
                     <img src={coverUrl} alt="Cover Preview" className="w-full h-full object-cover" />
+                    {isCompressingCover && (
+                      <div className="absolute inset-0 bg-black/70 flex flex-col items-center justify-center text-white text-[10px] font-bold p-1 text-center">
+                        <Loader2 className="w-5 h-5 animate-spin text-indigo-400 mb-1" />
+                        <span>Compressing WebP...</span>
+                      </div>
+                    )}
                   </div>
 
                   <div className="space-y-2 text-center sm:text-left flex-1">
                     <div>
                       <p className="text-xs font-bold text-zinc-900 dark:text-zinc-100">
-                        Drag and drop your series cover
+                        Upload or drop series cover image
                       </p>
                       <p className="text-[11px] text-zinc-500 dark:text-zinc-400">
-                        High-resolution artwork for discover feed and episode listings
+                        Supported: JPG, PNG, WebP (Max 10MB). Automatically optimized for ultra-fast CDN delivery.
                       </p>
                     </div>
+
+                    {coverCompressionInfo && (
+                      <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-emerald-500/10 text-emerald-400 text-[11px] font-bold border border-emerald-500/30">
+                        <CheckCheck className="w-3.5 h-3.5 text-emerald-400" />
+                        <span>
+                          WebP Optimized: {formatBytes(coverCompressionInfo.originalSize)} → {formatBytes(coverCompressionInfo.compressedSize)} (-{coverCompressionInfo.savingsPct}% saved)
+                        </span>
+                      </div>
+                    )}
 
                     <div className="flex flex-wrap gap-2 justify-center sm:justify-start pt-1">
                       <button
                         type="button"
                         onClick={() => fileInputRef.current?.click()}
-                        className="px-3.5 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs transition flex items-center gap-1.5 shadow-xs"
+                        disabled={isCompressingCover}
+                        className="px-3.5 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white font-bold text-xs transition flex items-center gap-1.5 shadow-xs"
                       >
                         <Upload className="w-3.5 h-3.5" />
-                        <span>Upload Cover</span>
+                        <span>{isCompressingCover ? "Compressing..." : "Upload & Compress Image"}</span>
                       </button>
 
                       <button
@@ -780,7 +1007,7 @@ export default function CreatorUploadWizardPage() {
                         onClick={() => setShowUrlOption(!showUrlOption)}
                         className="px-3 py-1.5 rounded-xl bg-zinc-200 dark:bg-zinc-800 hover:bg-zinc-300 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-300 font-semibold text-xs transition"
                       >
-                        {showUrlOption ? "Hide URL & Presets" : "Advanced URL"}
+                        {showUrlOption ? "Hide Presets" : "Preset Covers"}
                       </button>
                     </div>
                   </div>
@@ -802,14 +1029,17 @@ export default function CreatorUploadWizardPage() {
                     </div>
                     <div>
                       <label className="block text-[11px] font-bold text-zinc-400 mb-1.5">
-                        Sample Presets
+                        Sample Curated Artwork
                       </label>
                       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                         {PRESET_COVERS.map((preset) => (
                           <button
                             key={preset.label}
                             type="button"
-                            onClick={() => setCoverUrl(preset.url)}
+                            onClick={() => {
+                              setCoverUrl(preset.url);
+                              setCoverCompressionInfo(null);
+                            }}
                             className="p-1.5 rounded-xl border border-zinc-300 dark:border-zinc-800 hover:border-indigo-500 text-left text-[11px] font-semibold flex items-center gap-1.5 transition"
                           >
                             <img src={preset.url} alt={preset.label} className="w-6 h-8 object-cover rounded" />
@@ -822,236 +1052,85 @@ export default function CreatorUploadWizardPage() {
                 )}
               </div>
 
-              {/* Reading Direction & Classification */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                {/* Reading Direction */}
+              {/* Genre & Tags */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-[11px] font-bold text-zinc-700 dark:text-zinc-300 mb-1">
-                    Reading Flow Direction
-                  </label>
-                  <select
-                    value={readingDirection}
-                    onChange={(e) => setReadingDirection(e.target.value as typeof readingDirection)}
-                    className="w-full px-3 py-2 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 text-xs font-semibold text-zinc-900 dark:text-zinc-100 focus:outline-none focus:border-indigo-500"
-                  >
-                    <option value="RTL">Right-to-Left (Manga RTL)</option>
-                    <option value="LTR">Left-to-Right (Western LTR)</option>
-                    <option value="VERTICAL">Vertical Continuous Scroll</option>
-                  </select>
-                </div>
-
-                {/* Primary Genre */}
-                <div>
-                  <label className="block text-[11px] font-bold text-zinc-700 dark:text-zinc-300 mb-1">
-                    Primary Genre
+                  <label className="block text-xs font-bold text-zinc-700 dark:text-zinc-300 mb-1">
+                    Primary Genre *
                   </label>
                   <select
                     value={genre}
                     onChange={(e) => setGenre(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 text-xs font-semibold text-zinc-900 dark:text-zinc-100 focus:outline-none focus:border-indigo-500"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 text-xs font-semibold text-zinc-900 dark:text-zinc-100 focus:outline-none focus:border-indigo-500"
                   >
-                    {["Cyberpunk", "Action", "Fantasy", "Sci-Fi", "Romance", "Mystery", "Supernatural", "Slice of Life"].map(
-                      (g) => (
-                        <option key={g} value={g}>
-                          {g}
-                        </option>
-                      )
-                    )}
+                    {["Sci-Fi", "Fantasy", "Cyberpunk", "Action", "Romance", "Mystery", "Adventure"].map((g) => (
+                      <option key={g} value={g}>{g}</option>
+                    ))}
                   </select>
                 </div>
 
-                {/* Status */}
                 <div>
-                  <label className="block text-[11px] font-bold text-zinc-700 dark:text-zinc-300 mb-1">
-                    Release Status
+                  <label className="block text-xs font-bold text-zinc-700 dark:text-zinc-300 mb-1">
+                    Secondary Genre
                   </label>
                   <select
-                    value={contentStatus}
-                    onChange={(e) => setContentStatus(e.target.value as ContentStatus)}
-                    className="w-full px-3 py-2 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 text-xs font-semibold text-zinc-900 dark:text-zinc-100 focus:outline-none focus:border-indigo-500"
+                    value={secondaryGenre}
+                    onChange={(e) => setSecondaryGenre(e.target.value)}
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 text-xs font-semibold text-zinc-900 dark:text-zinc-100 focus:outline-none focus:border-indigo-500"
                   >
-                    <option value="ONGOING">Ongoing Serial</option>
-                    <option value="COMPLETED">Completed</option>
-                    <option value="DRAFT">Draft</option>
-                  </select>
-                </div>
-
-                {/* Age Rating */}
-                <div>
-                  <label className="block text-[11px] font-bold text-zinc-700 dark:text-zinc-300 mb-1">
-                    Age Rating
-                  </label>
-                  <select
-                    value={contentRating}
-                    onChange={(e) => setContentRating(e.target.value as ContentRating)}
-                    className="w-full px-3 py-2 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 text-xs font-semibold text-zinc-900 dark:text-zinc-100 focus:outline-none focus:border-indigo-500"
-                  >
-                    <option value="EVERYONE">Everyone (All Ages)</option>
-                    <option value="TEEN">Teen (13+)</option>
-                    <option value="MATURE">Mature (18+)</option>
-                  </select>
-                </div>
-
-                {/* Language */}
-                <div>
-                  <label className="block text-[11px] font-bold text-zinc-700 dark:text-zinc-300 mb-1">
-                    Language
-                  </label>
-                  <select
-                    value={language}
-                    onChange={(e) => setLanguage(e.target.value as LanguageCode)}
-                    className="w-full px-3 py-2 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 text-xs font-semibold text-zinc-900 dark:text-zinc-100 focus:outline-none focus:border-indigo-500"
-                  >
-                    <option value="ja">日本語 (JA)</option>
-                    <option value="en">English (EN)</option>
-                    <option value="ko">한국어 (KO)</option>
-                    <option value="es">Español (ES)</option>
-                    <option value="fr">Français (FR)</option>
-                    <option value="hi">हिन्दी (HI)</option>
-                  </select>
-                </div>
-
-                {/* PDF Offline Download Permission */}
-                <div>
-                  <label className="block text-[11px] font-bold text-zinc-700 dark:text-zinc-300 mb-1">
-                    Offline PDF Download
-                  </label>
-                  <select
-                    value={allowPdfDownload ? "yes" : "no"}
-                    onChange={(e) => setAllowPdfDownload(e.target.value === "yes")}
-                    className="w-full px-3 py-2 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 text-xs font-semibold text-zinc-900 dark:text-zinc-100 focus:outline-none focus:border-indigo-500"
-                  >
-                    <option value="yes">Allow Offline PDF Download</option>
-                    <option value="no">Online Reader Only</option>
+                    {["Fantasy", "Sci-Fi", "Action", "Mystery", "Steampunk", "Slice of Life"].map((g) => (
+                      <option key={g} value={g}>{g}</option>
+                    ))}
                   </select>
                 </div>
               </div>
 
               {/* Tags */}
-              <div>
-                <div className="flex items-center justify-between mb-1">
-                  <label className="text-xs font-bold text-zinc-700 dark:text-zinc-300">
-                    Tags & Keywords
-                  </label>
-                  <button
-                    type="button"
-                    onClick={() => handleTriggerAi("tags")}
-                    className="text-[11px] text-indigo-500 hover:text-indigo-400 font-bold flex items-center gap-1 transition"
-                  >
-                    <Sparkles className="w-3 h-3" />
-                    <span>Auto-Generate Tags</span>
-                  </button>
-                </div>
+              <div className="space-y-1.5">
+                <label className="block text-xs font-bold text-zinc-700 dark:text-zinc-300">
+                  Search & Discover Tags
+                </label>
                 <input
                   type="text"
                   value={tagInput}
                   onChange={(e) => setTagInput(e.target.value)}
-                  placeholder="e.g. Manga, Cyberpunk, Yokai, Action, Supernatural"
+                  placeholder="e.g. Magic, Progression, Cyberpunk, Dungeons"
                   className="w-full px-4 py-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 text-xs font-semibold text-zinc-900 dark:text-zinc-100 focus:outline-none focus:border-indigo-500"
                 />
-              </div>
-
-              {/* Content Warnings */}
-              <div className="space-y-2">
-                <label className="block text-xs font-bold text-zinc-700 dark:text-zinc-300">
-                  Content Advisories
-                </label>
-                <div className="flex flex-wrap gap-2">
-                  {CONTENT_WARNING_OPTIONS.map((warn) => {
-                    const isSelected = contentWarnings.includes(warn);
-                    return (
-                      <button
-                        key={warn}
-                        type="button"
-                        onClick={() => handleToggleWarning(warn)}
-                        className={`px-3 py-1.5 rounded-xl text-xs font-semibold border transition ${
-                          isSelected
-                            ? "bg-indigo-950/50 border-indigo-500 text-indigo-300"
-                            : "bg-zinc-50 dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-400 hover:border-zinc-700"
-                        }`}
-                      >
-                        {warn}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* Copyright */}
-              <div className="p-4 rounded-2xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 flex items-start gap-3">
-                <input
-                  type="checkbox"
-                  id="copyright"
-                  checked={hasCopyright}
-                  onChange={(e) => setHasCopyright(e.target.checked)}
-                  className="mt-1 accent-indigo-600 rounded"
-                />
-                <label htmlFor="copyright" className="text-xs text-zinc-600 dark:text-zinc-300 leading-relaxed cursor-pointer">
-                  <strong>Creator IP Verification:</strong> I confirm that I own or hold valid licensing rights to publish this manuscript, artwork, and character designs on Yumora.
-                </label>
               </div>
             </div>
           </div>
 
-          {/* Right Live Story Card Preview (5 Cols) */}
+          {/* Right Column: Series Live Card Preview */}
           <div className="lg:col-span-5 sticky top-20 space-y-4">
-            <div className="p-6 rounded-3xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-xl space-y-4">
-              <div className="flex items-center justify-between pb-2 border-b border-zinc-100 dark:border-zinc-800">
-                <span className="text-xs font-bold uppercase tracking-wider text-indigo-500 flex items-center gap-1.5">
-                  <Eye className="w-3.5 h-3.5" /> Live Reader Card Preview
-                </span>
-                <span className="text-[10px] text-zinc-400">Updates dynamically</span>
+            <div className="p-6 rounded-3xl bg-zinc-950 border border-zinc-800 text-white shadow-xl space-y-4">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-indigo-400 flex items-center gap-1.5">
+                <Eye className="w-3.5 h-3.5" /> Live Discovery Card Preview
+              </span>
+
+              <div className="aspect-[3/4] w-full max-w-[240px] mx-auto rounded-2xl overflow-hidden shadow-2xl relative border border-zinc-800 group">
+                <img src={coverUrl} alt="Cover Preview" className="w-full h-full object-cover" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent flex flex-col justify-end p-4">
+                  <span className="px-2 py-0.5 rounded text-[10px] font-black bg-indigo-600 text-white self-start mb-1">
+                    {formatChoice}
+                  </span>
+                  <h4 className="font-extrabold text-sm text-white line-clamp-1">{title || "Untitled Story"}</h4>
+                  <p className="text-[11px] text-zinc-300 line-clamp-2 mt-0.5">{description}</p>
+                </div>
               </div>
 
-              <div className="rounded-2xl overflow-hidden bg-zinc-950 border border-zinc-800 text-zinc-100 shadow-2xl space-y-3 p-4">
-                <div className="aspect-[16/10] rounded-xl overflow-hidden relative bg-zinc-900">
-                  <img src={coverUrl} alt={title || "Cover Preview"} className="w-full h-full object-cover" />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
-                  <div className="absolute top-2 left-2 flex gap-1">
-                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-indigo-600 text-white">
-                      {formatChoice}
-                    </span>
-                    <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-black/60 text-zinc-200 backdrop-blur-xs">
-                      {readingDirection}
-                    </span>
-                  </div>
-                  <div className="absolute bottom-2 left-2 right-2 flex items-center justify-between text-xs text-white">
-                    <span className="text-[11px] font-semibold">{genre}</span>
-                    <span className="text-[11px] uppercase font-bold text-indigo-400">{language}</span>
-                  </div>
+              <div className="p-3 rounded-2xl bg-zinc-900/80 border border-zinc-800/80 text-xs text-zinc-400 space-y-1">
+                <div className="flex justify-between">
+                  <span>Author:</span>
+                  <span className="text-white font-bold">{user?.name || "Aria Thorne"}</span>
                 </div>
-
-                <div>
-                  <h4 className="font-extrabold text-base text-white line-clamp-1">
-                    {title || "Untitled Series"}
-                  </h4>
-                  <div className="flex items-center gap-1.5 text-xs text-zinc-400 mt-0.5">
-                    <span>By {user?.name || "Mei Lin Takahashi"}</span>
-                    {user?.isVerified && (
-                      <CheckCircle2 className="w-3 h-3 text-indigo-400" />
-                    )}
-                  </div>
-                  <p className="text-xs text-zinc-300 line-clamp-2 mt-2 leading-relaxed">
-                    {description || "No synopsis entered yet."}
-                  </p>
+                <div className="flex justify-between">
+                  <span>Genre:</span>
+                  <span className="text-white font-bold">{genre} / {secondaryGenre}</span>
                 </div>
-
-                <div className="flex flex-wrap gap-1 pt-1">
-                  {tagInput.split(",").slice(0, 3).map((t, idx) => (
-                    <span
-                      key={idx}
-                      className="px-2 py-0.5 rounded-md text-[10px] bg-zinc-800 text-zinc-400 truncate max-w-[100px]"
-                    >
-                      #{t.trim()}
-                    </span>
-                  ))}
-                </div>
-
-                <div className="pt-2 border-t border-zinc-800 flex items-center justify-between text-xs text-zinc-400">
-                  <span>Chapter 1 Ready</span>
-                  <span className="text-indigo-400 font-bold flex items-center gap-1">
-                    Read Online →
-                  </span>
+                <div className="flex justify-between">
+                  <span>Status:</span>
+                  <span className="text-emerald-400 font-bold">{contentStatus}</span>
                 </div>
               </div>
             </div>
@@ -1059,76 +1138,83 @@ export default function CreatorUploadWizardPage() {
         </div>
       )}
 
-      {/* STEP 3: CONTENT UPLOAD & PDF PROCESSING PIPELINE */}
+      {/* STEP 3: CONTENT STUDIO (NOVEL MARKDOWN STUDIO OR COMIC PAGE INGESTION) */}
       {step === 3 && (
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-          <div className="lg:col-span-7 space-y-6">
-            <div className="p-6 sm:p-8 rounded-3xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 space-y-6 shadow-sm">
-              <div className="flex items-center justify-between pb-3 border-b border-zinc-100 dark:border-zinc-800">
+        <div>
+          {!isVisualMedium ? (
+            /* =================== NOVEL MARKDOWN STUDIO =================== */
+            <div className="space-y-6">
+              {/* Studio Header Bar */}
+              <div className="p-5 rounded-3xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
-                  <h3 className="text-xl font-black text-zinc-900 dark:text-zinc-100">
-                    03 Ingest Content & Process Pages
-                  </h3>
+                  <div className="flex items-center gap-2">
+                    <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-indigo-500/10 text-indigo-500 border border-indigo-500/30 uppercase tracking-wider">
+                      Novel Studio
+                    </span>
+                    <h3 className="text-lg font-black text-zinc-900 dark:text-zinc-100">
+                      03 Markdown Manuscript Editor & Live Reader Preview
+                    </h3>
+                  </div>
                   <p className="text-xs text-zinc-500 mt-0.5">
-                    Upload images, import PDF document, or archive bundle
+                    Write in standard markdown prose. Real-time typography rendering, word count, and mobile/desktop preview.
                   </p>
                 </div>
 
-                {/* Upload Method Switcher */}
-                <div className="flex items-center gap-1 bg-zinc-100 dark:bg-zinc-800 p-1 rounded-xl">
+                {/* View Mode Switcher */}
+                <div className="flex items-center gap-1.5 bg-zinc-100 dark:bg-zinc-800 p-1 rounded-2xl">
                   <button
                     type="button"
-                    onClick={() => setUploadTab("pdf")}
-                    className={`px-3 py-1 rounded-lg text-xs font-bold transition flex items-center gap-1 ${
-                      uploadTab === "pdf"
+                    onClick={() => setNovelViewMode("split")}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 ${
+                      novelViewMode === "split"
                         ? "bg-indigo-600 text-white shadow-xs"
-                        : "text-zinc-600 dark:text-zinc-400"
+                        : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white"
                     }`}
                   >
-                    <FileType className="w-3.5 h-3.5" />
-                    <span>PDF Import</span>
+                    <Split className="w-3.5 h-3.5" />
+                    <span>Split Studio</span>
                   </button>
 
                   <button
                     type="button"
-                    onClick={() => setUploadTab("images")}
-                    className={`px-3 py-1 rounded-lg text-xs font-bold transition flex items-center gap-1 ${
-                      uploadTab === "images"
+                    onClick={() => setNovelViewMode("edit")}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 ${
+                      novelViewMode === "edit"
                         ? "bg-indigo-600 text-white shadow-xs"
-                        : "text-zinc-600 dark:text-zinc-400"
+                        : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white"
                     }`}
                   >
-                    <ImageIcon className="w-3.5 h-3.5" />
-                    <span>Bulk Images</span>
+                    <PenTool className="w-3.5 h-3.5" />
+                    <span>Editor Only</span>
                   </button>
 
                   <button
                     type="button"
-                    onClick={() => setUploadTab("zip")}
-                    className={`px-3 py-1 rounded-lg text-xs font-bold transition flex items-center gap-1 ${
-                      uploadTab === "zip"
+                    onClick={() => setNovelViewMode("preview")}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 ${
+                      novelViewMode === "preview"
                         ? "bg-indigo-600 text-white shadow-xs"
-                        : "text-zinc-600 dark:text-zinc-400"
+                        : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white"
                     }`}
                   >
-                    <FileArchive className="w-3.5 h-3.5" />
-                    <span>ZIP Archive</span>
+                    <Eye className="w-3.5 h-3.5" />
+                    <span>Reader Preview</span>
                   </button>
                 </div>
               </div>
 
-              {/* Episode Title & Number */}
+              {/* Chapter Meta */}
               <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
                 <div>
                   <label className="block text-xs font-bold text-zinc-700 dark:text-zinc-300 mb-1">
-                    Chapter / Ep #
+                    Chapter #
                   </label>
                   <input
                     type="number"
                     min={1}
-                    value={episodeNumber}
-                    onChange={(e) => setEpisodeNumber(parseInt(e.target.value, 10))}
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 text-xs font-bold text-zinc-900 dark:text-zinc-100 focus:outline-none focus:border-indigo-500"
+                    value={chapterNumber}
+                    onChange={(e) => setChapterNumber(parseInt(e.target.value, 10) || 1)}
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-xs font-bold text-zinc-900 dark:text-zinc-100 focus:outline-none focus:border-indigo-500"
                   />
                 </div>
 
@@ -1139,295 +1225,555 @@ export default function CreatorUploadWizardPage() {
                   <input
                     type="text"
                     required
-                    value={episodeTitle}
-                    onChange={(e) => setEpisodeTitle(e.target.value)}
-                    placeholder="e.g. Chapter 1: The Shrine in the Neon Rain"
-                    className="w-full px-4 py-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 text-xs sm:text-sm font-semibold text-zinc-900 dark:text-zinc-100 focus:outline-none focus:border-indigo-500"
+                    value={chapterTitle}
+                    onChange={(e) => setChapterTitle(e.target.value)}
+                    placeholder="e.g. Chapter 1: The Broken Loom of Orion"
+                    className="w-full px-4 py-2.5 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-xs sm:text-sm font-semibold text-zinc-900 dark:text-zinc-100 focus:outline-none focus:border-indigo-500"
                   />
                 </div>
               </div>
 
-              {/* PDF Ingestion Area */}
-              {uploadTab === "pdf" && (
-                <div className="space-y-4">
-                  <input
-                    type="file"
-                    ref={pdfInputRef}
-                    onChange={(e) => {
-                      const file = e.target.files?.[0];
-                      if (file) handlePdfUpload(file);
-                    }}
-                    accept="application/pdf"
-                    className="hidden"
-                  />
+              {/* Workspace Grid */}
+              <div
+                className={`grid gap-6 items-start ${
+                  novelViewMode === "split"
+                    ? "grid-cols-1 lg:grid-cols-12"
+                    : "grid-cols-1"
+                }`}
+              >
+                {/* Editor Column */}
+                {(novelViewMode === "split" || novelViewMode === "edit") && (
+                  <div className={novelViewMode === "split" ? "lg:col-span-6 space-y-3" : "w-full space-y-3"}>
+                    {/* Markdown Formatting Toolbar */}
+                    <div className="p-2.5 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-sm flex flex-wrap items-center gap-1.5 text-zinc-700 dark:text-zinc-300">
+                      <button
+                        type="button"
+                        onClick={() => insertMarkdown("**", "**", "bold text")}
+                        className="p-2 rounded-xl hover:bg-zinc-100 dark:hover:bg-zinc-800 font-bold text-xs flex items-center gap-1 transition"
+                        title="Bold (**text**)"
+                      >
+                        <Bold className="w-3.5 h-3.5" />
+                      </button>
 
-                  <div className="p-8 rounded-3xl border-2 border-dashed border-indigo-500/50 bg-indigo-950/10 text-center space-y-4">
-                    <div className="w-14 h-14 rounded-2xl bg-indigo-600/20 text-indigo-400 flex items-center justify-center mx-auto ring-4 ring-indigo-500/20">
-                      {isProcessingPdf ? (
-                        <Loader2 className="w-7 h-7 animate-spin" />
-                      ) : (
-                        <FileType className="w-7 h-7" />
-                      )}
-                    </div>
+                      <button
+                        type="button"
+                        onClick={() => insertMarkdown("*", "*", "italic text")}
+                        className="p-2 rounded-xl hover:bg-zinc-100 dark:hover:bg-zinc-800 italic text-xs flex items-center gap-1 transition"
+                        title="Italic (*text*)"
+                      >
+                        <Italic className="w-3.5 h-3.5" />
+                      </button>
 
-                    <div>
-                      <h4 className="font-black text-sm text-zinc-900 dark:text-zinc-100">
-                        {isProcessingPdf ? "Processing PDF Document..." : "Upload Manga / Comic / Book PDF"}
-                      </h4>
-                      <p className="text-xs text-zinc-500 max-w-md mx-auto mt-1">
-                        {isProcessingPdf
-                          ? "Extracting high-resolution pages and generating web reader page stream..."
-                          : "Yumora processes PDF files into interactive web reader pages (PDF → Pages → Online Reader)."}
-                      </p>
-                    </div>
+                      <div className="w-px h-5 bg-zinc-200 dark:bg-zinc-800 mx-1" />
 
-                    {isProcessingPdf ? (
-                      <div className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-900/40 text-indigo-300 text-xs font-bold animate-pulse">
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                        <span>Rendering Page Layers & Optimizing for Web Reader...</span>
+                      <button
+                        type="button"
+                        onClick={() => insertMarkdown("# ", "", "Heading 1")}
+                        className="p-2 rounded-xl hover:bg-zinc-100 dark:hover:bg-zinc-800 text-xs flex items-center gap-1 transition"
+                        title="Heading 1 (# )"
+                      >
+                        <Heading1 className="w-3.5 h-3.5" />
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => insertMarkdown("## ", "", "Heading 2")}
+                        className="p-2 rounded-xl hover:bg-zinc-100 dark:hover:bg-zinc-800 text-xs flex items-center gap-1 transition"
+                        title="Heading 2 (## )"
+                      >
+                        <Heading2 className="w-3.5 h-3.5" />
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => insertMarkdown("> ", "", "Memorable quote or thought")}
+                        className="p-2 rounded-xl hover:bg-zinc-100 dark:hover:bg-zinc-800 text-xs flex items-center gap-1 transition"
+                        title="Blockquote (> )"
+                      >
+                        <Quote className="w-3.5 h-3.5" />
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => insertMarkdown('"', '"', "Spoken dialogue")}
+                        className="px-2.5 py-1.5 rounded-xl hover:bg-zinc-100 dark:hover:bg-zinc-800 font-mono text-xs transition"
+                        title="Dialogue Quote"
+                      >
+                        &ldquo;Quote&rdquo;
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => insertMarkdown("\n\n---\n\n", "")}
+                        className="p-2 rounded-xl hover:bg-zinc-100 dark:hover:bg-zinc-800 text-xs flex items-center gap-1 transition"
+                        title="Scene Divider (---)"
+                      >
+                        <Minus className="w-3.5 h-3.5" />
+                        <span className="text-[10px]">Divider</span>
+                      </button>
+
+                      <div className="ml-auto flex items-center gap-2 text-[11px] font-bold text-zinc-400 pr-2">
+                        <span>{wordCount.toLocaleString()} words</span>
+                        <span>•</span>
+                        <span>{readTime} min read</span>
                       </div>
-                    ) : (
-                      <div className="flex flex-wrap gap-2 justify-center">
-                        <button
-                          type="button"
-                          onClick={() => pdfInputRef.current?.click()}
-                          className="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs shadow-md transition flex items-center gap-2"
-                        >
-                          <Upload className="w-4 h-4" />
-                          <span>Select PDF File</span>
-                        </button>
-
-                        <button
-                          type="button"
-                          onClick={() =>
-                            handlePdfUpload(
-                              new File(["dummy"], "Manga_Chapter_01.pdf", { type: "application/pdf" })
-                            )
-                          }
-                          className="px-4 py-2.5 rounded-xl bg-zinc-200 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 font-bold text-xs hover:bg-zinc-300 transition"
-                        >
-                          Simulate &apos;Manga_Chapter_01.pdf&apos; Ingestion
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {/* Bulk Images Upload Tab */}
-              {uploadTab === "images" && (
-                <div className="space-y-4">
-                  <input
-                    type="file"
-                    multiple
-                    ref={imagesBulkInputRef}
-                    onChange={(e) => {
-                      const files = e.target.files;
-                      if (!files) return;
-                      Array.from(files).forEach((file, idx) => {
-                        const reader = new FileReader();
-                        reader.onload = () => {
-                          if (reader.result) {
-                            setPages((prev) => [
-                              ...prev,
-                              { id: `page-${Date.now()}-${idx}`, name: file.name, url: reader.result as string },
-                            ]);
-                          }
-                        };
-                        reader.readAsDataURL(file);
-                      });
-                    }}
-                    accept="image/jpeg,image/png,image/webp"
-                    className="hidden"
-                  />
-
-                  <div className="p-8 rounded-3xl border-2 border-dashed border-zinc-200 dark:border-zinc-800 text-center space-y-3">
-                    <div className="w-12 h-12 rounded-2xl bg-indigo-600/10 text-indigo-500 flex items-center justify-center mx-auto">
-                      <ImageIcon className="w-6 h-6" />
-                    </div>
-                    <div>
-                      <h4 className="font-extrabold text-sm text-zinc-900 dark:text-zinc-100">
-                        Upload Individual Page Images
-                      </h4>
-                      <p className="text-xs text-zinc-500 mt-0.5">
-                        Bulk select JPG, PNG, or WebP images. They will be auto-ordered in sequence.
-                      </p>
                     </div>
 
-                    <button
-                      type="button"
-                      onClick={() => imagesBulkInputRef.current?.click()}
-                      className="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs shadow-md transition inline-flex items-center gap-1.5"
-                    >
-                      <Plus className="w-4 h-4" />
-                      <span>+ Select Multiple Images</span>
-                    </button>
+                    {/* Markdown Manuscript Editor */}
+                    <div className="relative rounded-3xl bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 overflow-hidden shadow-md">
+                      <textarea
+                        ref={markdownTextareaRef}
+                        rows={22}
+                        value={chapterContent}
+                        onChange={(e) => setChapterContent(e.target.value)}
+                        placeholder="Write your story manuscript in Markdown..."
+                        className="w-full p-6 bg-transparent text-sm sm:text-base font-mono leading-relaxed text-zinc-900 dark:text-zinc-100 focus:outline-none resize-y min-h-[480px]"
+                      />
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
 
-              {/* ZIP Archive Tab */}
-              {uploadTab === "zip" && (
-                <div className="p-8 rounded-3xl border-2 border-dashed border-zinc-200 dark:border-zinc-800 text-center space-y-3">
-                  <div className="w-12 h-12 rounded-2xl bg-violet-600/10 text-violet-500 flex items-center justify-center mx-auto">
-                    <FileArchive className="w-6 h-6" />
-                  </div>
-                  <div>
-                    <h4 className="font-extrabold text-sm text-zinc-900 dark:text-zinc-100">
-                      Upload ZIP Archive
-                    </h4>
-                    <p className="text-xs text-zinc-500 mt-0.5">
-                      ZIP file containing numbered images (e.g. `001.png`, `002.png`, etc.)
-                    </p>
-                  </div>
+                {/* Preview Column */}
+                {(novelViewMode === "split" || novelViewMode === "preview") && (
+                  <div className={novelViewMode === "split" ? "lg:col-span-6 space-y-3" : "w-full space-y-3"}>
+                    {/* Typography & Device Controls */}
+                    <div className="p-2.5 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-sm flex flex-wrap items-center justify-between gap-3 text-xs">
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold text-zinc-400">Typography:</span>
+                        <div className="flex items-center gap-1 bg-zinc-100 dark:bg-zinc-800 p-0.5 rounded-xl">
+                          <button
+                            type="button"
+                            onClick={() => setProseFont("serif")}
+                            className={`px-2.5 py-1 rounded-lg font-serif font-bold ${
+                              proseFont === "serif" ? "bg-indigo-600 text-white" : "text-zinc-400"
+                            }`}
+                          >
+                            Serif
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setProseFont("sans")}
+                            className={`px-2.5 py-1 rounded-lg font-sans font-bold ${
+                              proseFont === "sans" ? "bg-indigo-600 text-white" : "text-zinc-400"
+                            }`}
+                          >
+                            Sans
+                          </button>
+                        </div>
 
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setIsProcessingPdf(true);
-                      setTimeout(() => {
-                        setIsProcessingPdf(false);
-                        setPages(SAMPLE_EXTRACTED_PAGES);
-                      }, 1200);
-                    }}
-                    className="px-5 py-2.5 rounded-xl bg-violet-600 hover:bg-violet-500 text-white font-bold text-xs shadow-md transition inline-flex items-center gap-1.5"
-                  >
-                    <Upload className="w-4 h-4" />
-                    <span>Upload & Unpack ZIP</span>
-                  </button>
-                </div>
-              )}
-
-              {/* Extracted / Reorderable Pages List */}
-              <div className="space-y-3 pt-2">
-                <div className="flex items-center justify-between text-xs text-zinc-500">
-                  <span className="font-bold text-zinc-300">
-                    Extracted Pages ({pages.length} Pages Ready)
-                  </span>
-                  <span>Use arrows to reorder pages</span>
-                </div>
-
-                <div className="space-y-2 max-h-[380px] overflow-y-auto pr-1">
-                  {pages.map((p, idx) => (
-                    <div
-                      key={p.id}
-                      className="p-3 rounded-2xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 flex items-center justify-between gap-3 group"
-                    >
-                      <div className="flex items-center gap-3 min-w-0">
-                        <span className="w-6 text-center font-mono font-bold text-xs text-zinc-400">
-                          {String(idx + 1).padStart(2, "0")}
-                        </span>
-                        <img
-                          src={p.url}
-                          alt={p.name}
-                          className="w-12 h-16 object-cover rounded-lg border border-zinc-700 flex-shrink-0"
-                        />
-                        <div className="min-w-0">
-                          <p className="text-xs font-bold text-zinc-900 dark:text-zinc-100 truncate">
-                            {p.name}
-                          </p>
-                          <p className="text-[10px] text-zinc-400">
-                            Page {idx + 1} of {pages.length} • High Resolution Web Reader Page
-                          </p>
+                        <div className="flex items-center gap-1 bg-zinc-100 dark:bg-zinc-800 p-0.5 rounded-xl">
+                          {[16, 18, 20].map((sz) => (
+                            <button
+                              key={sz}
+                              type="button"
+                              onClick={() => setProseFontSize(sz as typeof proseFontSize)}
+                              className={`px-2 py-1 rounded-lg font-bold ${
+                                proseFontSize === sz ? "bg-indigo-600 text-white" : "text-zinc-400"
+                              }`}
+                            >
+                              {sz}px
+                            </button>
+                          ))}
                         </div>
                       </div>
 
-                      <div className="flex items-center gap-1">
+                      <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-1 bg-zinc-100 dark:bg-zinc-800 p-0.5 rounded-xl">
+                          <button
+                            type="button"
+                            onClick={() => setPreviewTheme("dark")}
+                            className={`px-2 py-1 rounded-lg ${previewTheme === "dark" ? "bg-zinc-950 text-white font-bold" : "text-zinc-400"}`}
+                          >
+                            Dark
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setPreviewTheme("sepia")}
+                            className={`px-2 py-1 rounded-lg ${previewTheme === "sepia" ? "bg-[#fbf0d9] text-zinc-900 font-bold" : "text-zinc-400"}`}
+                          >
+                            Sepia
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setPreviewTheme("light")}
+                            className={`px-2 py-1 rounded-lg ${previewTheme === "light" ? "bg-white text-zinc-900 font-bold" : "text-zinc-400"}`}
+                          >
+                            Light
+                          </button>
+                        </div>
+
+                        <div className="flex items-center gap-1">
+                          <button
+                            type="button"
+                            onClick={() => setPreviewDevice("mobile")}
+                            className={`p-1.5 rounded-lg text-xs font-bold transition ${
+                              previewDevice === "mobile" ? "bg-indigo-600 text-white" : "bg-zinc-100 dark:bg-zinc-800 text-zinc-500"
+                            }`}
+                            title="Mobile Preview Frame"
+                          >
+                            <Smartphone className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setPreviewDevice("desktop")}
+                            className={`p-1.5 rounded-lg text-xs font-bold transition ${
+                              previewDevice === "desktop" ? "bg-indigo-600 text-white" : "bg-zinc-100 dark:bg-zinc-800 text-zinc-500"
+                            }`}
+                            title="Desktop Preview Frame"
+                          >
+                            <Monitor className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Live Reader Canvas Frame */}
+                    <div
+                      className={`mx-auto rounded-3xl border shadow-2xl transition-all overflow-hidden ${
+                        previewDevice === "mobile" ? "max-w-[360px]" : "w-full"
+                      } ${
+                        previewTheme === "dark"
+                          ? "bg-zinc-950 border-zinc-800 text-zinc-100"
+                          : previewTheme === "sepia"
+                          ? "bg-[#fbf0d9] border-[#e8d7b3] text-[#433422]"
+                          : "bg-white border-zinc-200 text-zinc-900"
+                      }`}
+                    >
+                      {/* Reader Header Simulation */}
+                      <div className="p-4 border-b border-black/10 dark:border-white/10 flex items-center justify-between text-xs opacity-70">
+                        <span className="font-bold truncate max-w-[200px]">{title}</span>
+                        <span>Ch. {chapterNumber}</span>
+                      </div>
+
+                      {/* Rendered Markdown Article */}
+                      <article
+                        className={`p-6 sm:p-8 max-h-[560px] overflow-y-auto space-y-4 ${
+                          proseFont === "serif"
+                            ? "font-serif"
+                            : proseFont === "mono"
+                            ? "font-mono"
+                            : "font-sans"
+                        }`}
+                        style={{ fontSize: `${proseFontSize}px` }}
+                      >
+                        {renderMarkdownPreview(chapterContent)}
+                      </article>
+
+                      {/* Reader Footer Simulation */}
+                      <div className="p-4 border-t border-black/10 dark:border-white/10 text-center text-xs opacity-60">
+                        <span>End of Chapter {chapterNumber} • {readTime} min read</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          ) : (
+            /* =================== COMIC / MANGA PAGE INGESTION =================== */
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+              <div className="lg:col-span-7 space-y-6">
+                <div className="p-6 sm:p-8 rounded-3xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 space-y-6 shadow-sm">
+                  <div className="flex items-center justify-between pb-3 border-b border-zinc-100 dark:border-zinc-800">
+                    <div>
+                      <h3 className="text-xl font-black text-zinc-900 dark:text-zinc-100">
+                        03 Ingest Content & Process Pages
+                      </h3>
+                      <p className="text-xs text-zinc-500 mt-0.5">
+                        Upload images (Max 15MB/page) with auto-WebP compression
+                      </p>
+                    </div>
+
+                    <div className="flex items-center gap-1 bg-zinc-100 dark:bg-zinc-800 p-1 rounded-xl">
+                      <button
+                        type="button"
+                        onClick={() => setUploadTab("images")}
+                        className={`px-3 py-1 rounded-lg text-xs font-bold transition flex items-center gap-1 ${
+                          uploadTab === "images" ? "bg-indigo-600 text-white" : "text-zinc-600 dark:text-zinc-400"
+                        }`}
+                      >
+                        <ImageIcon className="w-3.5 h-3.5" />
+                        <span>Bulk Images</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setUploadTab("pdf")}
+                        className={`px-3 py-1 rounded-lg text-xs font-bold transition flex items-center gap-1 ${
+                          uploadTab === "pdf" ? "bg-indigo-600 text-white" : "text-zinc-600 dark:text-zinc-400"
+                        }`}
+                      >
+                        <FileType className="w-3.5 h-3.5" />
+                        <span>PDF Import</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setUploadTab("zip")}
+                        className={`px-3 py-1 rounded-lg text-xs font-bold transition flex items-center gap-1 ${
+                          uploadTab === "zip" ? "bg-indigo-600 text-white" : "text-zinc-600 dark:text-zinc-400"
+                        }`}
+                      >
+                        <FileArchive className="w-3.5 h-3.5" />
+                        <span>ZIP Archive</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Chapter Details */}
+                  <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
+                    <div>
+                      <label className="block text-xs font-bold text-zinc-700 dark:text-zinc-300 mb-1">
+                        Chapter / Ep #
+                      </label>
+                      <input
+                        type="number"
+                        min={1}
+                        value={chapterNumber}
+                        onChange={(e) => setChapterNumber(parseInt(e.target.value, 10) || 1)}
+                        className="w-full px-3.5 py-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 text-xs font-bold text-zinc-900 dark:text-zinc-100 focus:outline-none focus:border-indigo-500"
+                      />
+                    </div>
+
+                    <div className="sm:col-span-3">
+                      <label className="block text-xs font-bold text-zinc-700 dark:text-zinc-300 mb-1">
+                        Chapter Title *
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        value={chapterTitle}
+                        onChange={(e) => setChapterTitle(e.target.value)}
+                        placeholder="e.g. Chapter 1: Awakening Surge"
+                        className="w-full px-4 py-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 text-xs sm:text-sm font-semibold text-zinc-900 dark:text-zinc-100 focus:outline-none focus:border-indigo-500"
+                      />
+                    </div>
+                  </div>
+
+                  {pagesError && (
+                    <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs flex items-center gap-2">
+                      <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                      <span>{pagesError}</span>
+                    </div>
+                  )}
+
+                  {/* Bulk Images Ingestion Tab */}
+                  {uploadTab === "images" && (
+                    <div className="space-y-4">
+                      <input
+                        type="file"
+                        multiple
+                        ref={imagesBulkInputRef}
+                        onChange={(e) => {
+                          if (e.target.files) handleBulkImagesUpload(e.target.files);
+                        }}
+                        accept="image/jpeg,image/png,image/webp"
+                        className="hidden"
+                      />
+
+                      <div className="p-8 rounded-3xl border-2 border-dashed border-zinc-200 dark:border-zinc-800 text-center space-y-3">
+                        <div className="w-12 h-12 rounded-2xl bg-indigo-600/10 text-indigo-500 flex items-center justify-center mx-auto">
+                          {isCompressingPages ? (
+                            <Loader2 className="w-6 h-6 animate-spin text-indigo-400" />
+                          ) : (
+                            <ImageIcon className="w-6 h-6" />
+                          )}
+                        </div>
+                        <div>
+                          <h4 className="font-extrabold text-sm text-zinc-900 dark:text-zinc-100">
+                            {isCompressingPages ? "Compressing Pages to WebP..." : "Upload Individual Page Images"}
+                          </h4>
+                          <p className="text-xs text-zinc-500 mt-0.5">
+                            {pageCompressionMessage || "Bulk select JPG, PNG, or WebP images (Max 15MB/page). Auto-compressed in browser."}
+                          </p>
+                        </div>
+
                         <button
                           type="button"
-                          disabled={idx === 0}
-                          onClick={() => movePageUp(idx)}
-                          className="p-1.5 rounded-lg bg-zinc-200 dark:bg-zinc-800 hover:bg-zinc-300 disabled:opacity-20 text-zinc-700 dark:text-zinc-300 transition"
-                          title="Move Up"
+                          disabled={isCompressingPages}
+                          onClick={() => imagesBulkInputRef.current?.click()}
+                          className="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white font-bold text-xs shadow-md transition inline-flex items-center gap-1.5"
                         >
-                          <ArrowUp className="w-3.5 h-3.5" />
-                        </button>
-                        <button
-                          type="button"
-                          disabled={idx === pages.length - 1}
-                          onClick={() => movePageDown(idx)}
-                          className="p-1.5 rounded-lg bg-zinc-200 dark:bg-zinc-800 hover:bg-zinc-300 disabled:opacity-20 text-zinc-700 dark:text-zinc-300 transition"
-                          title="Move Down"
-                        >
-                          <ArrowDown className="w-3.5 h-3.5" />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => removePage(idx)}
-                          className="p-1.5 rounded-lg hover:bg-rose-950/40 text-zinc-400 hover:text-rose-500 transition ml-1"
-                          title="Delete Page"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
+                          <Plus className="w-4 h-4" />
+                          <span>+ Select Multiple Page Images</span>
                         </button>
                       </div>
                     </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Right Column: Live Web Reader Canvas Simulation (5 Cols) */}
-          <div className="lg:col-span-5 sticky top-20 space-y-4">
-            <div className="p-6 rounded-3xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-xl space-y-4">
-              <div className="flex items-center justify-between pb-2 border-b border-zinc-100 dark:border-zinc-800">
-                <span className="text-xs font-bold uppercase tracking-wider text-indigo-500 flex items-center gap-1.5">
-                  <Eye className="w-3.5 h-3.5" /> Yumora Reader Ingestion Preview
-                </span>
-
-                <div className="flex items-center gap-1">
-                  <button
-                    type="button"
-                    onClick={() => setPreviewDevice("mobile")}
-                    className={`p-1.5 rounded-lg text-xs font-bold transition ${
-                      previewDevice === "mobile" ? "bg-indigo-600 text-white" : "bg-zinc-100 dark:bg-zinc-800 text-zinc-500"
-                    }`}
-                  >
-                    <Smartphone className="w-3.5 h-3.5" />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setPreviewDevice("desktop")}
-                    className={`p-1.5 rounded-lg text-xs font-bold transition ${
-                      previewDevice === "desktop" ? "bg-indigo-600 text-white" : "bg-zinc-100 dark:bg-zinc-800 text-zinc-500"
-                    }`}
-                  >
-                    <Monitor className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-              </div>
-
-              {/* Reader Simulation */}
-              <div
-                className={`mx-auto max-h-[550px] overflow-y-auto bg-black rounded-2xl border border-zinc-800 shadow-2xl p-0 transition-all ${
-                  previewDevice === "mobile" ? "max-w-[320px]" : "w-full"
-                }`}
-              >
-                <div className="p-4 text-center text-white bg-zinc-950 border-b border-zinc-800">
-                  <p className="text-[10px] font-bold text-indigo-400 uppercase tracking-widest">{title}</p>
-                  <h4 className="text-xs font-extrabold">{episodeTitle}</h4>
-                </div>
-
-                <div className="flex flex-col">
-                  {pages.map((p) => (
-                    <div key={p.id} className="relative">
-                      <img src={p.url} alt={p.name} className="w-full object-cover select-none block" />
-                    </div>
-                  ))}
-                </div>
-
-                <div className="p-6 text-center text-white bg-zinc-950 border-t border-zinc-800 space-y-2">
-                  <Sparkles className="w-5 h-5 text-indigo-400 mx-auto" />
-                  <p className="text-xs font-bold">End of Chapter {episodeNumber}</p>
-                  {allowPdfDownload && (
-                    <p className="text-[10px] text-emerald-400 flex items-center justify-center gap-1">
-                      <Download className="w-3 h-3" /> Offline PDF Download Enabled
-                    </p>
                   )}
+
+                  {/* PDF Ingestion Tab */}
+                  {uploadTab === "pdf" && (
+                    <div className="space-y-4">
+                      <input
+                        type="file"
+                        ref={pdfInputRef}
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) handlePdfUpload(file);
+                        }}
+                        accept="application/pdf"
+                        className="hidden"
+                      />
+
+                      <div className="p-8 rounded-3xl border-2 border-dashed border-indigo-500/50 bg-indigo-950/10 text-center space-y-4">
+                        <div className="w-14 h-14 rounded-2xl bg-indigo-600/20 text-indigo-400 flex items-center justify-center mx-auto ring-4 ring-indigo-500/20">
+                          {isProcessingPdf ? (
+                            <Loader2 className="w-7 h-7 animate-spin" />
+                          ) : (
+                            <FileType className="w-7 h-7" />
+                          )}
+                        </div>
+
+                        <div>
+                          <h4 className="font-black text-sm text-zinc-900 dark:text-zinc-100">
+                            {isProcessingPdf ? "Processing PDF Document..." : "Upload Manga / Comic / Book PDF"}
+                          </h4>
+                          <p className="text-xs text-zinc-500 max-w-md mx-auto mt-1">
+                            {isProcessingPdf
+                              ? "Extracting high-resolution pages and generating WebP stream..."
+                              : "Yumora processes PDF files into interactive web reader pages."}
+                          </p>
+                        </div>
+
+                        <div className="flex flex-wrap gap-2 justify-center">
+                          <button
+                            type="button"
+                            onClick={() => pdfInputRef.current?.click()}
+                            className="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs shadow-md transition flex items-center gap-2"
+                          >
+                            <Upload className="w-4 h-4" />
+                            <span>Select PDF File</span>
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Extracted Pages List */}
+                  <div className="space-y-3 pt-2">
+                    <div className="flex items-center justify-between text-xs text-zinc-500">
+                      <span className="font-bold text-zinc-300">
+                        Extracted Pages ({pages.length} Pages Ready)
+                      </span>
+                      <span>Use arrows to reorder pages</span>
+                    </div>
+
+                    <div className="space-y-2 max-h-[380px] overflow-y-auto pr-1">
+                      {pages.map((p, idx) => (
+                        <div
+                          key={p.id}
+                          className="p-3 rounded-2xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 flex items-center justify-between gap-3 group"
+                        >
+                          <div className="flex items-center gap-3 min-w-0">
+                            <span className="w-6 text-center font-mono font-bold text-xs text-zinc-400">
+                              {String(idx + 1).padStart(2, "0")}
+                            </span>
+                            <img
+                              src={p.url}
+                              alt={p.name}
+                              className="w-12 h-16 object-cover rounded-lg border border-zinc-700 flex-shrink-0"
+                            />
+                            <div className="min-w-0">
+                              <p className="text-xs font-bold text-zinc-900 dark:text-zinc-100 truncate">
+                                {p.name}
+                              </p>
+                              <p className="text-[10px] text-indigo-400">
+                                {p.size || "WebP Optimized Page"}
+                              </p>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-1">
+                            <button
+                              type="button"
+                              disabled={idx === 0}
+                              onClick={() => movePageUp(idx)}
+                              className="p-1.5 rounded-lg bg-zinc-200 dark:bg-zinc-800 hover:bg-zinc-300 disabled:opacity-20 text-zinc-700 dark:text-zinc-300 transition"
+                              title="Move Up"
+                            >
+                              <ArrowUp className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              type="button"
+                              disabled={idx === pages.length - 1}
+                              onClick={() => movePageDown(idx)}
+                              className="p-1.5 rounded-lg bg-zinc-200 dark:bg-zinc-800 hover:bg-zinc-300 disabled:opacity-20 text-zinc-700 dark:text-zinc-300 transition"
+                              title="Move Down"
+                            >
+                              <ArrowDown className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => removePage(idx)}
+                              className="p-1.5 rounded-lg hover:bg-rose-950/40 text-zinc-400 hover:text-rose-500 transition ml-1"
+                              title="Delete Page"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Right Column: Comic Web Reader Ingestion Canvas Preview */}
+              <div className="lg:col-span-5 sticky top-20 space-y-4">
+                <div className="p-6 rounded-3xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-xl space-y-4">
+                  <div className="flex items-center justify-between pb-2 border-b border-zinc-100 dark:border-zinc-800">
+                    <span className="text-xs font-bold uppercase tracking-wider text-indigo-500 flex items-center gap-1.5">
+                      <Eye className="w-3.5 h-3.5" /> Comic Reader Ingestion Preview
+                    </span>
+
+                    <div className="flex items-center gap-1">
+                      <button
+                        type="button"
+                        onClick={() => setPreviewDevice("mobile")}
+                        className={`p-1.5 rounded-lg text-xs font-bold transition ${
+                          previewDevice === "mobile" ? "bg-indigo-600 text-white" : "bg-zinc-100 dark:bg-zinc-800 text-zinc-500"
+                        }`}
+                      >
+                        <Smartphone className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setPreviewDevice("desktop")}
+                        className={`p-1.5 rounded-lg text-xs font-bold transition ${
+                          previewDevice === "desktop" ? "bg-indigo-600 text-white" : "bg-zinc-100 dark:bg-zinc-800 text-zinc-500"
+                        }`}
+                      >
+                        <Monitor className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </div>
+
+                  <div
+                    className={`mx-auto max-h-[520px] overflow-y-auto bg-black rounded-2xl border border-zinc-800 shadow-2xl p-0 transition-all ${
+                      previewDevice === "mobile" ? "max-w-[320px]" : "w-full"
+                    }`}
+                  >
+                    <div className="p-4 text-center text-white bg-zinc-950 border-b border-zinc-800">
+                      <p className="text-[10px] font-bold text-indigo-400 uppercase tracking-widest">{title}</p>
+                      <h4 className="text-xs font-extrabold">{chapterTitle}</h4>
+                    </div>
+
+                    <div className="flex flex-col">
+                      {pages.map((p) => (
+                        <div key={p.id} className="relative">
+                          <img src={p.url} alt={p.name} className="w-full object-cover select-none block" />
+                        </div>
+                      ))}
+                    </div>
+
+                    <div className="p-6 text-center text-white bg-zinc-950 border-t border-zinc-800 space-y-2">
+                      <Sparkles className="w-5 h-5 text-indigo-400 mx-auto" />
+                      <p className="text-xs font-bold">End of Chapter {chapterNumber}</p>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
+          )}
         </div>
       )}
 
@@ -1436,13 +1782,13 @@ export default function CreatorUploadWizardPage() {
         <div className="p-6 sm:p-8 rounded-3xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 space-y-6 shadow-sm">
           <div>
             <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-400 uppercase tracking-wider">
-              Verification Passed
+              Ready to Publish
             </span>
             <h3 className="text-xl font-black text-zinc-900 dark:text-zinc-100 mt-1">
               04 Review & Launch Story
             </h3>
             <p className="text-xs text-zinc-500">
-              Confirm your metadata, reading format, and page sequence before publishing
+              Confirm your metadata, reading format, and chapter details before releasing to the community
             </p>
           </div>
 
@@ -1463,7 +1809,7 @@ export default function CreatorUploadWizardPage() {
                   </span>
                 </div>
                 <h3 className="text-xl font-black text-white mt-1">{title}</h3>
-                <p className="text-xs text-zinc-400">By {user?.name || "Mei Lin Takahashi"}</p>
+                <p className="text-xs text-zinc-400">By {user?.name || "Aria Thorne"}</p>
                 <p className="text-xs text-zinc-300 line-clamp-2 mt-2 leading-relaxed">
                   {description}
                 </p>
@@ -1473,15 +1819,17 @@ export default function CreatorUploadWizardPage() {
             <div className="pt-4 border-t border-zinc-800 grid grid-cols-3 gap-2 text-center text-xs">
               <div className="p-2 rounded-xl bg-zinc-900 border border-zinc-800">
                 <p className="text-[10px] text-zinc-400">Chapter</p>
-                <p className="font-bold text-white mt-0.5">Chapter {episodeNumber}</p>
+                <p className="font-bold text-white mt-0.5">Chapter {chapterNumber}</p>
               </div>
               <div className="p-2 rounded-xl bg-zinc-900 border border-zinc-800">
-                <p className="text-[10px] text-zinc-400">Pages Extracted</p>
-                <p className="font-bold text-white mt-0.5">{pages.length} Pages</p>
+                <p className="text-[10px] text-zinc-400">{isVisualMedium ? "Pages" : "Word Count"}</p>
+                <p className="font-bold text-white mt-0.5">
+                  {isVisualMedium ? `${pages.length} Pages` : `${wordCount.toLocaleString()} words`}
+                </p>
               </div>
               <div className="p-2 rounded-xl bg-zinc-900 border border-zinc-800">
-                <p className="text-[10px] text-zinc-400">Reading Mode</p>
-                <p className="font-bold text-white mt-0.5">Universal Web</p>
+                <p className="text-[10px] text-zinc-400">Est. Read Time</p>
+                <p className="font-bold text-white mt-0.5">{readTime} min</p>
               </div>
             </div>
           </div>
@@ -1506,7 +1854,7 @@ export default function CreatorUploadWizardPage() {
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
             <Link
-              href={`/comics/${slugify(title)}`}
+              href={isVisualMedium ? `/comics/${slugify(title)}` : `/novels/${slugify(title)}`}
               className="w-full sm:w-auto px-6 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs shadow-md transition"
             >
               Open Universal Web Reader
@@ -1593,7 +1941,7 @@ export default function CreatorUploadWizardPage() {
                 </div>
                 <div>
                   <h3 className="font-bold text-sm">AI Creator Assistant</h3>
-                  <p className="text-[11px] text-zinc-400">Smart assistance for visual storytellers</p>
+                  <p className="text-[11px] text-zinc-400">Smart premise generation for creators</p>
                 </div>
               </div>
               <button onClick={() => setIsAiModalOpen(false)} className="text-zinc-400 hover:text-white">
@@ -1605,7 +1953,7 @@ export default function CreatorUploadWizardPage() {
               {isAiGenerating ? (
                 <div className="flex items-center gap-2 text-indigo-400 animate-pulse">
                   <Sparkles className="w-4 h-4 animate-spin" />
-                  <span>Generating creative suggestion...</span>
+                  <span>Generating creative premise...</span>
                 </div>
               ) : (
                 <p>{aiGeneratedText}</p>
@@ -1622,7 +1970,10 @@ export default function CreatorUploadWizardPage() {
               </button>
               <button
                 type="button"
-                onClick={handleApplyAiSuggestion}
+                onClick={() => {
+                  setDescription(aiGeneratedText);
+                  setIsAiModalOpen(false);
+                }}
                 className="px-5 py-2 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 text-white font-bold text-xs shadow-md"
               >
                 Apply to Story

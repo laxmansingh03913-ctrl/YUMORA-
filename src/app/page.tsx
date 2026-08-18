@@ -399,11 +399,14 @@ export default function HomePage() {
 
               <div className="lg:col-span-4 flex flex-col items-center lg:items-end justify-center gap-4">
                 <div className="p-4 rounded-2xl bg-zinc-900/90 border border-zinc-800 text-center w-full max-w-xs space-y-2">
-                  <p className="text-[11px] uppercase font-bold text-zinc-400 tracking-wider">
-                    Submissions Open
+                  <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 text-[10px] font-bold uppercase tracking-wider">
+                    <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-ping" />
+                    <span>Submissions Open</span>
+                  </div>
+                  <p className="text-xl font-extrabold text-white">{activeContest?.submissionCount || 48} Submissions</p>
+                  <p className="text-xs text-amber-400 font-semibold">
+                    Deadline: {activeContest ? formatDate(activeContest.endDate) : "Sep 30, 2026"}
                   </p>
-                  <p className="text-xl font-extrabold text-white">48 Submissions</p>
-                  <p className="text-xs text-amber-400">Deadline: March 31, 2026</p>
                 </div>
 
                 <Link
