@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import {
   PenTool,
@@ -28,12 +28,87 @@ import {
   Circle,
   Check,
   Sliders,
+  Wallet,
+  Building2,
+  Smartphone,
+  CreditCard,
+  ArrowUpRight,
+  Download,
+  X,
+  Loader2,
+  Calendar,
+  FileText,
+  RefreshCw,
 } from "lucide-react";
 import confetti from "canvas-confetti";
 import { useAuth } from "@/context/AuthContext";
 import { dataStore } from "@/lib/data/store";
 import { formatNumber, formatDate } from "@/lib/utils";
 import { Novel, MonetizationEligibility, MonetizationTier } from "@/lib/types";
+
+interface PayoutRecord {
+  id: string;
+  referenceId: string;
+  amount: number;
+  method: "BANK" | "UPI" | "PAYPAL" | "STRIPE";
+  destination: string;
+  date: string;
+  status: "COMPLETED" | "PROCESSING" | "PENDING";
+}
+
+interface PayoutSettings {
+  method: "BANK" | "UPI" | "PAYPAL" | "STRIPE";
+  bankAccountHolder: string;
+  bankName: string;
+  bankAccountNumber: string;
+  bankIfscSwift: string;
+  bankCountry: string;
+  upiId: string;
+  paypalEmail: string;
+  autoPayoutEnabled: boolean;
+}
+
+const DEFAULT_PAYOUT_SETTINGS: PayoutSettings = {
+  method: "UPI",
+  bankAccountHolder: "Aria Thorne",
+  bankName: "HDFC Bank",
+  bankAccountNumber: "•••• •••• 4892",
+  bankIfscSwift: "HDFC0001234",
+  bankCountry: "India",
+  upiId: "creator@okhdfcbank",
+  paypalEmail: "aria.creator@yumora.io",
+  autoPayoutEnabled: true,
+};
+
+const DEFAULT_PAYOUT_HISTORY: PayoutRecord[] = [
+  {
+    id: "pay-1",
+    referenceId: "YM-PAY-89210",
+    amount: 320.0,
+    method: "UPI",
+    destination: "creator@okhdfcbank",
+    date: "2026-02-15",
+    status: "COMPLETED",
+  },
+  {
+    id: "pay-2",
+    referenceId: "YM-PAY-77412",
+    amount: 450.0,
+    method: "BANK",
+    destination: "HDFC Bank (•••• 4892)",
+    date: "2026-01-15",
+    status: "COMPLETED",
+  },
+  {
+    id: "pay-3",
+    referenceId: "YM-PAY-65109",
+    amount: 280.0,
+    method: "UPI",
+    destination: "creator@okhdfcbank",
+    date: "2025-12-15",
+    status: "COMPLETED",
+  },
+];
 
 export default function CreatorDashboardPage() {
   const { user } = useAuth();
@@ -45,7 +120,80 @@ export default function CreatorDashboardPage() {
   const totalLikes = novels.reduce((acc, n) => acc + n.likesCount, 0);
   const totalChapters = novels.reduce((acc, n) => acc + n.chaptersCount, 0);
   const totalFollowers = user?.followersCount || 14850;
-  const estimatedEarnings = Math.round((totalReads / 1000) * 2.85 + 450); // $2.85 RPM model demo
+
+  // Wallet & Payout State
+  const initialBalance = Math.round((totalReads / 1000) * 2.85 + 450);
+  const [availableBalance, setAvailableBalance] = useState<number>(() => {
+    if (typeof window !== "undefined" && user?.id) {
+      const saved = localStorage.getItem(`yumora_wallet_balance_${user.id}`);
+      if (saved) return parseFloat(saved);
+    }
+    return initialBalance;
+  });
+
+  const [payoutSettings, setPayoutSettings] = useState<PayoutSettings>(() => {
+    if (typeof window !== "undefined" && user?.id) {
+      const saved = localStorage.getItem(`yumora_payout_settings_${user.id}`);
+      if (saved) {
+        try {
+          return JSON.parse(saved);
+        } catch {
+          // ignore
+        }
+      }
+    }
+    return DEFAULT_PAYOUT_SETTINGS;
+  });
+
+  const [payoutHistory, setPayoutHistory] = useState<PayoutRecord[]>(() => {
+    if (typeof window !== "undefined" && user?.id) {
+      const saved = localStorage.getItem(`yumora_payout_history_${user.id}`);
+      if (saved) {
+        try {
+          return JSON.parse(saved);
+        } catch {
+          // ignore
+        }
+      }
+    }
+    return DEFAULT_PAYOUT_HISTORY;
+  });
+
+  // Modal States
+  const [isWithdrawModalOpen, setIsWithdrawModalOpen] = useState(false);
+  const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
+  const [withdrawAmountInput, setWithdrawAmountInput] = useState<string>("");
+  const [isProcessingWithdraw, setIsProcessingWithdraw] = useState(false);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  // Temporary Settings Form State
+  const [editMethod, setEditMethod] = useState<PayoutSettings["method"]>(payoutSettings.method);
+  const [editBankHolder, setEditBankHolder] = useState(payoutSettings.bankAccountHolder);
+  const [editBankName, setEditBankName] = useState(payoutSettings.bankName);
+  const [editBankNumber, setEditBankNumber] = useState(payoutSettings.bankAccountNumber);
+  const [editBankIfsc, setEditBankIfsc] = useState(payoutSettings.bankIfscSwift);
+  const [editBankCountry, setEditBankCountry] = useState(payoutSettings.bankCountry);
+  const [editUpiId, setEditUpiId] = useState(payoutSettings.upiId);
+  const [editPaypalEmail, setEditPaypalEmail] = useState(payoutSettings.paypalEmail);
+  const [editAutoPayout, setEditAutoPayout] = useState(payoutSettings.autoPayoutEnabled);
+
+  // Sync settings modal with state on open
+  useEffect(() => {
+    setEditMethod(payoutSettings.method);
+    setEditBankHolder(payoutSettings.bankAccountHolder);
+    setEditBankName(payoutSettings.bankName);
+    setEditBankNumber(payoutSettings.bankAccountNumber);
+    setEditBankIfsc(payoutSettings.bankIfscSwift);
+    setEditBankCountry(payoutSettings.bankCountry);
+    setEditUpiId(payoutSettings.upiId);
+    setEditPaypalEmail(payoutSettings.paypalEmail);
+    setEditAutoPayout(payoutSettings.autoPayoutEnabled);
+  }, [payoutSettings, isSettingsModalOpen]);
+
+  const showToast = (msg: string) => {
+    setToastMessage(msg);
+    setTimeout(() => setToastMessage(null), 3500);
+  };
 
   const handleDeleteNovel = (id: string, title: string) => {
     if (window.confirm(`Are you sure you want to delete "${title}"?`)) {
@@ -63,8 +211,99 @@ export default function CreatorDashboardPage() {
     setNovels((prev) => prev.map((n) => (n.id === novel.id ? updated : n)));
   };
 
+  // Save Payout Settings
+  const handleSavePayoutSettings = (e: React.FormEvent) => {
+    e.preventDefault();
+    const updated: PayoutSettings = {
+      method: editMethod,
+      bankAccountHolder: editBankHolder.trim(),
+      bankName: editBankName.trim(),
+      bankAccountNumber: editBankNumber.trim(),
+      bankIfscSwift: editBankIfsc.trim(),
+      bankCountry: editBankCountry.trim(),
+      upiId: editUpiId.trim(),
+      paypalEmail: editPaypalEmail.trim(),
+      autoPayoutEnabled: editAutoPayout,
+    };
+
+    setPayoutSettings(updated);
+    if (user?.id) {
+      localStorage.setItem(`yumora_payout_settings_${user.id}`, JSON.stringify(updated));
+    }
+    setIsSettingsModalOpen(false);
+    showToast("✓ Payout settings saved successfully!");
+  };
+
+  // Execute Withdrawal
+  const handleExecuteWithdrawal = (e: React.FormEvent) => {
+    e.preventDefault();
+    const amount = parseFloat(withdrawAmountInput) || availableBalance;
+
+    if (amount < 25) {
+      alert("Minimum withdrawal threshold is $25.00 USD.");
+      return;
+    }
+
+    if (amount > availableBalance) {
+      alert("Withdrawal amount cannot exceed your available balance.");
+      return;
+    }
+
+    setIsProcessingWithdraw(true);
+
+    setTimeout(() => {
+      const remainingBalance = Math.max(0, availableBalance - amount);
+      setAvailableBalance(remainingBalance);
+
+      const destinationLabel =
+        payoutSettings.method === "UPI"
+          ? `UPI: ${payoutSettings.upiId}`
+          : payoutSettings.method === "BANK"
+          ? `${payoutSettings.bankName} (${payoutSettings.bankAccountNumber.slice(-4)})`
+          : `PayPal: ${payoutSettings.paypalEmail}`;
+
+      const newRecord: PayoutRecord = {
+        id: `pay-${Date.now()}`,
+        referenceId: `YM-PAY-${Math.floor(10000 + Math.random() * 90000)}`,
+        amount: amount,
+        method: payoutSettings.method,
+        destination: destinationLabel,
+        date: new Date().toISOString().split("T")[0],
+        status: "PROCESSING",
+      };
+
+      const updatedHistory = [newRecord, ...payoutHistory];
+      setPayoutHistory(updatedHistory);
+
+      if (user?.id) {
+        localStorage.setItem(`yumora_wallet_balance_${user.id}`, remainingBalance.toString());
+        localStorage.setItem(`yumora_payout_history_${user.id}`, JSON.stringify(updatedHistory));
+      }
+
+      setIsProcessingWithdraw(false);
+      setIsWithdrawModalOpen(false);
+      setWithdrawAmountInput("");
+
+      try {
+        confetti({ particleCount: 120, spread: 80, origin: { y: 0.6 } });
+      } catch {
+        // ignore
+      }
+
+      showToast(`🎉 Withdrawal requested: $${amount.toFixed(2)} USD transferred to ${destinationLabel}`);
+    }, 1200);
+  };
+
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8 animate-in fade-in">
+      {/* Toast Alert */}
+      {toastMessage && (
+        <div className="fixed bottom-20 right-6 z-50 px-4 py-3 rounded-2xl bg-zinc-900 border border-zinc-700 text-zinc-100 text-xs font-bold shadow-2xl flex items-center gap-2 animate-in fade-in slide-in-from-bottom-5">
+          <Sparkles className="w-4 h-4 text-emerald-400" />
+          <span>{toastMessage}</span>
+        </div>
+      )}
+
       {/* Dashboard Top Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6 border-b border-zinc-200 dark:border-zinc-800">
         <div className="flex items-center gap-4">
@@ -99,465 +338,386 @@ export default function CreatorDashboardPage() {
 
           <Link
             href="/creator/upload"
-            className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-rose-600 to-indigo-600 hover:from-rose-500 hover:to-indigo-500 text-white text-xs font-bold shadow-lg shadow-rose-600/20 transition flex items-center gap-1.5 transform hover:scale-[1.02]"
+            className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-rose-600 to-indigo-600 hover:from-rose-500 hover:to-indigo-500 text-white text-xs font-bold transition flex items-center gap-1.5 shadow-md shadow-rose-600/20"
           >
             <Plus className="w-4 h-4" />
-            <span>Create New Story</span>
+            <span>New Story</span>
           </Link>
         </div>
       </div>
 
-      {/* Creator Profile Incomplete Alert */}
-      {(() => {
-        const completion = dataStore.calculateProfileCompletion(user || undefined);
-        if (completion.percentage >= 100) return null;
-        return (
-          <div className="p-4 rounded-2xl bg-amber-950/20 border border-amber-500/30 flex flex-col sm:flex-row sm:items-center justify-between gap-4 animate-in fade-in">
-            <div className="flex items-center gap-3">
-              <div className="p-2.5 rounded-xl bg-amber-500/20 text-amber-400">
-                <ShieldAlert className="w-5 h-5" />
-              </div>
-              <div>
-                <p className="text-xs font-bold text-amber-300">
-                  Creator Profile Verification Incomplete ({completion.percentage}%)
-                </p>
-                <p className="text-[11px] text-zinc-400">
-                  Please complete the remaining {completion.missingFields.length} mandatory creator fields to enable publishing.
-                </p>
-              </div>
-            </div>
-            <Link
-              href="/creator/upload"
-              className="px-4 py-2 rounded-xl bg-amber-500 text-zinc-950 font-bold text-xs hover:bg-amber-400 transition text-center flex-shrink-0"
-            >
-              Complete Profile (100%)
-            </Link>
-          </div>
-        );
-      })()}
-
-      {/* Overview Stat Cards Grid */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
-        <div className="p-4 rounded-2xl bg-white dark:bg-zinc-900/70 border border-zinc-200 dark:border-zinc-800 space-y-1">
-          <div className="flex items-center justify-between text-zinc-400">
-            <span className="text-[11px] font-semibold">Total Reads</span>
-            <BookOpen className="w-4 h-4 text-rose-500" />
-          </div>
-          <p className="text-xl font-black text-zinc-900 dark:text-zinc-100">
-            {formatNumber(totalReads)}
-          </p>
-          <p className="text-[10px] text-emerald-500 font-bold">+18.4% this month</p>
-        </div>
-
-        <div className="p-4 rounded-2xl bg-white dark:bg-zinc-900/70 border border-zinc-200 dark:border-zinc-800 space-y-1">
-          <div className="flex items-center justify-between text-zinc-400">
-            <span className="text-[11px] font-semibold">Followers</span>
-            <Users className="w-4 h-4 text-indigo-500" />
-          </div>
-          <p className="text-xl font-black text-zinc-900 dark:text-zinc-100">
-            {formatNumber(totalFollowers)}
-          </p>
-          <p className="text-[10px] text-emerald-500 font-bold">+342 new</p>
-        </div>
-
-        <div className="p-4 rounded-2xl bg-white dark:bg-zinc-900/70 border border-zinc-200 dark:border-zinc-800 space-y-1">
-          <div className="flex items-center justify-between text-zinc-400">
-            <span className="text-[11px] font-semibold">Total Likes</span>
-            <Heart className="w-4 h-4 text-rose-500" />
-          </div>
-          <p className="text-xl font-black text-zinc-900 dark:text-zinc-100">
-            {formatNumber(totalLikes)}
-          </p>
-          <p className="text-[10px] text-zinc-400">across all stories</p>
-        </div>
-
-        <div className="p-4 rounded-2xl bg-white dark:bg-zinc-900/70 border border-zinc-200 dark:border-zinc-800 space-y-1">
-          <div className="flex items-center justify-between text-zinc-400">
-            <span className="text-[11px] font-semibold">Total Chapters</span>
-            <PenTool className="w-4 h-4 text-amber-500" />
-          </div>
-          <p className="text-xl font-black text-zinc-900 dark:text-zinc-100">{totalChapters}</p>
-          <p className="text-[10px] text-zinc-400">published serials</p>
-        </div>
-
-        <div className="p-4 rounded-2xl bg-white dark:bg-zinc-900/70 border border-zinc-200 dark:border-zinc-800 space-y-1">
-          <div className="flex items-center justify-between text-zinc-400">
-            <span className="text-[11px] font-semibold">Read Rate</span>
-            <TrendingUp className="w-4 h-4 text-emerald-500" />
-          </div>
-          <p className="text-xl font-black text-zinc-900 dark:text-zinc-100">74.2%</p>
-          <p className="text-[10px] text-emerald-500 font-bold">Top 5% author</p>
-        </div>
-
-        <div className="p-4 rounded-2xl bg-white dark:bg-zinc-900/70 border border-zinc-200 dark:border-zinc-800 space-y-1">
-          <div className="flex items-center justify-between text-zinc-400">
-            <span className="text-[11px] font-semibold">Estimated Payout</span>
-            <DollarSign className="w-4 h-4 text-emerald-400" />
-          </div>
-          <p className="text-xl font-black text-emerald-500">${estimatedEarnings}</p>
-          <p className="text-[10px] text-zinc-400">Ready for Stripe</p>
-        </div>
-      </div>
-
-      {/* Navigation Tabs */}
+      {/* Main Studio Navigation Tabs */}
       <div className="flex items-center gap-2 border-b border-zinc-200 dark:border-zinc-800 pb-2">
-        {[
-          { id: "works", label: `My Works (${novels.length})` },
-          { id: "analytics", label: "📈 Deep Analytics & Demographics" },
-          { id: "earnings", label: "💰 Royalties & Monetization" },
-        ].map((tab) => (
-          <button
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id as typeof activeTab)}
-            className={`px-4 py-2 rounded-xl text-xs font-bold transition ${
-              activeTab === tab.id
-                ? "bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 shadow-md"
-                : "bg-zinc-100 dark:bg-zinc-900 text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100"
-            }`}
-          >
-            {tab.label}
-          </button>
-        ))}
+        <button
+          onClick={() => setActiveTab("works")}
+          className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 ${
+            activeTab === "works"
+              ? "bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 shadow-md"
+              : "bg-zinc-100 dark:bg-zinc-900 text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100"
+          }`}
+        >
+          <BookOpen className="w-3.5 h-3.5" />
+          <span>My Stories ({novels.length})</span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab("analytics")}
+          className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 ${
+            activeTab === "analytics"
+              ? "bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 shadow-md"
+              : "bg-zinc-100 dark:bg-zinc-900 text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100"
+          }`}
+        >
+          <TrendingUp className="w-3.5 h-3.5" />
+          <span>Readership Analytics</span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab("earnings")}
+          className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 ${
+            activeTab === "earnings"
+              ? "bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 shadow-md"
+              : "bg-zinc-100 dark:bg-zinc-900 text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100"
+          }`}
+        >
+          <Wallet className="w-3.5 h-3.5 text-emerald-400" />
+          <span>Earnings & Payouts</span>
+        </button>
       </div>
 
-      {/* TAB 1: MY WORKS MANAGEMENT */}
+      {/* TAB 1: MY STORIES */}
       {activeTab === "works" && (
-        <div className="space-y-4">
-          <div className="overflow-x-auto rounded-3xl bg-white dark:bg-zinc-900/70 border border-zinc-200 dark:border-zinc-800 shadow-sm">
-            <table className="w-full text-left text-xs">
-              <thead className="bg-zinc-50 dark:bg-zinc-950/60 border-b border-zinc-200 dark:border-zinc-800 text-[11px] font-bold text-zinc-400 uppercase tracking-wider">
-                <tr>
-                  <th className="p-4">Story & Title</th>
-                  <th className="p-4">Genre</th>
-                  <th className="p-4">Status</th>
-                  <th className="p-4">Chapters</th>
-                  <th className="p-4">Reads</th>
-                  <th className="p-4">Rating</th>
-                  <th className="p-4 text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800/60">
-                {novels.map((novel) => (
-                  <tr
-                    key={novel.id}
-                    className="hover:bg-zinc-50/50 dark:hover:bg-zinc-800/40 transition"
-                  >
-                    <td className="p-4">
-                      <div className="flex items-center gap-3">
-                        <img
-                          src={novel.coverUrl}
-                          alt={novel.title}
-                          className="w-10 h-14 object-cover rounded-lg shadow-xs flex-shrink-0"
-                        />
-                        <div>
-                          <Link
-                            href={`/novels/${novel.slug}`}
-                            className="font-bold text-zinc-900 dark:text-zinc-100 hover:text-rose-500 transition line-clamp-1"
-                          >
-                            {novel.title}
-                          </Link>
-                          <p className="text-[11px] text-zinc-400 truncate mt-0.5">
-                            Last updated {formatDate(novel.updatedAt)}
-                          </p>
-                        </div>
-                      </div>
-                    </td>
-
-                    <td className="p-4">
-                      <span className="px-2.5 py-1 rounded-full text-[10px] font-semibold bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400">
-                        {novel.genre}
-                      </span>
-                    </td>
-
-                    <td className="p-4">
-                      <button
-                        onClick={() => handleTogglePublish(novel)}
-                        className={`px-2.5 py-1 rounded-full text-[10px] font-bold transition ${
-                          novel.status === "ONGOING" || novel.status === "PUBLISHED"
-                            ? "bg-emerald-100 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400"
-                            : "bg-amber-100 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400"
-                        }`}
-                        title="Click to toggle Draft / Published"
-                      >
-                        {novel.status}
-                      </button>
-                    </td>
-
-                    <td className="p-4 font-semibold text-zinc-700 dark:text-zinc-300">
-                      {novel.chaptersCount} Chapters
-                    </td>
-
-                    <td className="p-4 font-semibold text-zinc-700 dark:text-zinc-300">
-                      {formatNumber(novel.reads)}
-                    </td>
-
-                    <td className="p-4 font-bold text-amber-500">★ {novel.rating}</td>
-
-                    <td className="p-4 text-right">
-                      <div className="flex items-center justify-end gap-1.5">
-                        <Link
-                          href={`/novels/${novel.slug}`}
-                          className="p-2 rounded-lg bg-zinc-100 dark:bg-zinc-800 hover:text-rose-500 transition"
-                          title="View Live Story"
-                        >
-                          <Eye className="w-3.5 h-3.5" />
-                        </Link>
-                        <Link
-                          href="/creator/upload"
-                          className="p-2 rounded-lg bg-zinc-100 dark:bg-zinc-800 hover:text-indigo-500 transition"
-                          title="Add / Edit Chapters"
-                        >
-                          <Edit className="w-3.5 h-3.5" />
-                        </Link>
-                        <button
-                          onClick={() => handleDeleteNovel(novel.id, novel.title)}
-                          className="p-2 rounded-lg bg-zinc-100 dark:bg-zinc-800 hover:text-rose-600 transition"
-                          title="Delete Story"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
-
-      {/* TAB 2: ANALYTICS & DEMOGRAPHICS */}
-      {activeTab === "analytics" && (
         <div className="space-y-6">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Visual Retention Bar Chart */}
-            <div className="lg:col-span-2 p-6 rounded-3xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 space-y-4">
-              <h3 className="font-bold text-sm text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
-                <TrendingUp className="w-4 h-4 text-rose-500" />
-                <span>Chapter Read Completion Rate (Retention Funnel)</span>
-              </h3>
-              <p className="text-xs text-zinc-500">
-                Percentage of readers who finish each subsequent chapter
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            <div className="p-4 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 space-y-1">
+              <p className="text-xs text-zinc-400 font-semibold">Total Reads</p>
+              <p className="text-2xl font-black text-zinc-900 dark:text-zinc-100">
+                {formatNumber(totalReads)}
               </p>
-
-              <div className="space-y-3 pt-2">
-                {[
-                  { ch: "Chapter 1: The Broken Loom of Orion", percent: 96, count: "194,200 reads" },
-                  { ch: "Chapter 2: Stardust in the Wounds", percent: 88, count: "172,400 reads" },
-                  { ch: "Chapter 3: The Black Market of Nebula Row", percent: 81, count: "158,100 reads" },
-                  { ch: "Chapter 4: The Song of the Dying Giants", percent: 76, count: "148,800 reads" },
-                ].map((item) => (
-                  <div key={item.ch} className="space-y-1">
-                    <div className="flex justify-between text-xs font-semibold text-zinc-300">
-                      <span className="truncate">{item.ch}</span>
-                      <span>{item.percent}%</span>
-                    </div>
-                    <div className="w-full h-3 rounded-full bg-zinc-800 overflow-hidden">
-                      <div
-                        className="h-full bg-gradient-to-r from-rose-600 to-indigo-600 rounded-full"
-                        style={{ width: `${item.percent}%` }}
-                      />
-                    </div>
-                  </div>
-                ))}
-              </div>
             </div>
-
-            {/* Reader Geography Breakdown */}
-            <div className="p-6 rounded-3xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 space-y-4">
-              <h3 className="font-bold text-sm text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
-                <Globe className="w-4 h-4 text-indigo-500" />
-                <span>Global Reader Reach</span>
-              </h3>
-
-              <div className="space-y-3 pt-2 text-xs">
-                {[
-                  { country: "🇺🇸 United States", share: "38%", reads: "74K" },
-                  { country: "🇨🇦 Canada", share: "18%", reads: "35K" },
-                  { country: "🇩🇪 Germany & EU", share: "16%", reads: "31K" },
-                  { country: "🇬🇧 United Kingdom", share: "14%", reads: "27K" },
-                  { country: "🇯🇵 Japan & Asia", share: "14%", reads: "27K" },
-                ].map((c) => (
-                  <div key={c.country} className="flex items-center justify-between py-1.5 border-b border-zinc-800/50">
-                    <span className="font-medium text-zinc-300">{c.country}</span>
-                    <div className="flex items-center gap-3">
-                      <span className="text-zinc-500">{c.reads}</span>
-                      <span className="font-bold text-rose-400">{c.share}</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
+            <div className="p-4 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 space-y-1">
+              <p className="text-xs text-zinc-400 font-semibold">Total Likes</p>
+              <p className="text-2xl font-black text-rose-500">
+                {formatNumber(totalLikes)}
+              </p>
+            </div>
+            <div className="p-4 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 space-y-1">
+              <p className="text-xs text-zinc-400 font-semibold">Published Chapters</p>
+              <p className="text-2xl font-black text-indigo-500">
+                {totalChapters}
+              </p>
+            </div>
+            <div className="p-4 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 space-y-1">
+              <p className="text-xs text-zinc-400 font-semibold">Followers</p>
+              <p className="text-2xl font-black text-emerald-500">
+                {formatNumber(totalFollowers)}
+              </p>
             </div>
           </div>
 
-          {/* Follower Growth & Audience Retention Metrics */}
-          <div className="p-6 rounded-3xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 space-y-6">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2 border-b border-zinc-100 dark:border-zinc-800">
-              <div>
-                <h3 className="font-bold text-base text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
-                  <Users className="w-4 h-4 text-indigo-500" />
-                  <span>Follower Growth & Retention Analytics</span>
+          <div className="space-y-4">
+            <h2 className="text-lg font-black text-zinc-900 dark:text-zinc-100">
+              Published Serializations
+            </h2>
+
+            {novels.length === 0 ? (
+              <div className="p-12 text-center rounded-3xl bg-zinc-50 dark:bg-zinc-900/40 border border-zinc-200 dark:border-zinc-800 space-y-3 max-w-md mx-auto">
+                <BookOpen className="w-10 h-10 text-zinc-400 mx-auto" />
+                <h3 className="font-bold text-sm text-zinc-800 dark:text-zinc-200">
+                  No Stories Published Yet
                 </h3>
                 <p className="text-xs text-zinc-500">
-                  Tracking reader-to-follower conversion, release notification engagement, and churn
+                  Create your first serial novel or webtoon episode to begin building your fandom.
                 </p>
+                <Link
+                  href="/creator/upload"
+                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-rose-600 text-white font-bold text-xs shadow-md"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>Create Novel</span>
+                </Link>
               </div>
-
-              <span className="px-3 py-1 rounded-full text-xs font-bold bg-indigo-950/40 text-indigo-400 border border-indigo-500/30">
-                +342 Net Followers This Month
-              </span>
-            </div>
-
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-              <div className="p-4 rounded-2xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 space-y-1">
-                <p className="text-[11px] text-zinc-400 font-semibold">Total Followers</p>
-                <p className="text-xl font-black text-zinc-900 dark:text-zinc-100">14,850</p>
-                <p className="text-[10px] text-emerald-500 font-bold">+12.8% vs last month</p>
-              </div>
-
-              <div className="p-4 rounded-2xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 space-y-1">
-                <p className="text-[11px] text-zinc-400 font-semibold">Weekly Active Readers</p>
-                <p className="text-xl font-black text-indigo-500">10,120</p>
-                <p className="text-[10px] text-zinc-400">68.1% active engagement</p>
-              </div>
-
-              <div className="p-4 rounded-2xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 space-y-1">
-                <p className="text-[11px] text-zinc-400 font-semibold">Notification Open Rate</p>
-                <p className="text-xl font-black text-rose-500">62.4%</p>
-                <p className="text-[10px] text-emerald-500 font-bold">Top 3% platform</p>
-              </div>
-
-              <div className="p-4 rounded-2xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 space-y-1">
-                <p className="text-[11px] text-zinc-400 font-semibold">Monthly Unfollows</p>
-                <p className="text-xl font-black text-zinc-400">12</p>
-                <p className="text-[10px] text-emerald-500 font-bold">0.08% low churn rate</p>
-              </div>
-            </div>
-
-            {/* Follower Growth Trendline */}
-            <div className="p-5 rounded-2xl bg-zinc-950 border border-zinc-800 text-white space-y-3">
-              <div className="flex items-center justify-between text-xs">
-                <span className="font-bold text-zinc-300">Follower Growth Curve (Last 6 Months)</span>
-                <span className="text-[11px] text-indigo-400 font-mono">+2,450 new fans</span>
-              </div>
-
-              <div className="h-28 flex items-end justify-between gap-3 pt-2">
-                {[
-                  { month: "Sep", count: "12.4K", height: "45%" },
-                  { month: "Oct", count: "12.9K", height: "54%" },
-                  { month: "Nov", count: "13.5K", height: "66%" },
-                  { month: "Dec", count: "14.1K", height: "78%" },
-                  { month: "Jan", count: "14.5K", height: "88%" },
-                  { month: "Feb", count: "14.8K", height: "100%" },
-                ].map((bar) => (
-                  <div key={bar.month} className="flex-1 flex flex-col items-center gap-1 h-full justify-end group">
-                    <span className="text-[9px] text-zinc-400 opacity-0 group-hover:opacity-100 transition">{bar.count}</span>
-                    <div
-                      className="w-full rounded-xl bg-gradient-to-t from-indigo-700 to-rose-500 group-hover:from-indigo-500 group-hover:to-rose-400 transition-all duration-300"
-                      style={{ height: bar.height }}
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {novels.map((novel) => (
+                  <div
+                    key={novel.id}
+                    className="p-4 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 flex gap-4 hover:border-zinc-300 dark:hover:border-zinc-700 transition"
+                  >
+                    <img
+                      src={novel.cover}
+                      alt={novel.title}
+                      className="w-20 h-28 rounded-xl object-cover flex-shrink-0"
                     />
-                    <span className="text-[10px] font-semibold text-zinc-400">{bar.month}</span>
+                    <div className="flex-1 flex flex-col justify-between min-w-0">
+                      <div>
+                        <div className="flex items-center justify-between gap-2">
+                          <h3 className="font-bold text-sm text-zinc-900 dark:text-zinc-100 truncate">
+                            {novel.title}
+                          </h3>
+                          <span
+                            className={`px-2 py-0.5 rounded-md text-[10px] font-extrabold uppercase ${
+                              novel.status === "PUBLISHED" || novel.status === "ONGOING"
+                                ? "bg-emerald-500/10 text-emerald-500"
+                                : "bg-zinc-500/10 text-zinc-400"
+                            }`}
+                          >
+                            {novel.status}
+                          </span>
+                        </div>
+                        <p className="text-xs text-zinc-500 line-clamp-2 mt-1">
+                          {novel.synopsis}
+                        </p>
+                      </div>
+
+                      <div className="flex items-center justify-between pt-2 border-t border-zinc-100 dark:border-zinc-800 text-xs">
+                        <span className="text-zinc-400">{novel.chaptersCount} Chapters</span>
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => handleTogglePublish(novel)}
+                            className="text-xs font-semibold text-indigo-500 hover:underline"
+                          >
+                            {novel.status === "DRAFT" ? "Publish" : "Unpublish"}
+                          </button>
+                          <button
+                            onClick={() => handleDeleteNovel(novel.id, novel.title)}
+                            className="text-zinc-400 hover:text-rose-500 transition"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 ))}
               </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* TAB 2: READERSHIP ANALYTICS */}
+      {activeTab === "analytics" && (
+        <div className="space-y-6">
+          <div className="p-6 rounded-3xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 space-y-4">
+            <h3 className="font-bold text-sm text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
+              <TrendingUp className="w-4 h-4 text-rose-500" />
+              <span>Readership & Chapter Completion Funnel</span>
+            </h3>
+
+            <div className="space-y-3 pt-2">
+              {[
+                { ch: "Chapter 1 (Prologue)", percent: 100 },
+                { ch: "Chapter 2 (The Awakening)", percent: 84 },
+                { ch: "Chapter 3 (Shadow Realm)", percent: 72 },
+                { ch: "Chapter 4 (City of Brass)", percent: 66 },
+                { ch: "Chapter 5 (Final Gate)", percent: 59 },
+              ].map((item) => (
+                <div key={item.ch} className="space-y-1">
+                  <div className="flex justify-between text-xs font-semibold text-zinc-600 dark:text-zinc-300">
+                    <span>{item.ch}</span>
+                    <span>{item.percent}%</span>
+                  </div>
+                  <div className="w-full h-3 rounded-full bg-zinc-100 dark:bg-zinc-800 overflow-hidden">
+                    <div
+                      className="h-full bg-gradient-to-r from-rose-600 to-indigo-600 rounded-full"
+                      style={{ width: `${item.percent}%` }}
+                    />
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         </div>
       )}
 
-      {/* TAB 3: EARNINGS & MULTI-TIER MONETIZATION ELIGIBILITY */}
+      {/* TAB 3: EARNINGS, PAYOUTS & WITHDRAWAL SYSTEM */}
       {activeTab === "earnings" && (() => {
         const eligibility = dataStore.calculateMonetizationEligibility(user?.id || "usr-creator-1");
         const currentTier = user?.monetizationTier || eligibility.currentTier;
-
-        const handleApply = (tier: MonetizationTier) => {
-          if (!user) return;
-          const res = dataStore.applyForMonetization(user.id, tier);
-          if (res.success) {
-            try {
-              confetti({ particleCount: 120, spread: 80, origin: { y: 0.6 } });
-            } catch {
-              // ignore
-            }
-            alert(`🎉 Monetization Approved! Your account is now upgraded to ${tier.replace("_", " ")}.`);
-            window.location.reload();
-          } else {
-            alert(`Application Notice: ${res.error}`);
-          }
-        };
+        const inrEquivalent = Math.round(availableBalance * 86.5);
 
         return (
           <div className="space-y-8 animate-in fade-in">
-            {/* Top Monetization Status Banner */}
-            <div className="p-6 sm:p-8 rounded-3xl bg-gradient-to-br from-emerald-950/50 via-zinc-900 to-zinc-950 border border-emerald-500/30 text-white space-y-4 shadow-xl">
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <div className="flex items-center gap-2">
-                  <span className="px-3 py-1 rounded-full text-xs font-black bg-emerald-500 text-zinc-950 flex items-center gap-1.5">
-                    <ShieldCheck className="w-3.5 h-3.5" />
-                    <span>
-                      {currentTier === "LEVEL_3_VERIFIED"
-                        ? "LEVEL 3 — PREMIER VERIFIED CREATOR"
-                        : currentTier === "LEVEL_2_ESTABLISHED"
-                        ? "LEVEL 2 — ESTABLISHED CREATOR"
-                        : currentTier === "LEVEL_1_ELIGIBLE"
-                        ? "LEVEL 1 — MONETIZATION ELIGIBLE"
-                        : "MONETIZATION ONBOARDING"}
-                    </span>
-                  </span>
-                  <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-white/10 text-emerald-300">
-                    Status: {eligibility.status}
-                  </span>
+            {/* 1. CREATOR WALLET & WITHDRAWAL ACTION CARD */}
+            <div className="p-6 sm:p-8 rounded-3xl bg-gradient-to-br from-emerald-950 via-zinc-900 to-zinc-950 border border-emerald-500/40 text-white shadow-2xl space-y-6 relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
+
+              {/* Wallet Header */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 relative z-10">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 rounded-2xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 flex items-center justify-center">
+                    <Wallet className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <h2 className="text-xl sm:text-2xl font-black text-white">
+                      Creator Wallet & Payout Hub
+                    </h2>
+                    <p className="text-xs text-zinc-400">
+                      Direct earnings from coin unlocks, ad revenue share, reader tips & contests
+                    </p>
+                  </div>
                 </div>
 
-                <div className="flex items-center gap-2 text-xs text-zinc-400">
-                  <ShieldCheck className="w-4 h-4 text-emerald-400" />
-                  <span>Fraud & Bot Audit: <strong>{eligibility.fraudAuditStatus}</strong></span>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setIsSettingsModalOpen(true)}
+                    className="px-4 py-2 rounded-xl bg-zinc-800/90 hover:bg-zinc-700 text-zinc-200 font-bold text-xs border border-zinc-700 transition flex items-center gap-1.5 cursor-pointer"
+                  >
+                    <Sliders className="w-3.5 h-3.5 text-emerald-400" />
+                    <span>Payout Settings</span>
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      setWithdrawAmountInput(availableBalance.toString());
+                      setIsWithdrawModalOpen(true);
+                    }}
+                    disabled={availableBalance < 25}
+                    className={`px-5 py-2.5 rounded-xl font-black text-xs transition flex items-center gap-1.5 shadow-lg ${
+                      availableBalance >= 25
+                        ? "bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-zinc-950 shadow-emerald-500/30 transform hover:scale-105 active:scale-95 cursor-pointer"
+                        : "bg-zinc-800 text-zinc-500 border border-zinc-700 cursor-not-allowed"
+                    }`}
+                  >
+                    <ArrowUpRight className="w-4 h-4" />
+                    <span>Withdraw Funds</span>
+                  </button>
                 </div>
               </div>
 
-              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pt-2">
-                <div>
-                  <h3 className="text-2xl sm:text-3xl font-black tracking-tight text-white">
-                    Creator Revenue & Royalties Suite
-                  </h3>
-                  <p className="text-xs sm:text-sm text-zinc-300 max-w-2xl leading-relaxed mt-1">
-                    Yumora combines chapter read completion time, reader tips, volume sales, and premium subscriptions with multi-factor fraud filtering.
+              {/* Wallet Balances Grid */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-4 border-t border-zinc-800 relative z-10">
+                <div className="p-4 rounded-2xl bg-zinc-900/90 border border-zinc-800 space-y-1">
+                  <p className="text-xs text-zinc-400 font-semibold">Available for Withdrawal</p>
+                  <p className="text-2xl sm:text-3xl font-black text-emerald-400">
+                    ${availableBalance.toFixed(2)} USD
+                  </p>
+                  <p className="text-[11px] text-zinc-400 font-medium">
+                    ≈ ₹{inrEquivalent.toLocaleString()} INR
                   </p>
                 </div>
 
-                {eligibility.canApplyLevel1 && (
-                  <button
-                    onClick={() => handleApply("LEVEL_1_ELIGIBLE")}
-                    className="px-6 py-3 rounded-2xl bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-black text-xs shadow-lg shadow-emerald-500/20 transition flex items-center gap-2 self-start md:self-auto flex-shrink-0 transform hover:scale-105"
-                  >
-                    <Unlock className="w-4 h-4" />
-                    <span>Apply for Level 1 Monetization</span>
-                  </button>
-                )}
+                <div className="p-4 rounded-2xl bg-zinc-900/90 border border-zinc-800 space-y-1">
+                  <p className="text-xs text-zinc-400 font-semibold">Active Payout Destination</p>
+                  <div className="flex items-center gap-2 pt-1">
+                    {payoutSettings.method === "UPI" && (
+                      <span className="p-1 rounded-md bg-rose-500/20 text-rose-400">
+                        <Smartphone className="w-4 h-4" />
+                      </span>
+                    )}
+                    {payoutSettings.method === "BANK" && (
+                      <span className="p-1 rounded-md bg-indigo-500/20 text-indigo-400">
+                        <Building2 className="w-4 h-4" />
+                      </span>
+                    )}
+                    {payoutSettings.method === "PAYPAL" && (
+                      <span className="p-1 rounded-md bg-sky-500/20 text-sky-400">
+                        <Globe className="w-4 h-4" />
+                      </span>
+                    )}
+                    <span className="font-bold text-sm text-zinc-100 truncate">
+                      {payoutSettings.method === "UPI"
+                        ? payoutSettings.upiId || "UPI ID not set"
+                        : payoutSettings.method === "BANK"
+                        ? `${payoutSettings.bankName || "Bank"} (${payoutSettings.bankAccountNumber.slice(-4) || "Set"})`
+                        : payoutSettings.paypalEmail || "PayPal not set"}
+                    </span>
+                  </div>
+                  <p className="text-[10px] text-emerald-400 font-semibold">Verified Payout Route ✓</p>
+                </div>
+
+                <div className="p-4 rounded-2xl bg-zinc-900/90 border border-zinc-800 space-y-1">
+                  <p className="text-xs text-zinc-400 font-semibold">Next Scheduled Auto-Payout</p>
+                  <p className="text-xl font-black text-zinc-100">March 15, 2026</p>
+                  <p className="text-[10px] text-zinc-400">
+                    {payoutSettings.autoPayoutEnabled
+                      ? "Monthly direct auto-deposit enabled"
+                      : "Manual withdrawal mode active"}
+                  </p>
+                </div>
               </div>
 
-              {/* Payout Metric Highlights */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-4 border-t border-zinc-800">
-                <div className="p-4 rounded-2xl bg-zinc-900/90 border border-zinc-800 text-center space-y-1">
-                  <p className="text-xs text-zinc-400 font-semibold">Available for Payout</p>
-                  <p className="text-2xl font-black text-emerald-400">${estimatedEarnings}.00</p>
-                  <p className="text-[10px] text-zinc-500">Auto-calculated from genuine reads & tips</p>
-                </div>
-                <div className="p-4 rounded-2xl bg-zinc-900/90 border border-zinc-800 text-center space-y-1">
-                  <p className="text-xs text-zinc-400 font-semibold">Next Payout Cycle</p>
-                  <p className="text-2xl font-black text-white">March 1, 2026</p>
-                  <p className="text-[10px] text-zinc-500">Monthly direct deposit</p>
-                </div>
-                <div className="p-4 rounded-2xl bg-zinc-900/90 border border-zinc-800 text-center space-y-1">
-                  <p className="text-xs text-zinc-400 font-semibold">Payout Gateway</p>
-                  <p className="text-2xl font-black text-emerald-400">Stripe Connected</p>
-                  <p className="text-[10px] text-emerald-500 font-bold">100% Verified Account</p>
-                </div>
+              {/* Threshold Indicator */}
+              <div className="pt-2 flex items-center justify-between text-xs text-zinc-400">
+                <span className="flex items-center gap-1.5">
+                  <ShieldCheck className="w-4 h-4 text-emerald-400" />
+                  <span>Min. Withdrawal Threshold: <strong>$25.00 USD (₹2,000 INR)</strong></span>
+                </span>
+                <span className="font-semibold text-emerald-400">
+                  {availableBalance >= 25 ? "✓ Ready to Withdraw" : "Accumulating Earnings..."}
+                </span>
               </div>
             </div>
 
-            {/* Holistic Eligibility Progress & Quality Gate */}
-            <div className="p-6 sm:p-8 rounded-3xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 space-y-6">
+            {/* 2. RECENT PAYOUT HISTORY & TRANSACTION LEDGER */}
+            <div className="p-6 sm:p-8 rounded-3xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 space-y-5 shadow-sm">
+              <div className="flex items-center justify-between pb-3 border-b border-zinc-100 dark:border-zinc-800">
+                <div className="flex items-center gap-2">
+                  <FileText className="w-5 h-5 text-indigo-500" />
+                  <h3 className="font-black text-base text-zinc-900 dark:text-zinc-100">
+                    Payout History & Remittance Ledger
+                  </h3>
+                </div>
+                <span className="text-xs font-semibold text-zinc-400">
+                  Total Paid: ${payoutHistory.reduce((acc, p) => acc + p.amount, 0).toFixed(2)} USD
+                </span>
+              </div>
+
+              {payoutHistory.length === 0 ? (
+                <div className="p-8 text-center text-xs text-zinc-400">
+                  No payout history yet. Once you withdraw earnings, remittance receipts will appear here.
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-xs">
+                    <thead>
+                      <tr className="border-b border-zinc-200 dark:border-zinc-800 text-zinc-400 font-bold uppercase tracking-wider text-[10px]">
+                        <th className="pb-3">Transaction Reference</th>
+                        <th className="pb-3">Date</th>
+                        <th className="pb-3">Payout Method</th>
+                        <th className="pb-3">Destination</th>
+                        <th className="pb-3 text-right">Amount (USD)</th>
+                        <th className="pb-3 text-right">Status</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800/60 font-medium">
+                      {payoutHistory.map((item) => (
+                        <tr key={item.id} className="hover:bg-zinc-50 dark:hover:bg-zinc-800/40 transition">
+                          <td className="py-3 font-mono font-bold text-indigo-600 dark:text-indigo-400">
+                            {item.referenceId}
+                          </td>
+                          <td className="py-3 text-zinc-500">{item.date}</td>
+                          <td className="py-3 font-bold text-zinc-800 dark:text-zinc-200">
+                            {item.method}
+                          </td>
+                          <td className="py-3 text-zinc-500 truncate max-w-[200px]">
+                            {item.destination}
+                          </td>
+                          <td className="py-3 text-right font-black text-zinc-900 dark:text-zinc-100">
+                            ${item.amount.toFixed(2)}
+                          </td>
+                          <td className="py-3 text-right">
+                            <span
+                              className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase ${
+                                item.status === "COMPLETED"
+                                  ? "bg-emerald-500/10 text-emerald-500 border border-emerald-500/30"
+                                  : "bg-amber-500/10 text-amber-500 border border-amber-500/30"
+                              }`}
+                            >
+                              {item.status}
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+
+            {/* 3. MONETIZATION ELIGIBILITY ROADMAP */}
+            <div className="p-6 sm:p-8 rounded-3xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 space-y-6 shadow-sm">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-zinc-100 dark:border-zinc-800">
                 <div>
                   <div className="flex items-center gap-2">
@@ -569,7 +729,7 @@ export default function CreatorDashboardPage() {
                     </span>
                   </div>
                   <p className="text-xs text-zinc-500 mt-0.5">
-                    Yumora evaluates content originality, authentic readership, account age, and community standing to prevent follower botting
+                    Yumora evaluates content originality, authentic readership, and account standing
                   </p>
                 </div>
 
@@ -591,9 +751,8 @@ export default function CreatorDashboardPage() {
                 </div>
               </div>
 
-              {/* Multi-Factor Requirements Grid */}
+              {/* Requirements Grid */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                {/* 1. Account Standing */}
                 <div className="p-5 rounded-2xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 space-y-3">
                   <h4 className="font-extrabold text-xs text-zinc-900 dark:text-zinc-100 uppercase tracking-wide flex items-center gap-1.5">
                     <ShieldCheck className="w-4 h-4 text-indigo-500" />
@@ -606,11 +765,7 @@ export default function CreatorDashboardPage() {
                     </li>
                     <li className="flex items-center gap-2 text-emerald-500 font-semibold">
                       <CheckCircle2 className="w-3.5 h-3.5 flex-shrink-0" />
-                      <span className="text-zinc-700 dark:text-zinc-300">Email & Legal Age (18+) Verified</span>
-                    </li>
-                    <li className="flex items-center gap-2 text-emerald-500 font-semibold">
-                      <CheckCircle2 className="w-3.5 h-3.5 flex-shrink-0" />
-                      <span className="text-zinc-700 dark:text-zinc-300">Account Age ≥ 30 Days ({eligibility.accountAgeDays}d)</span>
+                      <span className="text-zinc-700 dark:text-zinc-300">Email & Age (18+) Verified</span>
                     </li>
                     <li className="flex items-center gap-2 text-emerald-500 font-semibold">
                       <CheckCircle2 className="w-3.5 h-3.5 flex-shrink-0" />
@@ -619,11 +774,10 @@ export default function CreatorDashboardPage() {
                   </ul>
                 </div>
 
-                {/* 2. Content & Chapters */}
                 <div className="p-5 rounded-2xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 space-y-3">
                   <h4 className="font-extrabold text-xs text-zinc-900 dark:text-zinc-100 uppercase tracking-wide flex items-center gap-1.5">
                     <BookOpen className="w-4 h-4 text-rose-500" />
-                    <span>2. Content & Chapters</span>
+                    <span>2. Content Quality</span>
                   </h4>
                   <ul className="space-y-2 text-xs">
                     <li className="flex items-center gap-2 text-emerald-500 font-semibold">
@@ -632,213 +786,309 @@ export default function CreatorDashboardPage() {
                     </li>
                     <li className="flex items-center gap-2 text-emerald-500 font-semibold">
                       <CheckCircle2 className="w-3.5 h-3.5 flex-shrink-0" />
-                      <span className="text-zinc-700 dark:text-zinc-300">At least 1 Approved Published Story</span>
-                    </li>
-                    <li className="flex items-center gap-2 text-emerald-500 font-semibold">
-                      <CheckCircle2 className="w-3.5 h-3.5 flex-shrink-0" />
-                      <span className="text-zinc-700 dark:text-zinc-300">
-                        {eligibility.publishedChaptersOrEpisodes} Published Chapters / Episodes (Min. 5 / 3)
-                      </span>
-                    </li>
-                    <li className="flex items-center gap-2 text-emerald-500 font-semibold">
-                      <CheckCircle2 className="w-3.5 h-3.5 flex-shrink-0" />
-                      <span className="text-zinc-700 dark:text-zinc-300">Zero AI-Spam / Scraped Content</span>
+                      <span className="text-zinc-700 dark:text-zinc-300">Published Chapters Active</span>
                     </li>
                   </ul>
                 </div>
 
-                {/* 3. Authentic Audience */}
                 <div className="p-5 rounded-2xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 space-y-3">
                   <h4 className="font-extrabold text-xs text-zinc-900 dark:text-zinc-100 uppercase tracking-wide flex items-center gap-1.5">
                     <Users className="w-4 h-4 text-amber-500" />
-                    <span>3. Authentic Readership</span>
+                    <span>3. Genuine Readership</span>
                   </h4>
                   <ul className="space-y-2 text-xs">
                     <li className="flex items-center justify-between">
+                      <span className="text-zinc-600 dark:text-zinc-400">Genuine Reads</span>
+                      <span className="font-bold text-zinc-900 dark:text-zinc-100">
+                        {formatNumber(totalReads)}
+                      </span>
+                    </li>
+                    <li className="flex items-center justify-between">
                       <span className="text-zinc-600 dark:text-zinc-400">Followers Threshold</span>
-                      <span className="font-bold text-zinc-900 dark:text-zinc-100">
-                        {formatNumber(eligibility.followersCount)} / {formatNumber(eligibility.followersThreshold)}
-                      </span>
-                    </li>
-                    <li className="flex items-center justify-between">
-                      <span className="text-zinc-600 dark:text-zinc-400">Genuine Reads (Bot-Filtered)</span>
-                      <span className="font-bold text-zinc-900 dark:text-zinc-100">
-                        {formatNumber(eligibility.genuineReadsCount)} / {formatNumber(eligibility.genuineReadsThreshold)}
-                      </span>
-                    </li>
-                    <li className="flex items-center justify-between">
-                      <span className="text-zinc-600 dark:text-zinc-400">Meaningful Engagements</span>
-                      <span className="font-bold text-zinc-900 dark:text-zinc-100">
-                        {formatNumber(eligibility.engagementsCount)} / {eligibility.engagementsThreshold}
-                      </span>
-                    </li>
-                    <li className="flex items-center justify-between">
-                      <span className="text-zinc-600 dark:text-zinc-400">Bot / Fraud Audit</span>
                       <span className="font-bold text-emerald-500">Passed ✓</span>
                     </li>
                   </ul>
                 </div>
               </div>
             </div>
-
-            {/* 3-Tier Creator Monetization Roadmap */}
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="text-lg sm:text-xl font-black text-zinc-900 dark:text-zinc-100">
-                    Yumora 3-Level Creator Monetization Model
-                  </h3>
-                  <p className="text-xs text-zinc-500">
-                    Transparent progression pathway from debut author to global franchise partner
-                  </p>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                {/* Level 1 */}
-                <div className={`p-6 rounded-3xl border space-y-4 relative ${
-                  currentTier === "LEVEL_1_ELIGIBLE" || currentTier === "LEVEL_2_ESTABLISHED" || currentTier === "LEVEL_3_VERIFIED"
-                    ? "bg-emerald-950/20 border-emerald-500/40 ring-1 ring-emerald-500/30"
-                    : "bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 opacity-80"
-                }`}>
-                  <div className="flex items-center justify-between">
-                    <span className="px-3 py-1 rounded-full text-xs font-black bg-emerald-500 text-zinc-950">
-                      🟢 LEVEL 1 — ELIGIBLE
-                    </span>
-                    {(currentTier === "LEVEL_1_ELIGIBLE" || currentTier === "LEVEL_2_ESTABLISHED" || currentTier === "LEVEL_3_VERIFIED") && (
-                      <span className="text-xs font-bold text-emerald-400 flex items-center gap-1">
-                        <Check className="w-3.5 h-3.5" /> Unlocked
-                      </span>
-                    )}
-                  </div>
-
-                  <div>
-                    <h4 className="font-black text-base text-zinc-900 dark:text-zinc-100">Debut Monetization</h4>
-                    <p className="text-xs text-zinc-500 mt-1">Meets basic quality & originality requirements</p>
-                  </div>
-
-                  <div className="space-y-2 pt-2 border-t border-zinc-200 dark:border-zinc-800 text-xs">
-                    <p className="font-bold text-zinc-700 dark:text-zinc-300">Unlocked Features:</p>
-                    <ul className="space-y-1.5 text-zinc-600 dark:text-zinc-400">
-                      <li className="flex items-center gap-2">✓ Reader Tips & Digital Gifts</li>
-                      <li className="flex items-center gap-2">✓ Paid Chapters & Coin Unlocks</li>
-                      <li className="flex items-center gap-2">✓ Paid Volumes & PDF Book Sales</li>
-                    </ul>
-                  </div>
-                </div>
-
-                {/* Level 2 */}
-                <div className={`p-6 rounded-3xl border space-y-4 relative ${
-                  currentTier === "LEVEL_2_ESTABLISHED" || currentTier === "LEVEL_3_VERIFIED"
-                    ? "bg-indigo-950/20 border-indigo-500/40 ring-1 ring-indigo-500/30"
-                    : "bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 opacity-80"
-                }`}>
-                  <div className="flex items-center justify-between">
-                    <span className="px-3 py-1 rounded-full text-xs font-black bg-indigo-500 text-white">
-                      🔵 LEVEL 2 — ESTABLISHED
-                    </span>
-                    {(currentTier === "LEVEL_2_ESTABLISHED" || currentTier === "LEVEL_3_VERIFIED") ? (
-                      <span className="text-xs font-bold text-indigo-400 flex items-center gap-1">
-                        <Check className="w-3.5 h-3.5" /> Unlocked
-                      </span>
-                    ) : (
-                      <span className="text-xs font-bold text-zinc-500 flex items-center gap-1">
-                        <Lock className="w-3.5 h-3.5" /> 2.5K+ Followers
-                      </span>
-                    )}
-                  </div>
-
-                  <div>
-                    <h4 className="font-black text-base text-zinc-900 dark:text-zinc-100">Recurring Fandom</h4>
-                    <p className="text-xs text-zinc-500 mt-1">High read-completion rate + consistent publishing history</p>
-                  </div>
-
-                  <div className="space-y-2 pt-2 border-t border-zinc-200 dark:border-zinc-800 text-xs">
-                    <p className="font-bold text-zinc-700 dark:text-zinc-300">Unlocked Features:</p>
-                    <ul className="space-y-1.5 text-zinc-600 dark:text-zinc-400">
-                      <li className="flex items-center gap-2">✓ Monthly Reader Memberships / VIP Tiers</li>
-                      <li className="flex items-center gap-2">✓ Ad Revenue Share Pool ($2.85 RPM)</li>
-                      <li className="flex items-center gap-2">✓ Yumora+ Creator Fund Grants</li>
-                      <li className="flex items-center gap-2">✓ Discovery Feed Algorithm Boost</li>
-                    </ul>
-                  </div>
-                </div>
-
-                {/* Level 3 */}
-                <div className={`p-6 rounded-3xl border space-y-4 relative ${
-                  currentTier === "LEVEL_3_VERIFIED"
-                    ? "bg-purple-950/20 border-purple-500/40 ring-1 ring-purple-500/30"
-                    : "bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 opacity-80"
-                }`}>
-                  <div className="flex items-center justify-between">
-                    <span className="px-3 py-1 rounded-full text-xs font-black bg-purple-600 text-white">
-                      🟣 LEVEL 3 — PREMIER
-                    </span>
-                    {currentTier === "LEVEL_3_VERIFIED" ? (
-                      <span className="text-xs font-bold text-purple-400 flex items-center gap-1">
-                        <Check className="w-3.5 h-3.5" /> Unlocked
-                      </span>
-                    ) : (
-                      <span className="text-xs font-bold text-zinc-500 flex items-center gap-1">
-                        <Lock className="w-3.5 h-3.5" /> 10K+ Followers
-                      </span>
-                    )}
-                  </div>
-
-                  <div>
-                    <h4 className="font-black text-base text-zinc-900 dark:text-zinc-100">Franchise & IP Studio</h4>
-                    <p className="text-xs text-zinc-500 mt-1">Top 1% commercial storytelling performance</p>
-                  </div>
-
-                  <div className="space-y-2 pt-2 border-t border-zinc-200 dark:border-zinc-800 text-xs">
-                    <p className="font-bold text-zinc-700 dark:text-zinc-300">Unlocked Features:</p>
-                    <ul className="space-y-1.5 text-zinc-600 dark:text-zinc-400">
-                      <li className="flex items-center gap-2">✓ Webtoon / Manga Adaptation Funding</li>
-                      <li className="flex items-center gap-2">✓ Animation Studio Production Consideration</li>
-                      <li className="flex items-center gap-2">✓ Direct Physical Publishing & Merch Rights</li>
-                      <li className="flex items-center gap-2">✓ Dedicated Editorial & Legal IP Management</li>
-                    </ul>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Anti-Fraud & Security Audit Protocol */}
-            <div className="p-6 rounded-3xl bg-zinc-950 border border-zinc-800 text-white space-y-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <ShieldCheck className="w-5 h-5 text-emerald-400" />
-                  <h4 className="font-bold text-sm">Yumora Anti-Fraud & Traffic Integrity Protocol</h4>
-                </div>
-                <span className="text-xs font-mono text-emerald-400">Real-Time Protection Active</span>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs text-zinc-400 pt-2 border-t border-zinc-800">
-                <div className="p-3 rounded-2xl bg-zinc-900/60 border border-zinc-800/80 space-y-1">
-                  <p className="font-bold text-zinc-200">Bot & Follower Farm Defense</p>
-                  <p className="text-[11px] leading-relaxed">
-                    Automated filtering detects sudden unnatural follower spikes, temporary burner accounts, and proxy clusters.
-                  </p>
-                </div>
-
-                <div className="p-3 rounded-2xl bg-zinc-900/60 border border-zinc-800/80 space-y-1">
-                  <p className="font-bold text-zinc-200">Genuine Read-Time Verification</p>
-                  <p className="text-[11px] leading-relaxed">
-                    Read counts require genuine chapter scroll depth and dwell time; scripted self-views and page-refresh bots are discarded.
-                  </p>
-                </div>
-
-                <div className="p-3 rounded-2xl bg-zinc-900/60 border border-zinc-800/80 space-y-1">
-                  <p className="font-bold text-zinc-200">Automatic Audit Holds</p>
-                  <p className="text-[11px] leading-relaxed">
-                    If suspicious engagement is detected, earnings are placed on safety hold while our moderation team completes a 24-hour review.
-                  </p>
-                </div>
-              </div>
-            </div>
           </div>
         );
       })()}
+
+      {/* WITHDRAWAL CONFIRMATION MODAL */}
+      {isWithdrawModalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in">
+          <div className="max-w-md w-full rounded-3xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 p-6 space-y-5 shadow-2xl">
+            <div className="flex items-center justify-between pb-3 border-b border-zinc-200 dark:border-zinc-800">
+              <div className="flex items-center gap-2">
+                <Wallet className="w-5 h-5 text-emerald-400" />
+                <h3 className="font-black text-base text-zinc-900 dark:text-zinc-100">
+                  Withdraw Creator Funds
+                </h3>
+              </div>
+              <button
+                onClick={() => setIsWithdrawModalOpen(false)}
+                className="p-1 rounded-lg text-zinc-400 hover:text-zinc-100"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleExecuteWithdrawal} className="space-y-4">
+              <div className="p-4 rounded-2xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 space-y-2">
+                <div className="flex justify-between text-xs">
+                  <span className="text-zinc-500">Available Balance</span>
+                  <span className="font-black text-emerald-500">${availableBalance.toFixed(2)} USD</span>
+                </div>
+                <div className="flex justify-between text-xs">
+                  <span className="text-zinc-500">Destination Account</span>
+                  <span className="font-bold text-zinc-900 dark:text-zinc-100">
+                    {payoutSettings.method === "UPI"
+                      ? `UPI: ${payoutSettings.upiId}`
+                      : payoutSettings.method === "BANK"
+                      ? `${payoutSettings.bankName} (${payoutSettings.bankAccountNumber.slice(-4)})`
+                      : `PayPal: ${payoutSettings.paypalEmail}`}
+                  </span>
+                </div>
+                <div className="flex justify-between text-xs">
+                  <span className="text-zinc-500">Platform Transfer Fee</span>
+                  <span className="font-bold text-emerald-500">$0.00 (Zero Fee)</span>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-zinc-700 dark:text-zinc-300 mb-1">
+                  Withdrawal Amount (USD)
+                </label>
+                <input
+                  type="number"
+                  min={25}
+                  max={availableBalance}
+                  step="any"
+                  required
+                  value={withdrawAmountInput}
+                  onChange={(e) => setWithdrawAmountInput(e.target.value)}
+                  placeholder={`Min $25.00 (Max $${availableBalance})`}
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 text-sm font-black text-zinc-900 dark:text-zinc-100 focus:outline-none focus:border-emerald-500"
+                />
+              </div>
+
+              <div className="flex justify-end gap-2 pt-3 border-t border-zinc-200 dark:border-zinc-800">
+                <button
+                  type="button"
+                  onClick={() => setIsWithdrawModalOpen(false)}
+                  className="px-4 py-2 rounded-xl bg-zinc-100 dark:bg-zinc-800 text-xs font-bold text-zinc-600 dark:text-zinc-300"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isProcessingWithdraw || availableBalance < 25}
+                  className="px-5 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-black text-xs shadow-md transition flex items-center gap-1.5 cursor-pointer"
+                >
+                  {isProcessingWithdraw ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <span>Processing...</span>
+                    </>
+                  ) : (
+                    <span>Confirm & Withdraw</span>
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* PAYOUT SETTINGS MODAL */}
+      {isSettingsModalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in">
+          <div className="max-w-lg w-full rounded-3xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 p-6 space-y-5 shadow-2xl max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between pb-3 border-b border-zinc-200 dark:border-zinc-800">
+              <div className="flex items-center gap-2">
+                <Sliders className="w-5 h-5 text-emerald-400" />
+                <h3 className="font-black text-base text-zinc-900 dark:text-zinc-100">
+                  Configure Payout Method
+                </h3>
+              </div>
+              <button
+                onClick={() => setIsSettingsModalOpen(false)}
+                className="p-1 rounded-lg text-zinc-400 hover:text-zinc-100"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSavePayoutSettings} className="space-y-4">
+              {/* Payment Method Selector */}
+              <div className="grid grid-cols-3 gap-2">
+                {[
+                  { id: "UPI", label: "UPI (India)", icon: Smartphone },
+                  { id: "BANK", label: "Bank Account", icon: Building2 },
+                  { id: "PAYPAL", label: "PayPal (Global)", icon: Globe },
+                ].map((m) => {
+                  const Icon = m.icon;
+                  return (
+                    <button
+                      key={m.id}
+                      type="button"
+                      onClick={() => setEditMethod(m.id as PayoutSettings["method"])}
+                      className={`p-3 rounded-2xl border text-center space-y-1 transition ${
+                        editMethod === m.id
+                          ? "bg-emerald-950/40 border-emerald-500 text-emerald-400 font-bold"
+                          : "bg-zinc-50 dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800 text-zinc-400"
+                      }`}
+                    >
+                      <Icon className="w-4 h-4 mx-auto" />
+                      <p className="text-[11px]">{m.label}</p>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* UPI Form */}
+              {editMethod === "UPI" && (
+                <div className="space-y-3 pt-2">
+                  <div>
+                    <label className="block text-xs font-bold text-zinc-700 dark:text-zinc-300 mb-1">
+                      UPI ID (Virtual Payment Address) *
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={editUpiId}
+                      onChange={(e) => setEditUpiId(e.target.value)}
+                      placeholder="e.g. yourname@okhdfcbank or 9876543210@paytm"
+                      className="w-full px-3.5 py-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 text-xs font-bold text-zinc-900 dark:text-zinc-100 focus:outline-none focus:border-emerald-500"
+                    />
+                    <p className="text-[10px] text-zinc-400 mt-1">
+                      Supports Google Pay, PhonePe, Paytm, and BHIM UPI.
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* Bank Account Form */}
+              {editMethod === "BANK" && (
+                <div className="space-y-3 pt-2">
+                  <div>
+                    <label className="block text-xs font-bold text-zinc-700 dark:text-zinc-300 mb-1">
+                      Account Holder Name *
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={editBankHolder}
+                      onChange={(e) => setEditBankHolder(e.target.value)}
+                      placeholder="Legal Name on Bank Account"
+                      className="w-full px-3.5 py-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 text-xs text-zinc-900 dark:text-zinc-100 focus:outline-none focus:border-emerald-500"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-bold text-zinc-700 dark:text-zinc-300 mb-1">
+                        Bank Name *
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        value={editBankName}
+                        onChange={(e) => setEditBankName(e.target.value)}
+                        placeholder="e.g. HDFC Bank, Chase"
+                        className="w-full px-3.5 py-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 text-xs text-zinc-900 dark:text-zinc-100 focus:outline-none focus:border-emerald-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-zinc-700 dark:text-zinc-300 mb-1">
+                        IFSC / SWIFT Code *
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        value={editBankIfsc}
+                        onChange={(e) => setEditBankIfsc(e.target.value)}
+                        placeholder="e.g. HDFC0001234"
+                        className="w-full px-3.5 py-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 text-xs text-zinc-900 dark:text-zinc-100 focus:outline-none focus:border-emerald-500"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-zinc-700 dark:text-zinc-300 mb-1">
+                      Account Number *
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={editBankNumber}
+                      onChange={(e) => setEditBankNumber(e.target.value)}
+                      placeholder="Bank Account Number"
+                      className="w-full px-3.5 py-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 text-xs text-zinc-900 dark:text-zinc-100 focus:outline-none focus:border-emerald-500"
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* PayPal Form */}
+              {editMethod === "PAYPAL" && (
+                <div className="space-y-3 pt-2">
+                  <div>
+                    <label className="block text-xs font-bold text-zinc-700 dark:text-zinc-300 mb-1">
+                      PayPal Email Address *
+                    </label>
+                    <input
+                      type="email"
+                      required
+                      value={editPaypalEmail}
+                      onChange={(e) => setEditPaypalEmail(e.target.value)}
+                      placeholder="e.g. creator@email.com"
+                      className="w-full px-3.5 py-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 text-xs text-zinc-900 dark:text-zinc-100 focus:outline-none focus:border-emerald-500"
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* Auto-Payout Option */}
+              <div className="pt-2">
+                <label className="flex items-center gap-3 p-3 rounded-2xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={editAutoPayout}
+                    onChange={(e) => setEditAutoPayout(e.target.checked)}
+                    className="accent-emerald-500 rounded"
+                  />
+                  <div>
+                    <p className="text-xs font-bold text-zinc-900 dark:text-zinc-100">
+                      Enable Monthly Auto-Payout (15th of Every Month)
+                    </p>
+                    <p className="text-[10px] text-zinc-400">
+                      Automatically transfers your balance once it exceeds $25.00 USD
+                    </p>
+                  </div>
+                </label>
+              </div>
+
+              <div className="flex justify-end gap-2 pt-3 border-t border-zinc-200 dark:border-zinc-800">
+                <button
+                  type="button"
+                  onClick={() => setIsSettingsModalOpen(false)}
+                  className="px-4 py-2 rounded-xl bg-zinc-100 dark:bg-zinc-800 text-xs font-bold text-zinc-600 dark:text-zinc-300"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-black text-xs shadow-md transition cursor-pointer"
+                >
+                  Save Settings
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
