@@ -445,7 +445,7 @@ export default function CreatorDashboardPage() {
                     className="p-4 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 flex gap-4 hover:border-zinc-300 dark:hover:border-zinc-700 transition"
                   >
                     <img
-                      src={novel.cover}
+                      src={novel.coverUrl}
                       alt={novel.title}
                       className="w-20 h-28 rounded-xl object-cover flex-shrink-0"
                     />
@@ -466,7 +466,7 @@ export default function CreatorDashboardPage() {
                           </span>
                         </div>
                         <p className="text-xs text-zinc-500 line-clamp-2 mt-1">
-                          {novel.synopsis}
+                          {novel.description}
                         </p>
                       </div>
 
