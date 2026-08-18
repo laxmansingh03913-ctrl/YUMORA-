@@ -639,6 +639,10 @@ export const SEED_COMICS: Comic[] = [
     reads: 115000,
     likesCount: 18400,
     rating: 4.93,
+    totalRatings: 1420,
+    isFeatured: true,
+    isEditorPick: true,
+    isPremium: false,
     episodesCount: 42,
     episodes: [
       {
@@ -677,7 +681,7 @@ export const SEED_COMICS: Comic[] = [
     secondaryGenre: "Sci-Fi",
     tags: ["Cyberpunk", "Graphic Novel", "Mecha", "Futuristic"],
     subType: "COMIC",
-    format: "PAGE",
+    format: "PAGE_BASED",
     language: "en",
     status: "ONGOING",
     contentRating: "TEEN",
@@ -685,6 +689,10 @@ export const SEED_COMICS: Comic[] = [
     reads: 78000,
     likesCount: 12400,
     rating: 4.88,
+    totalRatings: 980,
+    isFeatured: false,
+    isEditorPick: false,
+    isPremium: true,
     episodesCount: 28,
     episodes: [
       {
