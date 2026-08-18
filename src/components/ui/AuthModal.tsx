@@ -382,53 +382,6 @@ export function AuthModal() {
               )}
             </button>
           </div>
-
-          {/* 1-Click Fast Demo Role Switcher for instant testing */}
-          <div className="p-3.5 rounded-2xl bg-zinc-950/80 border border-zinc-800 space-y-2">
-            <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 flex items-center gap-1.5">
-              <Sparkles className="w-3 h-3 text-amber-400" /> Fast Demo Testing (1-Click Switch)
-            </p>
-            <div className="grid grid-cols-3 gap-2">
-              <button
-                type="button"
-                onClick={() => loginAsDemo("CREATOR")}
-                className={`flex flex-col items-center gap-1 p-2 rounded-xl border text-center transition ${
-                  role === "CREATOR"
-                    ? "bg-indigo-950/50 border-indigo-500/60 text-indigo-300 ring-1 ring-indigo-500/40"
-                    : "bg-zinc-900 border-zinc-800 hover:border-zinc-700 text-zinc-300"
-                }`}
-              >
-                <PenTool className="w-3.5 h-3.5 text-indigo-400" />
-                <span className="text-[10px] font-bold">Aria (Creator)</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => loginAsDemo("READER")}
-                className={`flex flex-col items-center gap-1 p-2 rounded-xl border text-center transition ${
-                  role === "READER"
-                    ? "bg-rose-950/50 border-rose-500/60 text-rose-300 ring-1 ring-rose-500/40"
-                    : "bg-zinc-900 border-zinc-800 hover:border-zinc-700 text-zinc-300"
-                }`}
-              >
-                <BookOpen className="w-3.5 h-3.5 text-rose-400" />
-                <span className="text-[10px] font-bold">Elena (Reader)</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => loginAsDemo("ADMIN")}
-                className={`flex flex-col items-center gap-1 p-2 rounded-xl border text-center transition ${
-                  role === "ADMIN"
-                    ? "bg-amber-950/50 border-amber-500/60 text-amber-300 ring-1 ring-amber-500/40"
-                    : "bg-zinc-900 border-zinc-800 hover:border-zinc-700 text-zinc-300"
-                }`}
-              >
-                <ShieldCheck className="w-3.5 h-3.5 text-amber-400" />
-                <span className="text-[10px] font-bold">Admin</span>
-              </button>
-            </div>
-          </div>
         </div>
 
         {/* Modal Footer Terms */}

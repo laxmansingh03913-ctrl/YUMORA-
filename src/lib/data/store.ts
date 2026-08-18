@@ -156,7 +156,7 @@ class DataStore {
 
   // Bookmarks
   getBookmarks(): string[] {
-    return this.getItem<string[]>(STORAGE_KEYS.BOOKMARKS, ["novel-1", "novel-3"]);
+    return this.getItem<string[]>(STORAGE_KEYS.BOOKMARKS, []);
   }
 
   toggleBookmark(contentId: string): boolean {
@@ -180,7 +180,7 @@ class DataStore {
 
   // Likes
   getLikes(): string[] {
-    return this.getItem<string[]>(STORAGE_KEYS.LIKES, ["novel-1", "post-1"]);
+    return this.getItem<string[]>(STORAGE_KEYS.LIKES, []);
   }
 
   toggleLike(contentId: string): boolean {
@@ -204,40 +204,7 @@ class DataStore {
 
   // Follows & Notifications Backend Logic
   getFollowRelationships(): Follow[] {
-    return this.getItem<Follow[]>(STORAGE_KEYS.FOLLOW_RELATIONS, [
-      {
-        id: "follow-seed-1",
-        followerId: "usr-reader-1",
-        followingId: "usr-creator-1",
-        createdAt: "2025-01-10T10:00:00Z",
-        notificationsEnabled: true,
-        preferences: { newChapters: true, newStories: true, newComics: true, announcements: true },
-      },
-      {
-        id: "follow-seed-2",
-        followerId: "usr-reader-1",
-        followingId: "usr-creator-2",
-        createdAt: "2025-01-12T14:30:00Z",
-        notificationsEnabled: true,
-        preferences: { newChapters: true, newStories: true, newComics: true, announcements: true },
-      },
-      {
-        id: "follow-seed-3",
-        followerId: "usr-creator-3",
-        followingId: "usr-creator-1",
-        createdAt: "2025-01-15T09:15:00Z",
-        notificationsEnabled: true,
-        preferences: { newChapters: true, newStories: true, newComics: true, announcements: true },
-      },
-      {
-        id: "follow-seed-4",
-        followerId: "usr-creator-2",
-        followingId: "usr-creator-3",
-        createdAt: "2025-01-20T16:45:00Z",
-        notificationsEnabled: true,
-        preferences: { newChapters: true, newStories: true, newComics: true, announcements: true },
-      },
-    ]);
+    return this.getItem<Follow[]>(STORAGE_KEYS.FOLLOW_RELATIONS, []);
   }
 
   followCreator(
@@ -399,7 +366,7 @@ class DataStore {
 
   // Legacy fast follow helper
   getFollows(): string[] {
-    return this.getItem<string[]>(STORAGE_KEYS.FOLLOWS, ["usr-creator-1", "usr-creator-3"]);
+    return this.getItem<string[]>(STORAGE_KEYS.FOLLOWS, []);
   }
 
   toggleFollow(creatorId: string, currentUserId?: string): boolean {
@@ -433,14 +400,13 @@ class DataStore {
     releaseNumber: number;
     releasedAt: string;
   }[] {
-    const currentFollowerId = userId || "usr-reader-1";
+    const currentFollowerId = userId || "";
+    if (!currentFollowerId) return [];
     const followedIds = this.getFollowing(currentFollowerId).map((u) => u.id);
+    if (followedIds.length === 0) return [];
 
-    // Also include default follows if list empty for rich experience
-    const activeFollowedIds = followedIds.length > 0 ? followedIds : ["usr-creator-1", "usr-creator-2", "usr-creator-3"];
-
-    const novels = this.getNovels().filter((n) => activeFollowedIds.includes(n.creatorId));
-    const comics = this.getComics().filter((c) => activeFollowedIds.includes(c.creatorId));
+    const novels = this.getNovels().filter((n) => followedIds.includes(n.creatorId));
+    const comics = this.getComics().filter((c) => followedIds.includes(c.creatorId));
 
     const feed: {
       id: string;
@@ -527,48 +493,7 @@ class DataStore {
 
   // Notification Methods
   getNotifications(userId: string): NotificationItem[] {
-    const customNotifs = this.getItem<NotificationItem[]>(STORAGE_KEYS.NOTIFICATIONS, [
-      {
-        id: "notif-1",
-        userId: "usr-reader-1",
-        creatorId: "usr-creator-2",
-        creatorName: "Kaelen Vance",
-        creatorAvatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=300",
-        title: "Kaelen Vance published a new chapter",
-        message: "Valkyrie Protocol: ZERO — Chapter 3: The Ghost Fleet is now live!",
-        contentUrl: "/novels/valkyrie-protocol/chapter/3",
-        type: "CHAPTER_RELEASE",
-        isRead: false,
-        createdAt: new Date(Date.now() - 7200000).toISOString(), // 2 hours ago
-      },
-      {
-        id: "notif-2",
-        userId: "usr-reader-1",
-        creatorId: "usr-creator-3",
-        creatorName: "Mei Lin Takahashi",
-        creatorAvatar: "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=300",
-        title: "Mei Lin Takahashi published Episode 04",
-        message: "Kitsune: Neo-Tokyo Spirits — Episode 04: Blade Awakening is ready to read!",
-        contentUrl: "/comics/kitsune-neo-tokyo",
-        type: "EPISODE_RELEASE",
-        isRead: false,
-        createdAt: new Date(Date.now() - 18000000).toISOString(), // 5 hours ago
-      },
-      {
-        id: "notif-3",
-        userId: "usr-reader-1",
-        creatorId: "usr-creator-1",
-        creatorName: "Aria Thorne",
-        creatorAvatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300",
-        title: "Aria Thorne posted a creator announcement",
-        message: "Thank you for 14K followers! New volume launch date announced for Echoes of the Void.",
-        contentUrl: "/creator/ariathorne",
-        type: "ANNOUNCEMENT",
-        isRead: true,
-        createdAt: new Date(Date.now() - 86400000).toISOString(), // 1 day ago
-      },
-    ]);
-
+    const customNotifs = this.getItem<NotificationItem[]>(STORAGE_KEYS.NOTIFICATIONS, []);
     return customNotifs.filter((n) => !n.userId || n.userId === userId);
   }
 
@@ -603,22 +528,7 @@ class DataStore {
 
   // Reading Progress
   getReadingProgressMap(): Record<string, ReadingProgress> {
-    return this.getItem<Record<string, ReadingProgress>>(STORAGE_KEYS.READING_PROGRESS, {
-      "novel-1": {
-        contentId: "novel-1",
-        contentType: "NOVEL",
-        chapterNumber: 2,
-        progressPercentage: 45,
-        lastReadAt: new Date(Date.now() - 3600000).toISOString(),
-      },
-      "novel-2": {
-        contentId: "novel-2",
-        contentType: "NOVEL",
-        chapterNumber: 1,
-        progressPercentage: 80,
-        lastReadAt: new Date(Date.now() - 86400000).toISOString(),
-      },
-    });
+    return this.getItem<Record<string, ReadingProgress>>(STORAGE_KEYS.READING_PROGRESS, {});
   }
 
   saveReadingProgress(progress: ReadingProgress): void {
@@ -721,8 +631,30 @@ class DataStore {
       updatedUser = { ...users[existingIdx], ...updates };
       users[existingIdx] = updatedUser;
     } else {
-      const base = SEED_USERS[0];
-      updatedUser = { ...base, id: userId, ...updates };
+      updatedUser = {
+        id: userId,
+        name: updates.name || "User",
+        username: updates.username || `user_${userId.slice(0, 6)}`,
+        email: updates.email || "",
+        role: updates.role || "READER",
+        avatar:
+          updates.avatar ||
+          "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300&auto=format&fit=crop&q=80",
+        bio: updates.bio || "Storyteller on Yumora.",
+        country: updates.country || "Global",
+        isVerified: false,
+        isCreatorProfileComplete: false,
+        isEmailVerified: Boolean(updates.isEmailVerified),
+        isAgeVerified: true,
+        monetizationTier: "NONE",
+        monetizationStatus: "NOT_APPLIED",
+        fraudAuditStatus: "CLEAN",
+        followersCount: 0,
+        followingCount: 0,
+        totalReads: 0,
+        createdAt: new Date().toISOString(),
+        ...updates,
+      };
       users.push(updatedUser);
     }
 

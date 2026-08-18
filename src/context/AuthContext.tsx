@@ -3,7 +3,6 @@
 import React, { createContext, useContext, useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { UserProfile, Role } from "../lib/types";
-import { SEED_USERS } from "../lib/data/seed-data";
 import { dataStore } from "../lib/data/store";
 import { supabase } from "../lib/supabase/client";
 import { getAuthCallbackUrl } from "../lib/auth-config";
@@ -210,17 +209,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     [user, router]
   );
 
-  const switchRole = (role: Role) => {
-    let target = SEED_USERS.find((u) => u.role === role);
-    if (!target) {
-      target = SEED_USERS[0];
+  const switchRole = (newRole: Role) => {
+    if (user) {
+      updateProfile({ role: newRole });
     }
-    saveUser(target);
   };
 
-  const loginAsDemo = (role: Role) => {
-    switchRole(role);
-    handlePostAuthRedirect();
+  const loginAsDemo = (_role: Role) => {
+    // Demo login removed in favor of real authentication
   };
 
   // Sign In with Email & Password

@@ -21,15 +21,36 @@ import { formatNumber, formatDate } from "@/lib/utils";
 
 export default function ContestsPage() {
   const contests = dataStore.getContests();
-  const contest = contests[0];
   const novels = dataStore.getNovels();
 
-  const [votes, setVotes] = useState<Record<string, number>>({
-    "novel-1": 342,
-    "novel-2": 289,
-    "novel-3": 241,
-    "novel-4": 185,
-  });
+  const contest = contests[0] || {
+    id: "contest-monthly-active",
+    title: "Yumora Monthly Story Challenge — Sci-Fi & Fantasy",
+    slug: "monthly-challenge",
+    description: "Write an original serialized story with captivating characters and immersive world-building. Open to all creators worldwide.",
+    prizePool: "$850 USD",
+    prizeStructure: [
+      { place: "1st Place", reward: "$500 USD", perks: "Official Feature & Promotion" },
+      { place: "2nd Place", reward: "$200 USD", perks: "Verified Creator Badge" },
+      { place: "3rd Place", reward: "$100 USD", perks: "Community Spotlight" },
+      { place: "Reader Choice", reward: "$50 USD", perks: "Audience Favorite Badge" },
+    ],
+    rules: [
+      "Minimum 2 published chapters at submission time",
+      "Original work owned 100% by the publishing author",
+      "Submissions evaluated based on reader engagement, originality, and storytelling pace",
+    ],
+    judgingCriteria: [
+      { title: "World-Building & Originality", weight: "35%", desc: "Rich universe rules and distinct creative premise" },
+      { title: "Character Arcs & Voice", weight: "30%", desc: "Compelling motives and emotional depth" },
+      { title: "Pacing & Readability", weight: "20%", desc: "Addictive hook and polished narrative flow" },
+      { title: "Reader Community Engagement", weight: "15%", desc: "Comments, votes, and chapter read completion rate" },
+    ],
+    endDate: new Date(Date.now() + 30 * 86400000).toISOString(),
+    submissionCount: novels.length,
+  };
+
+  const [votes, setVotes] = useState<Record<string, number>>({});
   const [votedIds, setVotedIds] = useState<string[]>([]);
   const [isSubmitModalOpen, setIsSubmitModalOpen] = useState(false);
   const [selectedNovelId, setSelectedNovelId] = useState(novels[0]?.id || "");
@@ -184,63 +205,84 @@ export default function ContestsPage() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-          {novels.slice(0, 4).map((novel, index) => {
-            const currentVotes = votes[novel.id] || 120;
-            const hasVoted = votedIds.includes(novel.id);
+        {novels.length > 0 ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+            {novels.slice(0, 4).map((novel, index) => {
+              const currentVotes = votes[novel.id] || 0;
+              const hasVoted = votedIds.includes(novel.id);
 
-            return (
-              <div
-                key={novel.id}
-                className="p-4 rounded-3xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 flex flex-col justify-between space-y-4 shadow-sm relative group"
-              >
-                <div className="absolute top-3 left-3 px-2.5 py-1 rounded-full text-[10px] font-black bg-black/80 text-amber-400 z-10 backdrop-blur-md">
-                  RANK #{index + 1}
-                </div>
-
-                <div className="aspect-[4/3] rounded-2xl overflow-hidden bg-zinc-950 relative">
-                  <img
-                    src={novel.coverUrl}
-                    alt={novel.title}
-                    className="w-full h-full object-cover group-hover:scale-105 transition duration-500"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
-                  <span className="absolute bottom-2 left-2 px-2 py-0.5 rounded text-[10px] font-semibold bg-white/20 text-white backdrop-blur-xs">
-                    {novel.genre}
-                  </span>
-                </div>
-
-                <div className="space-y-1">
-                  <Link href={`/novels/${novel.slug}`}>
-                    <h4 className="font-bold text-sm text-zinc-900 dark:text-zinc-100 group-hover:text-rose-500 transition line-clamp-1">
-                      {novel.title}
-                    </h4>
-                  </Link>
-                  <p className="text-xs text-zinc-400">By {novel.creator.name}</p>
-                </div>
-
-                <div className="pt-2 border-t border-zinc-100 dark:border-zinc-800 flex items-center justify-between">
-                  <div className="text-xs">
-                    <span className="font-bold text-rose-500">{currentVotes}</span>
-                    <span className="text-zinc-400 text-[11px] ml-1">community votes</span>
+              return (
+                <div
+                  key={novel.id}
+                  className="p-4 rounded-3xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 flex flex-col justify-between space-y-4 shadow-sm relative group"
+                >
+                  <div className="absolute top-3 left-3 px-2.5 py-1 rounded-full text-[10px] font-black bg-black/80 text-amber-400 z-10 backdrop-blur-md">
+                    RANK #{index + 1}
                   </div>
 
-                  <button
-                    onClick={() => handleVote(novel.id)}
-                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1 ${
-                      hasVoted
-                        ? "bg-emerald-600 text-white"
-                        : "bg-rose-600 hover:bg-rose-500 text-white shadow-md shadow-rose-600/20"
-                    }`}
-                  >
-                    <Vote className="w-3.5 h-3.5" />
-                    <span>{hasVoted ? "Voted!" : "Vote"}</span>
-                  </button>
+                  <div className="aspect-[4/3] rounded-2xl overflow-hidden bg-zinc-950 relative">
+                    <img
+                      src={novel.coverUrl}
+                      alt={novel.title}
+                      className="w-full h-full object-cover group-hover:scale-105 transition duration-500"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
+                    <span className="absolute bottom-2 left-2 px-2 py-0.5 rounded text-[10px] font-semibold bg-white/20 text-white backdrop-blur-xs">
+                      {novel.genre}
+                    </span>
+                  </div>
+
+                  <div className="space-y-1">
+                    <Link href={`/novels/${novel.slug}`}>
+                      <h4 className="font-bold text-sm text-zinc-900 dark:text-zinc-100 group-hover:text-rose-500 transition line-clamp-1">
+                        {novel.title}
+                      </h4>
+                    </Link>
+                    <p className="text-xs text-zinc-400">By {novel.creator.name}</p>
+                  </div>
+
+                  <div className="pt-2 border-t border-zinc-100 dark:border-zinc-800 flex items-center justify-between">
+                    <div className="text-xs">
+                      <span className="font-bold text-rose-500">{currentVotes}</span>
+                      <span className="text-zinc-400 text-[11px] ml-1">community votes</span>
+                    </div>
+
+                    <button
+                      onClick={() => handleVote(novel.id)}
+                      className={`px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1 ${
+                        hasVoted
+                          ? "bg-emerald-600 text-white"
+                          : "bg-rose-600 hover:bg-rose-500 text-white shadow-md shadow-rose-600/20"
+                      }`}
+                    >
+                      <Vote className="w-3.5 h-3.5" />
+                      <span>{hasVoted ? "Voted!" : "Vote"}</span>
+                    </button>
+                  </div>
                 </div>
-              </div>
-            );
-          })}
-        </div>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="text-center py-16 px-4 rounded-3xl bg-zinc-900/50 border border-zinc-800 space-y-4 max-w-md mx-auto">
+            <div className="w-12 h-12 rounded-2xl bg-amber-500/10 text-amber-500 flex items-center justify-center mx-auto">
+              <Trophy className="w-6 h-6" />
+            </div>
+            <div className="space-y-1">
+              <h3 className="text-base font-bold text-white">Submissions Open Now</h3>
+              <p className="text-xs text-zinc-400">
+                Be the first author to submit an original novel and claim 1st place!
+              </p>
+            </div>
+            <button
+              onClick={() => setIsSubmitModalOpen(true)}
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-rose-600 text-zinc-950 font-black text-xs shadow-md transition hover:scale-[1.02]"
+            >
+              <Sparkles className="w-3.5 h-3.5" />
+              <span>Submit Story Entry</span>
+            </button>
+          </div>
+        )}
       </div>
 
       {/* 4. SUBMIT STORY ENTRY MODAL */}
