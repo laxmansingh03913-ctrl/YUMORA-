@@ -541,10 +541,10 @@ export const SEED_NOVELS: Novel[] = RAW_NOVEL_DATA.map((config, index) => {
       title: config.sampleChapterTitle,
       content: config.sampleChapterContent,
       status: "PUBLISHED" as const,
+      isFree: true,
       publishedAt: "2025-10-15T12:00:00Z",
       wordCount: 2450,
-      likesCount: Math.round(config.likesCount * 0.4),
-      commentsCount: 84,
+      readTimeMinutes: 12,
     },
     {
       id: `${config.id}-ch-2`,
@@ -553,10 +553,10 @@ export const SEED_NOVELS: Novel[] = RAW_NOVEL_DATA.map((config, index) => {
       title: "Chapter 2: The Rising Tempest",
       content: "The morning sun brought no warmth to the jagged mountain pass.\n\nAs the scouting party advanced through the mist, the ambient mana spiked dramatically. Something massive was stirring beneath the permafrost, awakening ancient power.",
       status: "PUBLISHED" as const,
+      isFree: true,
       publishedAt: "2025-10-18T12:00:00Z",
       wordCount: 2800,
-      likesCount: Math.round(config.likesCount * 0.35),
-      commentsCount: 62,
+      readTimeMinutes: 14,
     },
     {
       id: `${config.id}-ch-3`,
@@ -565,10 +565,10 @@ export const SEED_NOVELS: Novel[] = RAW_NOVEL_DATA.map((config, index) => {
       title: "Chapter 3: Blood and Runes",
       content: "Runes carved into the stone began pulsing with radiant energy. Every fighter gripped their weapons tightly as the ground shook with rhythmic tremors.",
       status: "PUBLISHED" as const,
+      isFree: index % 3 === 0 ? false : true,
       publishedAt: "2025-10-22T12:00:00Z",
       wordCount: 3100,
-      likesCount: Math.round(config.likesCount * 0.25),
-      commentsCount: 50,
+      readTimeMinutes: 15,
     },
   ];
 
