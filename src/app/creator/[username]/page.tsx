@@ -313,6 +313,7 @@ export default function CreatorProfilePage({ params }: CreatorProfileProps) {
 
   // Custom Avatar Upload for Self
   const fileInputRef = React.useRef<HTMLInputElement>(null);
+  const modalFileInputRef = React.useRef<HTMLInputElement>(null);
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
 
   const handleAvatarFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -450,7 +451,7 @@ export default function CreatorProfilePage({ params }: CreatorProfileProps) {
                   <input
                     ref={fileInputRef}
                     type="file"
-                    accept="image/jpeg,image/png,image/webp"
+                    accept="image/*"
                     className="hidden"
                     onChange={handleAvatarFileChange}
                   />
@@ -944,9 +945,9 @@ export default function CreatorProfilePage({ params }: CreatorProfileProps) {
                   </p>
                   <button
                     type="button"
-                    onClick={() => fileInputRef.current?.click()}
+                    onClick={() => modalFileInputRef.current?.click()}
                     disabled={isUploadingAvatar}
-                    className="px-3 py-1.5 rounded-xl bg-zinc-200 dark:bg-zinc-800 hover:bg-zinc-300 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 font-bold text-[11px] transition flex items-center gap-1.5"
+                    className="px-3 py-1.5 rounded-xl bg-zinc-200 dark:bg-zinc-800 hover:bg-zinc-300 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 font-bold text-[11px] transition flex items-center gap-1.5 cursor-pointer"
                   >
                     {isUploadingAvatar ? (
                       <Loader2 className="w-3.5 h-3.5 animate-spin text-rose-500" />
@@ -955,6 +956,14 @@ export default function CreatorProfilePage({ params }: CreatorProfileProps) {
                     )}
                     <span>{isUploadingAvatar ? "Compressing..." : "Upload New Photo"}</span>
                   </button>
+
+                  <input
+                    ref={modalFileInputRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handleAvatarFileChange}
+                  />
                 </div>
               </div>
 

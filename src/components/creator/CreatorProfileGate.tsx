@@ -245,7 +245,7 @@ export function CreatorProfileGate({ onProfileCompleted }: CreatorProfileGatePro
             <input
               ref={avatarFileRef}
               type="file"
-              accept="image/jpeg,image/png,image/webp"
+              accept="image/*"
               className="hidden"
               onChange={handleAvatarUpload}
             />
