@@ -670,12 +670,12 @@ class DataStore {
     percentage: number;
     isComplete: boolean;
     checks: {
-      username: boolean;
       name: boolean;
-      avatar: boolean;
+      username: boolean;
       bio: boolean;
       country: boolean;
-      preferences: boolean;
+      primaryGenres: boolean;
+      preferredTypes: boolean;
       terms: boolean;
     };
     missingFields: string[];
@@ -685,33 +685,33 @@ class DataStore {
         percentage: 0,
         isComplete: false,
         checks: {
-          username: false,
           name: false,
-          avatar: false,
+          username: false,
           bio: false,
           country: false,
-          preferences: false,
+          primaryGenres: false,
+          preferredTypes: false,
           terms: false,
         },
         missingFields: [
-          "Username",
           "Display Name",
-          "Profile Avatar",
-          "Bio & Description",
+          "Unique Creator Username",
+          "Creator Bio",
           "Country / Region",
-          "Creator Preferences & Genres",
-          "Creator Terms & Agreement",
+          "Primary Genres",
+          "Preferred Content Types",
+          "Creator Agreement & Publishing Rights",
         ],
       };
     }
 
     const checks = {
-      username: Boolean(user.username && user.username.length >= 3),
       name: Boolean(user.name && user.name.trim().length >= 2),
-      avatar: Boolean(user.avatar && user.avatar.trim().length > 0),
+      username: Boolean(user.username && user.username.trim().length >= 3),
       bio: Boolean(user.bio && user.bio.trim().length >= 20),
       country: Boolean(user.country && user.country.trim().length > 0),
-      preferences: Boolean(user.primaryGenres && user.primaryGenres.length > 0),
+      primaryGenres: Boolean(user.primaryGenres && user.primaryGenres.length > 0),
+      preferredTypes: Boolean(user.preferredTypes && user.preferredTypes.length > 0),
       terms: Boolean(user.agreedToCreatorTerms === true),
     };
 
@@ -720,13 +720,13 @@ class DataStore {
     const percentage = Math.round((completedCount / keys.length) * 100);
 
     const missingFields: string[] = [];
-    if (!checks.username) missingFields.push("Unique Username");
     if (!checks.name) missingFields.push("Display Name");
-    if (!checks.avatar) missingFields.push("Profile Picture / Avatar");
-    if (!checks.bio) missingFields.push("Bio (minimum 20 characters)");
+    if (!checks.username) missingFields.push("Unique Creator Username");
+    if (!checks.bio) missingFields.push("Creator Bio (minimum 20 characters)");
     if (!checks.country) missingFields.push("Country / Region");
-    if (!checks.preferences) missingFields.push("Creator Preferences & Genres");
-    if (!checks.terms) missingFields.push("Publishing Rights & Agreement");
+    if (!checks.primaryGenres) missingFields.push("Primary Genres");
+    if (!checks.preferredTypes) missingFields.push("Preferred Content Types");
+    if (!checks.terms) missingFields.push("Creator Agreement & Publishing Rights");
 
     return {
       percentage,
