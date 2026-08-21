@@ -44,7 +44,7 @@ import confetti from "canvas-confetti";
 import { useAuth } from "@/context/AuthContext";
 import { dataStore } from "@/lib/data/store";
 import { formatNumber, formatDate } from "@/lib/utils";
-import { Novel, MonetizationEligibility, MonetizationTier } from "@/lib/types";
+import { Novel, Comic, MonetizationEligibility, MonetizationTier } from "@/lib/types";
 
 interface PayoutRecord {
   id: string;
