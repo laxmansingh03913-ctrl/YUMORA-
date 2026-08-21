@@ -1019,7 +1019,7 @@ export default function CreatorDashboardPage() {
               </button>
             </div>
 
-            <form onSubmit={handleExecuteWithdrawal} className="space-y-4">
+            <form onSubmit={handleWithdrawalSubmit} className="space-y-4">
               <div className="p-4 rounded-2xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 space-y-2">
                 <div className="flex justify-between text-xs">
                   <span className="text-zinc-500">Available Balance</span>
