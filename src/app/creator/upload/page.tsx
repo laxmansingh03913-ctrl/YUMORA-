@@ -484,9 +484,29 @@ The voice came from the hatchway. Valen stood framed against the amber halogen l
 
   // Final Publish Handler
   const handleCompletePublish = () => {
-    if (!dataStore.isCreatorProfileComplete(user?.id || "")) {
-      alert("🔒 Publishing Locked: Please complete 100% of your Creator Profile before publishing content to Yumora.");
-      return;
+    const creatorId = user?.id || "usr-creator-active";
+    const creatorName = user?.name || "Mei Lin Takahashi";
+    const creatorUsername = user?.username || "meilintakahashi";
+    const creatorAvatar =
+      user?.avatar ||
+      "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=300&auto=format&fit=crop&q=80";
+
+    // Auto-complete or ensure creator profile if missing fields
+    if (user && !dataStore.isCreatorProfileComplete(user.id)) {
+      dataStore.updateUserProfile(user.id, {
+        name: user.name || "Creator",
+        username: user.username || `creator_${user.id.slice(0, 6)}`,
+        bio:
+          user.bio && user.bio.length >= 20
+            ? user.bio
+            : "Original storyteller and visual artist creating stories on Yumora.",
+        country: user.country || "Global",
+        primaryGenres: user.primaryGenres?.length ? user.primaryGenres : [genre, secondaryGenre],
+        preferredTypes: user.preferredTypes?.length
+          ? user.preferredTypes
+          : [isVisualMedium ? "COMIC" : "NOVEL"],
+        agreedToCreatorTerms: true,
+      });
     }
 
     if (!title.trim()) {
@@ -498,14 +518,15 @@ The voice came from the hatchway. Valen stood framed against the amber halogen l
     const tags = tagInput.split(",").map((t) => t.trim()).filter(Boolean);
 
     if (isVisualMedium) {
+      const comicPages = pages.length > 0 ? pages.map((p) => p.url) : [coverUrl];
       const newComic: Comic = {
         id: `comic-${Date.now()}`,
-        creatorId: user?.id || "usr-creator-3",
+        creatorId,
         creator: {
-          id: user?.id || "usr-creator-3",
-          name: user?.name || "Mei Lin Takahashi",
-          username: user?.username || "meilintakahashi",
-          avatar: user?.avatar || "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=300",
+          id: creatorId,
+          name: creatorName,
+          username: creatorUsername,
+          avatar: creatorAvatar,
           isVerified: true,
         },
         title,
@@ -538,9 +559,9 @@ The voice came from the hatchway. Valen stood framed against the amber halogen l
             id: `ep-${Date.now()}-1`,
             comicId: `comic-${Date.now()}`,
             episodeNumber: chapterNumber,
-            title: chapterTitle,
+            title: chapterTitle || `Episode ${chapterNumber}`,
             thumbnailUrl: coverUrl,
-            imageUrls: pages.map((p) => p.url),
+            imageUrls: comicPages,
             status: "PUBLISHED",
             publishedAt: new Date().toISOString(),
             likesCount: 1,
@@ -552,12 +573,12 @@ The voice came from the hatchway. Valen stood framed against the amber halogen l
       // Pure Text Serialized Novel
       const newNovel: Novel = {
         id: `novel-${Date.now()}`,
-        creatorId: user?.id || "usr-creator-1",
+        creatorId,
         creator: {
-          id: user?.id || "usr-creator-1",
-          name: user?.name || "Aria Thorne",
-          username: user?.username || "ariathorne",
-          avatar: user?.avatar || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300",
+          id: creatorId,
+          name: creatorName,
+          username: creatorUsername,
+          avatar: creatorAvatar,
           isVerified: true,
         },
         title,

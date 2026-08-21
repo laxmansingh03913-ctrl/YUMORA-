@@ -1,14 +1,19 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { Image as ImageIcon, Sparkles, Star, Search, Flame, ArrowRight } from "lucide-react";
 import { dataStore } from "@/lib/data/store";
 import { ComicCard } from "@/components/ui/ComicCard";
+import { Comic } from "@/lib/types";
 
 export default function ComicsPage() {
   const [search, setSearch] = useState("");
-  const comics = dataStore.getComics();
+  const [comics, setComics] = useState<Comic[]>(() => dataStore.getComics());
+
+  useEffect(() => {
+    setComics(dataStore.getComics());
+  }, []);
 
   const filtered = comics.filter((c) => {
     if (!search.trim()) return true;

@@ -1,16 +1,20 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { BookOpen, Search, Sparkles, Filter, TrendingUp } from "lucide-react";
 import { dataStore } from "@/lib/data/store";
 import { NovelCard } from "@/components/ui/NovelCard";
+import { Novel } from "@/lib/types";
 
 export default function NovelsPage() {
   const [selectedGenre, setSelectedGenre] = useState<string>("All");
   const [search, setSearch] = useState("");
+  const [novels, setNovels] = useState<Novel[]>(() => dataStore.getNovels());
 
-  const novels = dataStore.getNovels();
+  useEffect(() => {
+    setNovels(dataStore.getNovels());
+  }, []);
   const genres = ["All", "Sci-Fi", "Fantasy", "Cyberpunk", "Adventure", "Mystery", "Romance"];
 
   const filtered = novels.filter((novel) => {

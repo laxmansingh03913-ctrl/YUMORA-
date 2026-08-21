@@ -25,6 +25,8 @@ import {
   SEED_USERS,
 } from "./seed-data";
 
+import { idbGet, idbSet } from "./idb";
+
 const STORAGE_KEYS = {
   NOVELS: "yumora_novels",
   COMICS: "yumora_comics",
@@ -41,6 +43,32 @@ const STORAGE_KEYS = {
 };
 
 class DataStore {
+  private memoryComics: Map<string, Comic> = new Map();
+  private memoryNovels: Map<string, Novel> = new Map();
+  private isHydratedFromIdb = false;
+
+  constructor() {
+    if (this.isBrowser()) {
+      this.initFromIdb();
+    }
+  }
+
+  private async initFromIdb() {
+    try {
+      const idbComics = await idbGet<Comic[]>(STORAGE_KEYS.COMICS);
+      if (idbComics && Array.isArray(idbComics)) {
+        idbComics.forEach((c) => this.memoryComics.set(c.id, c));
+      }
+      const idbNovels = await idbGet<Novel[]>(STORAGE_KEYS.NOVELS);
+      if (idbNovels && Array.isArray(idbNovels)) {
+        idbNovels.forEach((n) => this.memoryNovels.set(n.id, n));
+      }
+      this.isHydratedFromIdb = true;
+    } catch (e) {
+      console.warn("IndexedDB init notice:", e);
+    }
+  }
+
   private isBrowser(): boolean {
     return typeof window !== "undefined";
   }
@@ -60,7 +88,7 @@ class DataStore {
     try {
       localStorage.setItem(key, JSON.stringify(value));
     } catch (e) {
-      console.warn("LocalStorage save error", e);
+      console.warn("LocalStorage save warning (will persist via IndexedDB):", e);
     }
   }
 
@@ -70,6 +98,7 @@ class DataStore {
     const novelMap = new Map<string, Novel>();
     SEED_NOVELS.forEach((n) => novelMap.set(n.id, n));
     customNovels.forEach((n) => novelMap.set(n.id, n));
+    this.memoryNovels.forEach((n) => novelMap.set(n.id, n));
     return Array.from(novelMap.values());
   }
 
@@ -84,6 +113,7 @@ class DataStore {
   }
 
   saveNovel(novel: Novel): Novel {
+    this.memoryNovels.set(novel.id, novel);
     const novels = this.getItem<Novel[]>(STORAGE_KEYS.NOVELS, []);
     const index = novels.findIndex((n) => n.id === novel.id);
     if (index >= 0) {
@@ -92,6 +122,9 @@ class DataStore {
       novels.push(novel);
     }
     this.setItem(STORAGE_KEYS.NOVELS, novels);
+    if (this.isBrowser()) {
+      idbSet(STORAGE_KEYS.NOVELS, Array.from(this.memoryNovels.values())).catch(() => {});
+    }
     return novel;
   }
 
@@ -118,6 +151,7 @@ class DataStore {
     const comicMap = new Map<string, Comic>();
     SEED_COMICS.forEach((c) => comicMap.set(c.id, c));
     customComics.forEach((c) => comicMap.set(c.id, c));
+    this.memoryComics.forEach((c) => comicMap.set(c.id, c));
     return Array.from(comicMap.values());
   }
 
@@ -126,6 +160,7 @@ class DataStore {
   }
 
   saveComic(comic: Comic): Comic {
+    this.memoryComics.set(comic.id, comic);
     const comics = this.getItem<Comic[]>(STORAGE_KEYS.COMICS, []);
     const index = comics.findIndex((c) => c.id === comic.id);
     if (index >= 0) {
@@ -134,6 +169,9 @@ class DataStore {
       comics.push(comic);
     }
     this.setItem(STORAGE_KEYS.COMICS, comics);
+    if (this.isBrowser()) {
+      idbSet(STORAGE_KEYS.COMICS, Array.from(this.memoryComics.values())).catch(() => {});
+    }
     return comic;
   }
 

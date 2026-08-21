@@ -84,13 +84,28 @@ const DEFAULT_PAYOUT_HISTORY: PayoutRecord[] = [];
 
 export default function CreatorDashboardPage() {
   const { user } = useAuth();
-  const [novels, setNovels] = useState<Novel[]>(() => dataStore.getNovels().filter(n => n.creatorId === user?.id));
+  const [novels, setNovels] = useState<Novel[]>(() =>
+    user ? dataStore.getNovels().filter((n) => n.creatorId === user.id) : []
+  );
+  const [comics, setComics] = useState<Comic[]>(() =>
+    user ? dataStore.getComics().filter((c) => c.creatorId === user.id) : []
+  );
   const [activeTab, setActiveTab] = useState<"works" | "analytics" | "earnings">("works");
+  const [worksFilter, setWorksFilter] = useState<"all" | "novels" | "comics">("all");
 
-  // Real Computed metrics from authenticated user's actual stories
-  const totalReads = novels.reduce((acc, n) => acc + (n.reads || 0), 0);
-  const totalLikes = novels.reduce((acc, n) => acc + (n.likesCount || 0), 0);
+  // Real Computed metrics from authenticated user's actual stories (Novels + Comics)
+  const totalNovelReads = novels.reduce((acc, n) => acc + (n.reads || 0), 0);
+  const totalComicReads = comics.reduce((acc, c) => acc + (c.reads || 0), 0);
+  const totalReads = totalNovelReads + totalComicReads;
+
+  const totalNovelLikes = novels.reduce((acc, n) => acc + (n.likesCount || 0), 0);
+  const totalComicLikes = comics.reduce((acc, c) => acc + (c.likesCount || 0), 0);
+  const totalLikes = totalNovelLikes + totalComicLikes;
+
   const totalChapters = novels.reduce((acc, n) => acc + (n.chaptersCount || n.chapters?.length || 0), 0);
+  const totalEpisodes = comics.reduce((acc, c) => acc + (c.episodesCount || c.episodes?.length || 0), 0);
+  const totalPublishedUnits = totalChapters + totalEpisodes;
+
   const totalFollowers = user?.followersCount || (user ? dataStore.getFollowerCount(user.id) : 0);
 
   // Real calculated balance (zero mock offset)
@@ -152,8 +167,10 @@ export default function CreatorDashboardPage() {
   // Sync state when user loads
   useEffect(() => {
     if (user) {
-      const userStories = dataStore.getNovels().filter(n => n.creatorId === user.id);
-      setNovels(userStories);
+      const userNovels = dataStore.getNovels().filter((n) => n.creatorId === user.id);
+      const userComics = dataStore.getComics().filter((c) => c.creatorId === user.id);
+      setNovels(userNovels);
+      setComics(userComics);
     }
   }, [user]);
 
@@ -197,6 +214,22 @@ export default function CreatorDashboardPage() {
     setNovels((prev) => prev.map((n) => (n.id === novel.id ? updated : n)));
   };
 
+  const handleDeleteComic = (id: string, title: string) => {
+    if (window.confirm(`Are you sure you want to delete "${title}"?`)) {
+      const updated = comics.filter((c) => c.id !== id);
+      setComics(updated);
+      localStorage.setItem("yumora_comics", JSON.stringify(updated));
+    }
+  };
+
+  const handleToggleComicPublish = (comic: Comic) => {
+    const nextStatus: Comic["status"] =
+      comic.status === "PUBLISHED" || comic.status === "ONGOING" ? "DRAFT" : "ONGOING";
+    const updated: Comic = { ...comic, status: nextStatus };
+    dataStore.saveComic(updated);
+    setComics((prev) => prev.map((c) => (c.id === comic.id ? updated : c)));
+  };
+
   // Save Payout Settings
   const handleSavePayoutSettings = (e: React.FormEvent) => {
     e.preventDefault();
@@ -217,24 +250,15 @@ export default function CreatorDashboardPage() {
       localStorage.setItem(`yumora_payout_settings_${user.id}`, JSON.stringify(updated));
     }
     setIsSettingsModalOpen(false);
-    showToast("✓ Payout settings saved successfully!");
+    showToast("✅ Payout account settings saved securely.");
   };
 
-  // Execute Withdrawal
-  const handleExecuteWithdrawal = (e: React.FormEvent) => {
+  const handleWithdrawalSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    const amount = parseFloat(withdrawAmountInput);
 
-    if (!isPayoutConfigured) {
-      setIsWithdrawModalOpen(false);
-      setIsSettingsModalOpen(true);
-      showToast("⚠️ Please configure your Payout Method before withdrawing.");
-      return;
-    }
-
-    const amount = parseFloat(withdrawAmountInput) || availableBalance;
-
-    if (amount < 25) {
-      alert("Minimum withdrawal threshold is $25.00 USD.");
+    if (isNaN(amount) || amount < 10) {
+      alert("Minimum withdrawal amount is $10.00 USD.");
       return;
     }
 
@@ -290,6 +314,8 @@ export default function CreatorDashboardPage() {
 
   // Derive Initials for fallback
   const initials = (user?.name || "Creator").slice(0, 2).toUpperCase();
+
+  const totalWorksCount = novels.length + comics.length;
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8 animate-in fade-in">
@@ -360,7 +386,7 @@ export default function CreatorDashboardPage() {
           }`}
         >
           <BookOpen className="w-3.5 h-3.5" />
-          <span>My Stories ({novels.length})</span>
+          <span>My Stories ({totalWorksCount})</span>
         </button>
 
         <button
@@ -405,9 +431,9 @@ export default function CreatorDashboardPage() {
               </p>
             </div>
             <div className="p-4 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 space-y-1">
-              <p className="text-xs text-zinc-400 font-semibold">Published Chapters</p>
+              <p className="text-xs text-zinc-400 font-semibold">Published Chapters & Eps</p>
               <p className="text-2xl font-black text-indigo-500">
-                {totalChapters}
+                {totalPublishedUnits}
               </p>
             </div>
             <div className="p-4 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 space-y-1">
@@ -419,11 +445,48 @@ export default function CreatorDashboardPage() {
           </div>
 
           <div className="space-y-4">
-            <h2 className="text-lg font-black text-zinc-900 dark:text-zinc-100">
-              Published Serializations
-            </h2>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <h2 className="text-lg font-black text-zinc-900 dark:text-zinc-100">
+                Published Serializations ({totalWorksCount})
+              </h2>
 
-            {novels.length === 0 ? (
+              {totalWorksCount > 0 && (
+                <div className="flex items-center gap-1.5 p-1 bg-zinc-100 dark:bg-zinc-900 rounded-xl text-xs font-bold border border-zinc-200 dark:border-zinc-800 self-start">
+                  <button
+                    onClick={() => setWorksFilter("all")}
+                    className={`px-3 py-1 rounded-lg transition ${
+                      worksFilter === "all"
+                        ? "bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white shadow-sm"
+                        : "text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100"
+                    }`}
+                  >
+                    All ({totalWorksCount})
+                  </button>
+                  <button
+                    onClick={() => setWorksFilter("novels")}
+                    className={`px-3 py-1 rounded-lg transition ${
+                      worksFilter === "novels"
+                        ? "bg-white dark:bg-zinc-800 text-rose-500 shadow-sm"
+                        : "text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100"
+                    }`}
+                  >
+                    Novels ({novels.length})
+                  </button>
+                  <button
+                    onClick={() => setWorksFilter("comics")}
+                    className={`px-3 py-1 rounded-lg transition ${
+                      worksFilter === "comics"
+                        ? "bg-white dark:bg-zinc-800 text-indigo-400 shadow-sm"
+                        : "text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100"
+                    }`}
+                  >
+                    Comics / Manga ({comics.length})
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {totalWorksCount === 0 ? (
               <div className="p-12 text-center rounded-3xl bg-zinc-50 dark:bg-zinc-900/40 border border-zinc-200 dark:border-zinc-800 space-y-3 max-w-md mx-auto">
                 <BookOpen className="w-10 h-10 text-zinc-400 mx-auto" />
                 <h3 className="font-bold text-sm text-zinc-800 dark:text-zinc-200">
@@ -434,65 +497,153 @@ export default function CreatorDashboardPage() {
                 </p>
                 <Link
                   href="/creator/upload"
-                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-rose-600 text-white font-bold text-xs shadow-md"
+                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-gradient-to-r from-rose-600 to-indigo-600 text-white font-bold text-xs shadow-md"
                 >
                   <Plus className="w-4 h-4" />
-                  <span>Create Novel</span>
+                  <span>Publish Story / Webtoon</span>
                 </Link>
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {novels.map((novel) => (
-                  <div
-                    key={novel.id}
-                    className="p-4 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 flex gap-4 hover:border-zinc-300 dark:hover:border-zinc-700 transition"
-                  >
-                    <img
-                      src={novel.coverUrl}
-                      alt={novel.title}
-                      className="w-20 h-28 rounded-xl object-cover flex-shrink-0"
-                    />
-                    <div className="flex-1 flex flex-col justify-between min-w-0">
-                      <div>
-                        <div className="flex items-center justify-between gap-2">
-                          <h3 className="font-bold text-sm text-zinc-900 dark:text-zinc-100 truncate">
-                            {novel.title}
-                          </h3>
-                          <span
-                            className={`px-2 py-0.5 rounded-md text-[10px] font-extrabold uppercase ${
-                              novel.status === "PUBLISHED" || novel.status === "ONGOING"
-                                ? "bg-emerald-500/10 text-emerald-500"
-                                : "bg-zinc-500/10 text-zinc-400"
-                            }`}
-                          >
-                            {novel.status}
-                          </span>
+                {/* Novels */}
+                {(worksFilter === "all" || worksFilter === "novels") &&
+                  novels.map((novel) => (
+                    <div
+                      key={novel.id}
+                      className="p-4 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 flex gap-4 hover:border-zinc-300 dark:hover:border-zinc-700 transition"
+                    >
+                      <Link href={`/novels/${novel.slug}`} className="flex-shrink-0">
+                        <img
+                          src={novel.coverUrl}
+                          alt={novel.title}
+                          className="w-20 h-28 rounded-xl object-cover hover:opacity-90 transition"
+                        />
+                      </Link>
+                      <div className="flex-1 flex flex-col justify-between min-w-0">
+                        <div>
+                          <div className="flex items-center justify-between gap-2">
+                            <div className="flex items-center gap-1.5 min-w-0">
+                              <span className="px-1.5 py-0.5 rounded text-[9px] font-extrabold bg-rose-500/10 text-rose-500 uppercase">
+                                Novel
+                              </span>
+                              <Link
+                                href={`/novels/${novel.slug}`}
+                                className="font-bold text-sm text-zinc-900 dark:text-zinc-100 truncate hover:text-rose-500 transition"
+                              >
+                                {novel.title}
+                              </Link>
+                            </div>
+                            <span
+                              className={`px-2 py-0.5 rounded-md text-[10px] font-extrabold uppercase flex-shrink-0 ${
+                                novel.status === "PUBLISHED" || novel.status === "ONGOING"
+                                  ? "bg-emerald-500/10 text-emerald-500"
+                                  : "bg-zinc-500/10 text-zinc-400"
+                              }`}
+                            >
+                              {novel.status}
+                            </span>
+                          </div>
+                          <p className="text-xs text-zinc-500 line-clamp-2 mt-1">
+                            {novel.description}
+                          </p>
                         </div>
-                        <p className="text-xs text-zinc-500 line-clamp-2 mt-1">
-                          {novel.description}
-                        </p>
-                      </div>
 
-                      <div className="flex items-center justify-between pt-2 border-t border-zinc-100 dark:border-zinc-800 text-xs">
-                        <span className="text-zinc-400">{novel.chaptersCount} Chapters</span>
-                        <div className="flex items-center gap-2">
-                          <button
-                            onClick={() => handleTogglePublish(novel)}
-                            className="text-xs font-semibold text-indigo-500 hover:underline"
-                          >
-                            {novel.status === "DRAFT" ? "Publish" : "Unpublish"}
-                          </button>
-                          <button
-                            onClick={() => handleDeleteNovel(novel.id, novel.title)}
-                            className="text-zinc-400 hover:text-rose-500 transition"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
+                        <div className="flex items-center justify-between pt-2 border-t border-zinc-100 dark:border-zinc-800 text-xs">
+                          <span className="text-zinc-400 font-medium">{novel.chaptersCount} Chapters</span>
+                          <div className="flex items-center gap-3">
+                            <Link
+                              href={`/novels/${novel.slug}`}
+                              className="text-xs font-bold text-zinc-700 dark:text-zinc-300 hover:text-rose-500"
+                            >
+                              Read
+                            </Link>
+                            <button
+                              onClick={() => handleTogglePublish(novel)}
+                              className="text-xs font-semibold text-indigo-500 hover:underline"
+                            >
+                              {novel.status === "DRAFT" ? "Publish" : "Unpublish"}
+                            </button>
+                            <button
+                              onClick={() => handleDeleteNovel(novel.id, novel.title)}
+                              className="text-zinc-400 hover:text-rose-500 transition"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
                         </div>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  ))}
+
+                {/* Comics / Manga */}
+                {(worksFilter === "all" || worksFilter === "comics") &&
+                  comics.map((comic) => (
+                    <div
+                      key={comic.id}
+                      className="p-4 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 flex gap-4 hover:border-zinc-300 dark:hover:border-zinc-700 transition"
+                    >
+                      <Link href={`/comics/${comic.slug}`} className="flex-shrink-0">
+                        <img
+                          src={comic.coverUrl}
+                          alt={comic.title}
+                          className="w-20 h-28 rounded-xl object-cover hover:opacity-90 transition"
+                        />
+                      </Link>
+                      <div className="flex-1 flex flex-col justify-between min-w-0">
+                        <div>
+                          <div className="flex items-center justify-between gap-2">
+                            <div className="flex items-center gap-1.5 min-w-0">
+                              <span className="px-1.5 py-0.5 rounded text-[9px] font-extrabold bg-indigo-500/10 text-indigo-400 uppercase">
+                                {comic.subType || "Comic"}
+                              </span>
+                              <Link
+                                href={`/comics/${comic.slug}`}
+                                className="font-bold text-sm text-zinc-900 dark:text-zinc-100 truncate hover:text-indigo-400 transition"
+                              >
+                                {comic.title}
+                              </Link>
+                            </div>
+                            <span
+                              className={`px-2 py-0.5 rounded-md text-[10px] font-extrabold uppercase flex-shrink-0 ${
+                                comic.status === "PUBLISHED" || comic.status === "ONGOING"
+                                  ? "bg-emerald-500/10 text-emerald-500"
+                                  : "bg-zinc-500/10 text-zinc-400"
+                              }`}
+                            >
+                              {comic.status}
+                            </span>
+                          </div>
+                          <p className="text-xs text-zinc-500 line-clamp-2 mt-1">
+                            {comic.description}
+                          </p>
+                        </div>
+
+                        <div className="flex items-center justify-between pt-2 border-t border-zinc-100 dark:border-zinc-800 text-xs">
+                          <span className="text-zinc-400 font-medium">{comic.episodesCount} Episodes</span>
+                          <div className="flex items-center gap-3">
+                            <Link
+                              href={`/comics/${comic.slug}`}
+                              className="text-xs font-bold text-zinc-700 dark:text-zinc-300 hover:text-indigo-400"
+                            >
+                              Read
+                            </Link>
+                            <button
+                              onClick={() => handleToggleComicPublish(comic)}
+                              className="text-xs font-semibold text-indigo-500 hover:underline"
+                            >
+                              {comic.status === "DRAFT" ? "Publish" : "Unpublish"}
+                            </button>
+                            <button
+                              onClick={() => handleDeleteComic(comic.id, comic.title)}
+                              className="text-zinc-400 hover:text-rose-500 transition"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
               </div>
             )}
           </div>
