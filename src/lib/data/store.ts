@@ -26,6 +26,7 @@ import {
 } from "./seed-data";
 
 import { idbGet, idbSet } from "./idb";
+import { dbService } from "../supabase/db";
 
 const STORAGE_KEYS = {
   NOVELS: "yumora_novels",
@@ -50,6 +51,30 @@ class DataStore {
   constructor() {
     if (this.isBrowser()) {
       this.initFromIdb();
+      this.syncFromSupabase();
+    }
+  }
+
+  private async syncFromSupabase() {
+    try {
+      const [cloudNovels, cloudComics] = await Promise.all([
+        dbService.getNovels(),
+        dbService.getComics(),
+      ]);
+
+      if (cloudNovels && cloudNovels.length > 0) {
+        cloudNovels.forEach((n) => {
+          if (n && n.id) this.memoryNovels.set(n.id, n);
+        });
+      }
+
+      if (cloudComics && cloudComics.length > 0) {
+        cloudComics.forEach((c) => {
+          if (c && c.id) this.memoryComics.set(c.id, c);
+        });
+      }
+    } catch (e) {
+      console.warn("Supabase background sync notice:", e);
     }
   }
 

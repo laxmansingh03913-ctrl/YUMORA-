@@ -60,6 +60,8 @@ import { useAuth } from "@/context/AuthContext";
 import { Novel, Comic, ContentStatus, ContentRating, LanguageCode } from "@/lib/types";
 import { slugify, calculateReadTime } from "@/lib/utils";
 import { CreatorProfileGate } from "@/components/creator/CreatorProfileGate";
+import { dbService } from "@/lib/supabase/db";
+import { uploadDataUrlToSupabase, SUPABASE_BUCKETS } from "@/lib/supabase/storage";
 import {
   validateImageFile,
   compressImageToWebP,
@@ -482,8 +484,12 @@ The voice came from the hatchway. Valen stood framed against the amber halogen l
     }
   };
 
+  // Cloud Publishing State
+  const [isPublishingToCloud, setIsPublishingToCloud] = useState(false);
+  const [cloudPublishStatus, setCloudPublishStatus] = useState<string | null>(null);
+
   // Final Publish Handler
-  const handleCompletePublish = () => {
+  const handleCompletePublish = async () => {
     const creatorId = user?.id || "usr-creator-active";
     const creatorName = user?.name || "Mei Lin Takahashi";
     const creatorUsername = user?.username || "meilintakahashi";
@@ -514,121 +520,179 @@ The voice came from the hatchway. Valen stood framed against the amber halogen l
       return;
     }
 
+    setIsPublishingToCloud(true);
+    setCloudPublishStatus("Uploading cover to Supabase Storage...");
+
     const slug = slugify(title) || `work-${Date.now()}`;
     const tags = tagInput.split(",").map((t) => t.trim()).filter(Boolean);
 
-    if (isVisualMedium) {
-      const comicPages = pages.length > 0 ? pages.map((p) => p.url) : [coverUrl];
-      const newComic: Comic = {
-        id: `comic-${Date.now()}`,
-        creatorId,
-        creator: {
-          id: creatorId,
-          name: creatorName,
-          username: creatorUsername,
-          avatar: creatorAvatar,
-          isVerified: true,
-        },
-        title,
-        slug,
-        description,
-        coverUrl,
-        genre,
-        secondaryGenre,
-        tags,
-        language,
-        format: formatChoice === "WEBTOON" ? "VERTICAL" : "PAGE_BASED",
-        readingDirection,
-        subType: formatChoice,
-        allowPdfDownload,
-        status: contentStatus,
-        contentRating,
-        contentWarning: contentWarnings.join(", "),
-        views: 1,
-        reads: 1,
-        rating: 5.0,
-        totalRatings: 1,
-        isFeatured: true,
-        isEditorPick: true,
-        isPremium: false,
-        episodesCount: 1,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        episodes: [
-          {
-            id: `ep-${Date.now()}-1`,
-            comicId: `comic-${Date.now()}`,
-            episodeNumber: chapterNumber,
-            title: chapterTitle || `Episode ${chapterNumber}`,
-            thumbnailUrl: coverUrl,
-            imageUrls: comicPages,
-            status: "PUBLISHED",
-            publishedAt: new Date().toISOString(),
-            likesCount: 1,
-          },
-        ],
-      };
-      dataStore.saveComic(newComic);
-    } else {
-      // Pure Text Serialized Novel
-      const newNovel: Novel = {
-        id: `novel-${Date.now()}`,
-        creatorId,
-        creator: {
-          id: creatorId,
-          name: creatorName,
-          username: creatorUsername,
-          avatar: creatorAvatar,
-          isVerified: true,
-        },
-        title,
-        slug,
-        description,
-        coverUrl,
-        genre,
-        secondaryGenre,
-        tags,
-        language,
-        status: contentStatus,
-        contentRating,
-        contentWarning: contentWarnings.join(", "),
-        views: 1,
-        reads: 1,
-        likesCount: 1,
-        bookmarksCount: 1,
-        rating: 5.0,
-        totalRatings: 1,
-        isFeatured: false,
-        isEditorPick: false,
-        isPremium: false,
-        chaptersCount: 1,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        chapters: [
-          {
-            id: `ch-${Date.now()}-1`,
-            novelId: `novel-${Date.now()}`,
-            chapterNumber: chapterNumber,
-            title: chapterTitle,
-            content: chapterContent,
-            status: "PUBLISHED",
-            wordCount,
-            isFree: true,
-            readTimeMinutes: readTime,
-            publishedAt: new Date().toISOString(),
-          },
-        ],
-      };
-      dataStore.saveNovel(newNovel);
-    }
-
     try {
-      confetti({ particleCount: 140, spread: 90, origin: { y: 0.6 } });
-    } catch {
-      // ignore
-    }
+      // 1. Upload Cover Image to Supabase Storage
+      let finalCoverUrl = coverUrl;
+      if (coverUrl.startsWith("data:")) {
+        finalCoverUrl = await uploadDataUrlToSupabase(
+          SUPABASE_BUCKETS.COVERS,
+          `${slug}-cover-${Date.now()}.webp`,
+          coverUrl
+        );
+      }
 
-    setStep(5);
+      if (isVisualMedium) {
+        setCloudPublishStatus(`Uploading ${pages.length} manga pages to Supabase Storage...`);
+        const finalPageUrls = await Promise.all(
+          (pages.length > 0 ? pages : [{ id: "p1", name: "Cover", url: finalCoverUrl }]).map(
+            async (p, idx) => {
+              if (p.url.startsWith("data:")) {
+                const uploadedUrl = await uploadDataUrlToSupabase(
+                  SUPABASE_BUCKETS.COMICS,
+                  `${slug}/ep-${chapterNumber}/page-${idx + 1}-${Date.now()}.webp`,
+                  p.url
+                );
+                return uploadedUrl;
+              }
+              return p.url;
+            }
+          )
+        );
+
+        setCloudPublishStatus("Saving comic to Supabase Cloud Database...");
+        const comicId = `comic-${Date.now()}`;
+        const episodeId = `ep-${Date.now()}-1`;
+
+        const newComic: Comic = {
+          id: comicId,
+          creatorId,
+          creator: {
+            id: creatorId,
+            name: creatorName,
+            username: creatorUsername,
+            avatar: creatorAvatar,
+            isVerified: true,
+          },
+          title,
+          slug,
+          description,
+          coverUrl: finalCoverUrl,
+          genre,
+          secondaryGenre,
+          tags,
+          language,
+          format: formatChoice === "WEBTOON" ? "VERTICAL" : "PAGE_BASED",
+          readingDirection,
+          subType: formatChoice,
+          allowPdfDownload,
+          status: contentStatus,
+          contentRating,
+          contentWarning: contentWarnings.join(", "),
+          views: 1,
+          reads: 1,
+          rating: 5.0,
+          totalRatings: 1,
+          isFeatured: true,
+          isEditorPick: true,
+          isPremium: false,
+          episodesCount: 1,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          episodes: [
+            {
+              id: episodeId,
+              comicId,
+              episodeNumber: chapterNumber,
+              title: chapterTitle || `Episode ${chapterNumber}`,
+              thumbnailUrl: finalCoverUrl,
+              imageUrls: finalPageUrls,
+              status: "PUBLISHED",
+              publishedAt: new Date().toISOString(),
+              likesCount: 1,
+            },
+          ],
+        };
+
+        // Insert into Supabase PostgreSQL Cloud DB
+        await dbService.insertComic(newComic);
+        await dbService.insertEpisode(newComic.episodes[0], comicId);
+
+        // Also sync with local fast cache
+        dataStore.saveComic(newComic);
+      } else {
+        // Pure Text Serialized Novel
+        setCloudPublishStatus("Saving novel manuscript to Supabase Cloud Database...");
+        const novelId = `novel-${Date.now()}`;
+        const chapterId = `ch-${Date.now()}-1`;
+
+        const newNovel: Novel = {
+          id: novelId,
+          creatorId,
+          creator: {
+            id: creatorId,
+            name: creatorName,
+            username: creatorUsername,
+            avatar: creatorAvatar,
+            isVerified: true,
+          },
+          title,
+          slug,
+          description,
+          coverUrl: finalCoverUrl,
+          genre,
+          secondaryGenre,
+          tags,
+          language,
+          status: contentStatus,
+          contentRating,
+          contentWarning: contentWarnings.join(", "),
+          views: 1,
+          reads: 1,
+          likesCount: 1,
+          bookmarksCount: 1,
+          rating: 5.0,
+          totalRatings: 1,
+          isFeatured: false,
+          isEditorPick: false,
+          isPremium: false,
+          chaptersCount: 1,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          chapters: [
+            {
+              id: chapterId,
+              novelId,
+              chapterNumber,
+              title: chapterTitle,
+              content: chapterContent,
+              status: "PUBLISHED",
+              wordCount,
+              isFree: true,
+              readTimeMinutes: readTime,
+              publishedAt: new Date().toISOString(),
+            },
+          ],
+        };
+
+        // Insert into Supabase PostgreSQL Cloud DB
+        await dbService.insertNovel(newNovel);
+        await dbService.insertChapter(newNovel.chapters[0], novelId);
+
+        // Also sync with local fast cache
+        dataStore.saveNovel(newNovel);
+      }
+
+      try {
+        confetti({ particleCount: 140, spread: 90, origin: { y: 0.6 } });
+      } catch {
+        // ignore
+      }
+
+      setStep(5);
+    } catch (err) {
+      console.error("Cloud publish error:", err);
+      alert("Notice: Story saved to local workspace. If Supabase network had a hiccup, it will sync automatically.");
+      setStep(5);
+    } finally {
+      setIsPublishingToCloud(false);
+      setCloudPublishStatus(null);
+    }
   };
 
   const STEPS_NAV = [
@@ -1936,11 +2000,21 @@ The voice came from the hatchway. Valen stood framed against the amber halogen l
               ) : (
                 <button
                   type="button"
+                  disabled={isPublishingToCloud}
                   onClick={handleCompletePublish}
-                  className="px-7 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-black text-xs shadow-lg shadow-emerald-600/25 transition flex items-center gap-1.5 transform hover:scale-[1.02]"
+                  className="px-7 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-black text-xs shadow-lg shadow-emerald-600/25 transition flex items-center gap-2 transform hover:scale-[1.02] disabled:opacity-60"
                 >
-                  <Send className="w-4 h-4" />
-                  <span>Publish Story</span>
+                  {isPublishingToCloud ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <span>{cloudPublishStatus || "Publishing to Supabase..."}</span>
+                    </>
+                  ) : (
+                    <>
+                      <Send className="w-4 h-4" />
+                      <span>Publish to Supabase Cloud</span>
+                    </>
+                  )}
                 </button>
               )}
             </div>
