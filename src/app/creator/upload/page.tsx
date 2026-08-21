@@ -138,7 +138,7 @@ export default function CreatorUploadWizardPage() {
 
   // Content Medium
   const [formatChoice, setFormatChoice] = useState<
-    "NOVEL" | "ILLUSTRATED_NOVEL" | "MANGA" | "WEBTOON" | "COMIC" | "PDF_BOOK"
+    "NOVEL" | "ILLUSTRATED_NOVEL" | "MANGA" | "WEBTOON" | "COMIC" | "GRAPHIC_NOVEL" | "PDF_BOOK"
   >("NOVEL");
   const [readingDirection, setReadingDirection] = useState<"RTL" | "LTR" | "VERTICAL">("LTR");
   const [allowPdfDownload, setAllowPdfDownload] = useState(true);
@@ -258,6 +258,7 @@ export default function CreatorUploadWizardPage() {
     formatChoice === "MANGA" ||
     formatChoice === "WEBTOON" ||
     formatChoice === "COMIC" ||
+    formatChoice === "GRAPHIC_NOVEL" ||
     formatChoice === "PDF_BOOK";
 
   // Cover Image Upload with Size Validation & WebP Compression
