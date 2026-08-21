@@ -27,6 +27,7 @@ import {
   Sliders,
 } from "lucide-react";
 import { dataStore } from "@/lib/data/store";
+import { dbService } from "@/lib/supabase/db";
 import { formatNumber, formatDate } from "@/lib/utils";
 
 interface ComicPageProps {
@@ -53,20 +54,36 @@ export default function ComicDetailPage({ params }: ComicPageProps) {
 
   useEffect(() => {
     setMounted(true);
-    const found = dataStore.getComicBySlug(resolvedParams.slug);
-    setComic(found);
-    if (found) {
-      setIsBookmarked(dataStore.isBookmarked(found.id));
-      setIsLiked(dataStore.isLiked(found.id));
-      setLikesCount(found.views || 1420);
-      if (found.format === "VERTICAL") {
+    const local = dataStore.getComicBySlug(resolvedParams.slug);
+    if (local) {
+      const sorted = {
+        ...local,
+        episodes: [...(local.episodes || [])].sort((a, b) => a.episodeNumber - b.episodeNumber),
+      };
+      setComic(sorted);
+      setIsBookmarked(dataStore.isBookmarked(sorted.id));
+      setIsLiked(dataStore.isLiked(sorted.id));
+      setLikesCount(sorted.views || 1420);
+      if (sorted.format === "VERTICAL") {
         setReadingMode("VERTICAL");
-      } else if (found.readingDirection === "RTL") {
+      } else if (sorted.readingDirection === "RTL") {
         setReadingMode("RTL");
       } else {
         setReadingMode("VERTICAL");
       }
     }
+
+    // Always fetch latest live episodes from Supabase Cloud
+    dbService.getComicBySlug(resolvedParams.slug).then((cloud) => {
+      if (cloud && cloud.episodes && cloud.episodes.length > 0) {
+        const sortedCloud = {
+          ...cloud,
+          episodes: [...(cloud.episodes || [])].sort((a, b) => a.episodeNumber - b.episodeNumber),
+        };
+        setComic(sortedCloud);
+        dataStore.saveComic(sortedCloud);
+      }
+    });
   }, [resolvedParams.slug]);
 
   if (!comic) {

@@ -165,6 +165,9 @@ export default function CreatorUploadWizardPage() {
 
   // Comic / Manga Bulk Image Processing
   const [uploadTab, setUploadTab] = useState<"images" | "pdf" | "zip">("images");
+  const [episodeDistributionMode, setEpisodeDistributionMode] = useState<
+    "EACH_IMAGE_IS_EPISODE" | "ALL_IMAGES_ONE_EPISODE"
+  >("EACH_IMAGE_IS_EPISODE");
   const [isProcessingPdf, setIsProcessingPdf] = useState(false);
   const [isCompressingPages, setIsCompressingPages] = useState(false);
   const [pageCompressionMessage, setPageCompressionMessage] = useState<string | null>(null);
@@ -607,25 +610,80 @@ export default function CreatorUploadWizardPage() {
         );
 
         if (uploadMode === "ADD_CHAPTER" && selectedSeriesId) {
-          setCloudPublishStatus(`Adding Episode ${chapterNumber} to existing series...`);
-          const episodeId = `ep-${selectedSeriesId}-${chapterNumber}-${Date.now()}`;
-          const newEpisode: ComicEpisode = {
-            id: episodeId,
-            comicId: selectedSeriesId,
-            episodeNumber: chapterNumber,
-            title: chapterTitle || `Episode ${chapterNumber}`,
-            thumbnailUrl: finalCoverUrl,
-            imageUrls: finalPageUrls,
-            status: "PUBLISHED",
-            publishedAt: new Date().toISOString(),
-            likesCount: 0,
-          };
-          await dbService.insertEpisode(newEpisode, selectedSeriesId);
-          dataStore.addComicEpisode(selectedSeriesId, newEpisode);
+          if (episodeDistributionMode === "EACH_IMAGE_IS_EPISODE" && finalPageUrls.length > 1) {
+            setCloudPublishStatus(`Adding ${finalPageUrls.length} separate episodes to series...`);
+            for (let idx = 0; idx < finalPageUrls.length; idx++) {
+              const epNum = chapterNumber + idx;
+              const epId = `ep-${selectedSeriesId}-${epNum}-${Date.now() + idx}`;
+              const pageUrl = finalPageUrls[idx];
+              const ep: ComicEpisode = {
+                id: epId,
+                comicId: selectedSeriesId,
+                episodeNumber: epNum,
+                title: `Episode ${epNum}`,
+                thumbnailUrl: pageUrl,
+                imageUrls: [pageUrl],
+                status: "PUBLISHED",
+                publishedAt: new Date().toISOString(),
+                likesCount: 0,
+              };
+              await dbService.insertEpisode(ep, selectedSeriesId);
+              dataStore.addComicEpisode(selectedSeriesId, ep);
+            }
+          } else {
+            setCloudPublishStatus(`Adding Episode ${chapterNumber} to existing series...`);
+            const episodeId = `ep-${selectedSeriesId}-${chapterNumber}-${Date.now()}`;
+            const newEpisode: ComicEpisode = {
+              id: episodeId,
+              comicId: selectedSeriesId,
+              episodeNumber: chapterNumber,
+              title: chapterTitle || `Episode ${chapterNumber}`,
+              thumbnailUrl: finalCoverUrl,
+              imageUrls: finalPageUrls,
+              status: "PUBLISHED",
+              publishedAt: new Date().toISOString(),
+              likesCount: 0,
+            };
+            await dbService.insertEpisode(newEpisode, selectedSeriesId);
+            dataStore.addComicEpisode(selectedSeriesId, newEpisode);
+          }
         } else {
           setCloudPublishStatus("Saving comic to Supabase Cloud Database...");
           const comicId = `comic-${Date.now()}`;
-          const episodeId = `ep-${Date.now()}-1`;
+
+          let episodesToAttach: ComicEpisode[] = [];
+
+          if (episodeDistributionMode === "EACH_IMAGE_IS_EPISODE" && finalPageUrls.length > 0) {
+            episodesToAttach = finalPageUrls.map((pageUrl, idx) => {
+              const epNum = idx + 1;
+              return {
+                id: `ep-${comicId}-${epNum}-${Date.now() + idx}`,
+                comicId,
+                episodeNumber: epNum,
+                title: `Episode ${epNum}`,
+                thumbnailUrl: pageUrl,
+                imageUrls: [pageUrl],
+                status: "PUBLISHED",
+                publishedAt: new Date().toISOString(),
+                likesCount: 1,
+              };
+            });
+          } else {
+            const episodeId = `ep-${Date.now()}-1`;
+            episodesToAttach = [
+              {
+                id: episodeId,
+                comicId,
+                episodeNumber: chapterNumber,
+                title: chapterTitle || `Episode ${chapterNumber}`,
+                thumbnailUrl: finalCoverUrl,
+                imageUrls: finalPageUrls,
+                status: "PUBLISHED",
+                publishedAt: new Date().toISOString(),
+                likesCount: 1,
+              },
+            ];
+          }
 
           const newComic: Comic = {
             id: comicId,
@@ -659,27 +717,17 @@ export default function CreatorUploadWizardPage() {
             isFeatured: true,
             isEditorPick: true,
             isPremium: false,
-            episodesCount: 1,
+            episodesCount: episodesToAttach.length,
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString(),
-            episodes: [
-              {
-                id: episodeId,
-                comicId,
-                episodeNumber: chapterNumber,
-                title: chapterTitle || `Episode ${chapterNumber}`,
-                thumbnailUrl: finalCoverUrl,
-                imageUrls: finalPageUrls,
-                status: "PUBLISHED",
-                publishedAt: new Date().toISOString(),
-                likesCount: 1,
-              },
-            ],
+            episodes: episodesToAttach,
           };
 
           // Insert into Supabase PostgreSQL Cloud DB
           await dbService.insertComic(newComic);
-          await dbService.insertEpisode(newComic.episodes[0], comicId);
+          for (const ep of episodesToAttach) {
+            await dbService.insertEpisode(ep, comicId);
+          }
 
           // Also sync with local fast cache
           dataStore.saveComic(newComic);
@@ -1993,6 +2041,59 @@ export default function CreatorUploadWizardPage() {
                           Ep {num}
                         </button>
                       ))}
+                    </div>
+                  </div>
+
+                  {/* Episode Distribution Strategy Selector */}
+                  <div className="p-4 rounded-2xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <label className="text-xs font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-1.5">
+                        <Zap className="w-4 h-4 text-amber-500" />
+                        <span>Episode Distribution Strategy:</span>
+                      </label>
+                      <span className="text-[11px] font-bold text-indigo-400">
+                        {episodeDistributionMode === "EACH_IMAGE_IS_EPISODE"
+                          ? `⚡ Auto-Split (${pages.length} Episode${pages.length !== 1 ? "s" : ""})`
+                          : `📑 Single Episode (${pages.length} Page${pages.length !== 1 ? "s" : ""})`}
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                      <button
+                        type="button"
+                        onClick={() => setEpisodeDistributionMode("EACH_IMAGE_IS_EPISODE")}
+                        className={`p-3.5 rounded-2xl border text-left transition space-y-1.5 cursor-pointer ${
+                          episodeDistributionMode === "EACH_IMAGE_IS_EPISODE"
+                            ? "bg-indigo-950/40 border-indigo-500 ring-2 ring-indigo-500/40 text-indigo-300 font-bold"
+                            : "bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-zinc-400 hover:border-zinc-700"
+                        }`}
+                      >
+                        <div className="flex items-center gap-2">
+                          <Zap className="w-4 h-4 text-amber-400" />
+                          <span className="text-xs font-black">1 Image = 1 Episode (Auto-Split)</span>
+                        </div>
+                        <p className="text-[11px] text-zinc-400 leading-snug">
+                          Har uploaded image ek alag Episode banegi (1st image = Ep 1, 2nd image = Ep 2...).
+                        </p>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setEpisodeDistributionMode("ALL_IMAGES_ONE_EPISODE")}
+                        className={`p-3.5 rounded-2xl border text-left transition space-y-1.5 cursor-pointer ${
+                          episodeDistributionMode === "ALL_IMAGES_ONE_EPISODE"
+                            ? "bg-indigo-950/40 border-indigo-500 ring-2 ring-indigo-500/40 text-indigo-300 font-bold"
+                            : "bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-zinc-400 hover:border-zinc-700"
+                        }`}
+                      >
+                        <div className="flex items-center gap-2">
+                          <Layers className="w-4 h-4 text-indigo-400" />
+                          <span className="text-xs font-black">Multi-Page Single Episode</span>
+                        </div>
+                        <p className="text-[11px] text-zinc-400 leading-snug">
+                          Saari uploaded images ek hi episode ke andar consecutive pages (Page 1, 2, 3...) banengi.
+                        </p>
+                      </button>
                     </div>
                   </div>
 
