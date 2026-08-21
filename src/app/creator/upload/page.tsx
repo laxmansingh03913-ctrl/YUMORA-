@@ -57,7 +57,15 @@ import {
 } from "lucide-react";
 import { dataStore } from "@/lib/data/store";
 import { useAuth } from "@/context/AuthContext";
-import { Novel, Comic, ContentStatus, ContentRating, LanguageCode } from "@/lib/types";
+import {
+  Novel,
+  Comic,
+  Chapter,
+  ComicEpisode,
+  ContentStatus,
+  ContentRating,
+  LanguageCode,
+} from "@/lib/types";
 import { slugify, calculateReadTime } from "@/lib/utils";
 import { CreatorProfileGate } from "@/components/creator/CreatorProfileGate";
 import { dbService } from "@/lib/supabase/db";
@@ -110,6 +118,24 @@ export default function CreatorUploadWizardPage() {
   // 4-Step Progress Flow: 1 (Format) -> 2 (Details) -> 3 (Content / Novel Markdown) -> 4 (Review & Publish)
   const [step, setStep] = useState<1 | 2 | 3 | 4 | 5>(1);
 
+  // Upload Mode: Start New Series vs Add Chapter to Existing Series
+  const [uploadMode, setUploadMode] = useState<"NEW_SERIES" | "ADD_CHAPTER">("NEW_SERIES");
+  const [selectedSeriesId, setSelectedSeriesId] = useState<string>("");
+  const [selectedSeriesType, setSelectedSeriesType] = useState<"NOVEL" | "COMIC">("COMIC");
+
+  // User's existing works
+  const [userNovels, setUserNovels] = useState<Novel[]>([]);
+  const [userComics, setUserComics] = useState<Comic[]>([]);
+
+  useEffect(() => {
+    const allNovels = dataStore.getNovels();
+    const allComics = dataStore.getComics();
+    const myNovels = user ? allNovels.filter((n) => n.creatorId === user.id) : allNovels;
+    const myComics = user ? allComics.filter((c) => c.creatorId === user.id) : allComics;
+    setUserNovels(myNovels.length > 0 ? myNovels : allNovels);
+    setUserComics(myComics.length > 0 ? myComics : allComics);
+  }, [user]);
+
   // Content Medium
   const [formatChoice, setFormatChoice] = useState<
     "NOVEL" | "ILLUSTRATED_NOVEL" | "MANGA" | "WEBTOON" | "COMIC" | "PDF_BOOK"
@@ -150,6 +176,55 @@ export default function CreatorUploadWizardPage() {
   const [chapterNumber, setChapterNumber] = useState(1);
   const [chapterTitle, setChapterTitle] = useState("");
   const [chapterContent, setChapterContent] = useState("");
+
+  // Handler for selecting an existing series to add a chapter to
+  const handleSelectExistingSeries = (seriesId: string, type: "NOVEL" | "COMIC") => {
+    setSelectedSeriesId(seriesId);
+    setSelectedSeriesType(type);
+    setUploadMode("ADD_CHAPTER");
+
+    if (type === "COMIC") {
+      const comic = dataStore.getComics().find((c) => c.id === seriesId);
+      if (comic) {
+        setTitle(comic.title);
+        setDescription(comic.description);
+        setCoverUrl(comic.coverUrl);
+        setGenre(comic.genre);
+        setSecondaryGenre(comic.secondaryGenre || "Fantasy");
+        setTagInput(comic.tags.join(", "));
+        setFormatChoice(comic.subType || "MANGA");
+        setReadingDirection(comic.readingDirection || "VERTICAL");
+        const nextEpNum =
+          comic.episodes && comic.episodes.length > 0
+            ? Math.max(...comic.episodes.map((e) => e.episodeNumber)) + 1
+            : (comic.episodesCount || 0) + 1;
+        setChapterNumber(nextEpNum);
+        setChapterTitle(`Episode ${nextEpNum}`);
+        setPages([]);
+        setStep(3); // Jump right to Content Studio!
+      }
+    } else {
+      const novel = dataStore.getNovels().find((n) => n.id === seriesId);
+      if (novel) {
+        setTitle(novel.title);
+        setDescription(novel.description);
+        setCoverUrl(novel.coverUrl);
+        setGenre(novel.genre);
+        setSecondaryGenre(novel.secondaryGenre || "Fantasy");
+        setTagInput(novel.tags.join(", "));
+        setFormatChoice("NOVEL");
+        setReadingDirection("LTR");
+        const nextChNum =
+          novel.chapters && novel.chapters.length > 0
+            ? Math.max(...novel.chapters.map((c) => c.chapterNumber)) + 1
+            : (novel.chaptersCount || 0) + 1;
+        setChapterNumber(nextChNum);
+        setChapterTitle(`Chapter ${nextChNum}`);
+        setChapterContent("");
+        setStep(3); // Jump right to Writing Studio!
+      }
+    }
+  };
 
   // Novel Markdown Studio View Modes
   const [novelViewMode, setNovelViewMode] = useState<"split" | "edit" | "preview">("split");
@@ -531,127 +606,164 @@ export default function CreatorUploadWizardPage() {
           )
         );
 
-        setCloudPublishStatus("Saving comic to Supabase Cloud Database...");
-        const comicId = `comic-${Date.now()}`;
-        const episodeId = `ep-${Date.now()}-1`;
+        if (uploadMode === "ADD_CHAPTER" && selectedSeriesId) {
+          setCloudPublishStatus(`Adding Episode ${chapterNumber} to existing series...`);
+          const episodeId = `ep-${selectedSeriesId}-${chapterNumber}-${Date.now()}`;
+          const newEpisode: ComicEpisode = {
+            id: episodeId,
+            comicId: selectedSeriesId,
+            episodeNumber: chapterNumber,
+            title: chapterTitle || `Episode ${chapterNumber}`,
+            thumbnailUrl: finalCoverUrl,
+            imageUrls: finalPageUrls,
+            status: "PUBLISHED",
+            publishedAt: new Date().toISOString(),
+            likesCount: 0,
+          };
+          await dbService.insertEpisode(newEpisode, selectedSeriesId);
+          dataStore.addComicEpisode(selectedSeriesId, newEpisode);
+        } else {
+          setCloudPublishStatus("Saving comic to Supabase Cloud Database...");
+          const comicId = `comic-${Date.now()}`;
+          const episodeId = `ep-${Date.now()}-1`;
 
-        const newComic: Comic = {
-          id: comicId,
-          creatorId,
-          creator: {
-            id: creatorId,
-            name: creatorName,
-            username: creatorUsername,
-            avatar: creatorAvatar,
-            isVerified: true,
-          },
-          title,
-          slug,
-          description,
-          coverUrl: finalCoverUrl,
-          genre,
-          secondaryGenre,
-          tags,
-          language,
-          format: formatChoice === "WEBTOON" ? "VERTICAL" : "PAGE_BASED",
-          readingDirection,
-          subType: formatChoice,
-          allowPdfDownload,
-          status: contentStatus,
-          contentRating,
-          contentWarning: contentWarnings.join(", "),
-          views: 1,
-          reads: 1,
-          rating: 5.0,
-          totalRatings: 1,
-          isFeatured: true,
-          isEditorPick: true,
-          isPremium: false,
-          episodesCount: 1,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-          episodes: [
-            {
-              id: episodeId,
-              comicId,
-              episodeNumber: chapterNumber,
-              title: chapterTitle || `Episode ${chapterNumber}`,
-              thumbnailUrl: finalCoverUrl,
-              imageUrls: finalPageUrls,
-              status: "PUBLISHED",
-              publishedAt: new Date().toISOString(),
-              likesCount: 1,
+          const newComic: Comic = {
+            id: comicId,
+            creatorId,
+            creator: {
+              id: creatorId,
+              name: creatorName,
+              username: creatorUsername,
+              avatar: creatorAvatar,
+              isVerified: true,
             },
-          ],
-        };
+            title,
+            slug,
+            description,
+            coverUrl: finalCoverUrl,
+            genre,
+            secondaryGenre,
+            tags,
+            language,
+            format: formatChoice === "WEBTOON" ? "VERTICAL" : "PAGE_BASED",
+            readingDirection,
+            subType: formatChoice,
+            allowPdfDownload,
+            status: contentStatus,
+            contentRating,
+            contentWarning: contentWarnings.join(", "),
+            views: 1,
+            reads: 1,
+            rating: 5.0,
+            totalRatings: 1,
+            isFeatured: true,
+            isEditorPick: true,
+            isPremium: false,
+            episodesCount: 1,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+            episodes: [
+              {
+                id: episodeId,
+                comicId,
+                episodeNumber: chapterNumber,
+                title: chapterTitle || `Episode ${chapterNumber}`,
+                thumbnailUrl: finalCoverUrl,
+                imageUrls: finalPageUrls,
+                status: "PUBLISHED",
+                publishedAt: new Date().toISOString(),
+                likesCount: 1,
+              },
+            ],
+          };
 
-        // Insert into Supabase PostgreSQL Cloud DB
-        await dbService.insertComic(newComic);
-        await dbService.insertEpisode(newComic.episodes[0], comicId);
+          // Insert into Supabase PostgreSQL Cloud DB
+          await dbService.insertComic(newComic);
+          await dbService.insertEpisode(newComic.episodes[0], comicId);
 
-        // Also sync with local fast cache
-        dataStore.saveComic(newComic);
+          // Also sync with local fast cache
+          dataStore.saveComic(newComic);
+        }
       } else {
         // Pure Text Serialized Novel
-        setCloudPublishStatus("Saving novel manuscript to Supabase Cloud Database...");
-        const novelId = `novel-${Date.now()}`;
-        const chapterId = `ch-${Date.now()}-1`;
+        if (uploadMode === "ADD_CHAPTER" && selectedSeriesId) {
+          setCloudPublishStatus(`Adding Chapter ${chapterNumber} to existing novel...`);
+          const chapterId = `ch-${selectedSeriesId}-${chapterNumber}-${Date.now()}`;
+          const newChapter: Chapter = {
+            id: chapterId,
+            novelId: selectedSeriesId,
+            chapterNumber,
+            title: chapterTitle || `Chapter ${chapterNumber}`,
+            content: chapterContent,
+            status: "PUBLISHED",
+            wordCount,
+            isFree: true,
+            readTimeMinutes: readTime,
+            publishedAt: new Date().toISOString(),
+          };
+          await dbService.insertChapter(newChapter, selectedSeriesId);
+          dataStore.addChapter(selectedSeriesId, newChapter);
+        } else {
+          setCloudPublishStatus("Saving novel manuscript to Supabase Cloud Database...");
+          const novelId = `novel-${Date.now()}`;
+          const chapterId = `ch-${Date.now()}-1`;
 
-        const newNovel: Novel = {
-          id: novelId,
-          creatorId,
-          creator: {
-            id: creatorId,
-            name: creatorName,
-            username: creatorUsername,
-            avatar: creatorAvatar,
-            isVerified: true,
-          },
-          title,
-          slug,
-          description,
-          coverUrl: finalCoverUrl,
-          genre,
-          secondaryGenre,
-          tags,
-          language,
-          status: contentStatus,
-          contentRating,
-          contentWarning: contentWarnings.join(", "),
-          views: 1,
-          reads: 1,
-          likesCount: 1,
-          bookmarksCount: 1,
-          rating: 5.0,
-          totalRatings: 1,
-          isFeatured: false,
-          isEditorPick: false,
-          isPremium: false,
-          chaptersCount: 1,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-          chapters: [
-            {
-              id: chapterId,
-              novelId,
-              chapterNumber,
-              title: chapterTitle,
-              content: chapterContent,
-              status: "PUBLISHED",
-              wordCount,
-              isFree: true,
-              readTimeMinutes: readTime,
-              publishedAt: new Date().toISOString(),
+          const newNovel: Novel = {
+            id: novelId,
+            creatorId,
+            creator: {
+              id: creatorId,
+              name: creatorName,
+              username: creatorUsername,
+              avatar: creatorAvatar,
+              isVerified: true,
             },
-          ],
-        };
+            title,
+            slug,
+            description,
+            coverUrl: finalCoverUrl,
+            genre,
+            secondaryGenre,
+            tags,
+            language,
+            status: contentStatus,
+            contentRating,
+            contentWarning: contentWarnings.join(", "),
+            views: 1,
+            reads: 1,
+            likesCount: 1,
+            bookmarksCount: 1,
+            rating: 5.0,
+            totalRatings: 1,
+            isFeatured: false,
+            isEditorPick: false,
+            isPremium: false,
+            chaptersCount: 1,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+            chapters: [
+              {
+                id: chapterId,
+                novelId,
+                chapterNumber,
+                title: chapterTitle,
+                content: chapterContent,
+                status: "PUBLISHED",
+                wordCount,
+                isFree: true,
+                readTimeMinutes: readTime,
+                publishedAt: new Date().toISOString(),
+              },
+            ],
+          };
 
-        // Insert into Supabase PostgreSQL Cloud DB
-        await dbService.insertNovel(newNovel);
-        await dbService.insertChapter(newNovel.chapters[0], novelId);
+          // Insert into Supabase PostgreSQL Cloud DB
+          await dbService.insertNovel(newNovel);
+          await dbService.insertChapter(newNovel.chapters[0], novelId);
 
-        // Also sync with local fast cache
-        dataStore.saveNovel(newNovel);
+          // Also sync with local fast cache
+          dataStore.saveNovel(newNovel);
+        }
       }
 
       try {
@@ -767,42 +879,190 @@ export default function CreatorUploadWizardPage() {
         </div>
       )}
 
-      {/* STEP 1: FORMAT SELECTION */}
+      {/* STEP 1: FORMAT & SERIES SELECTION */}
       {step === 1 && (
         <div className="p-6 sm:p-8 rounded-3xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 space-y-6 shadow-sm">
-          <div>
-            <h3 className="text-xl font-black text-zinc-900 dark:text-zinc-100">
-              01 Choose Publication Format
-            </h3>
-            <p className="text-xs text-zinc-500 mt-0.5">
-              Select your story&apos;s medium to tailor reading layouts and creator tools
-            </p>
+          {/* Mode Switcher: New Series vs Add Chapter */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-zinc-100 dark:border-zinc-800">
+            <div>
+              <h3 className="text-xl font-black text-zinc-900 dark:text-zinc-100">
+                01 Publication Flow
+              </h3>
+              <p className="text-xs text-zinc-500 mt-0.5">
+                Start a brand new series or add subsequent chapters to your existing works
+              </p>
+            </div>
+
+            <div className="flex items-center gap-1.5 p-1 rounded-2xl bg-zinc-100 dark:bg-zinc-800 self-start sm:self-auto">
+              <button
+                type="button"
+                onClick={() => {
+                  setUploadMode("NEW_SERIES");
+                  setSelectedSeriesId("");
+                  setChapterNumber(1);
+                  setChapterTitle("");
+                }}
+                className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 ${
+                  uploadMode === "NEW_SERIES"
+                    ? "bg-indigo-600 text-white shadow-xs"
+                    : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100"
+                }`}
+              >
+                <Plus className="w-3.5 h-3.5" />
+                <span>New Story / Series</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setUploadMode("ADD_CHAPTER")}
+                className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 ${
+                  uploadMode === "ADD_CHAPTER"
+                    ? "bg-indigo-600 text-white shadow-xs"
+                    : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100"
+                }`}
+              >
+                <BookOpen className="w-3.5 h-3.5" />
+                <span>Add Chapter / Episode ({userNovels.length + userComics.length})</span>
+              </button>
+            </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {/* 1. Serialized Novel */}
-            <button
-              type="button"
-              onClick={() => {
-                setFormatChoice("NOVEL");
-                setReadingDirection("LTR");
-              }}
-              className={`p-6 rounded-2xl border text-left transition space-y-3 ${
-                formatChoice === "NOVEL"
-                  ? "bg-indigo-950/30 border-indigo-500 ring-2 ring-indigo-500/40"
-                  : "bg-zinc-50 dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800 hover:border-zinc-700"
-              }`}
-            >
-              <div className="w-10 h-10 rounded-xl bg-indigo-600 text-white flex items-center justify-center font-bold">
-                <BookOpen className="w-5 h-5" />
+          {/* If ADD_CHAPTER mode: Display existing series to pick from */}
+          {uploadMode === "ADD_CHAPTER" ? (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-black uppercase text-indigo-500 tracking-wider">
+                  Select a Series to Add Next Chapter:
+                </span>
+                <span className="text-xs text-zinc-400">Click any series to jump directly to chapter upload</span>
               </div>
-              <h4 className="font-bold text-sm text-zinc-900 dark:text-zinc-100">
-                📖 Serialized Web Novel
-              </h4>
-              <p className="text-xs text-zinc-500 leading-relaxed">
-                Pure text prose chapters with markdown styling, reading typography controls, and real-time word counter.
-              </p>
-            </button>
+
+              {userComics.length === 0 && userNovels.length === 0 ? (
+                <div className="p-8 rounded-3xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 text-center space-y-3">
+                  <p className="text-xs text-zinc-500">No existing series found in your creator account.</p>
+                  <button
+                    type="button"
+                    onClick={() => setUploadMode("NEW_SERIES")}
+                    className="px-4 py-2 rounded-xl bg-indigo-600 text-white font-bold text-xs"
+                  >
+                    Create Your First Series Now
+                  </button>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {/* Manga / Comics list */}
+                  {userComics.map((c) => {
+                    const currentEps = c.episodesCount || c.episodes?.length || 1;
+                    const nextEp =
+                      c.episodes && c.episodes.length > 0
+                        ? Math.max(...c.episodes.map((e) => e.episodeNumber)) + 1
+                        : currentEps + 1;
+
+                    return (
+                      <div
+                        key={c.id}
+                        onClick={() => handleSelectExistingSeries(c.id, "COMIC")}
+                        className={`p-4 rounded-2xl border text-left cursor-pointer transition flex gap-3.5 items-center hover:scale-[1.01] ${
+                          selectedSeriesId === c.id
+                            ? "bg-indigo-950/30 border-indigo-500 ring-2 ring-indigo-500/40"
+                            : "bg-zinc-50 dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800 hover:border-zinc-700"
+                        }`}
+                      >
+                        <img
+                          src={c.coverUrl}
+                          alt={c.title}
+                          className="w-14 h-18 rounded-xl object-cover flex-shrink-0 border border-zinc-700"
+                        />
+                        <div className="min-w-0 flex-1 space-y-1">
+                          <div className="flex items-center gap-1.5">
+                            <span className="px-2 py-0.5 rounded text-[10px] font-extrabold bg-indigo-600 text-white">
+                              {c.subType || "MANGA"}
+                            </span>
+                            <span className="text-[10px] text-zinc-400 font-semibold">{c.genre}</span>
+                          </div>
+                          <h4 className="font-black text-sm text-zinc-900 dark:text-zinc-100 truncate">
+                            {c.title}
+                          </h4>
+                          <p className="text-[11px] text-emerald-500 font-bold">
+                            Current: {currentEps} Ep • Next: Episode {nextEp} →
+                          </p>
+                        </div>
+                      </div>
+                    );
+                  })}
+
+                  {/* Novels list */}
+                  {userNovels.map((n) => {
+                    const currentChs = n.chaptersCount || n.chapters?.length || 1;
+                    const nextCh =
+                      n.chapters && n.chapters.length > 0
+                        ? Math.max(...n.chapters.map((c) => c.chapterNumber)) + 1
+                        : currentChs + 1;
+
+                    return (
+                      <div
+                        key={n.id}
+                        onClick={() => handleSelectExistingSeries(n.id, "NOVEL")}
+                        className={`p-4 rounded-2xl border text-left cursor-pointer transition flex gap-3.5 items-center hover:scale-[1.01] ${
+                          selectedSeriesId === n.id
+                            ? "bg-indigo-950/30 border-indigo-500 ring-2 ring-indigo-500/40"
+                            : "bg-zinc-50 dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800 hover:border-zinc-700"
+                        }`}
+                      >
+                        <img
+                          src={n.coverUrl}
+                          alt={n.title}
+                          className="w-14 h-18 rounded-xl object-cover flex-shrink-0 border border-zinc-700"
+                        />
+                        <div className="min-w-0 flex-1 space-y-1">
+                          <div className="flex items-center gap-1.5">
+                            <span className="px-2 py-0.5 rounded text-[10px] font-extrabold bg-rose-600 text-white">
+                              NOVEL
+                            </span>
+                            <span className="text-[10px] text-zinc-400 font-semibold">{n.genre}</span>
+                          </div>
+                          <h4 className="font-black text-sm text-zinc-900 dark:text-zinc-100 truncate">
+                            {n.title}
+                          </h4>
+                          <p className="text-[11px] text-emerald-500 font-bold">
+                            Current: {currentChs} Ch • Next: Chapter {nextCh} →
+                          </p>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="space-y-4">
+              <span className="text-xs font-black uppercase text-zinc-400 tracking-wider">
+                Select Format for New Story:
+              </span>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {/* 1. Serialized Novel */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setFormatChoice("NOVEL");
+                    setReadingDirection("LTR");
+                  }}
+                  className={`p-6 rounded-2xl border text-left transition space-y-3 ${
+                    formatChoice === "NOVEL"
+                      ? "bg-indigo-950/30 border-indigo-500 ring-2 ring-indigo-500/40"
+                      : "bg-zinc-50 dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800 hover:border-zinc-700"
+                  }`}
+                >
+                  <div className="w-10 h-10 rounded-xl bg-indigo-600 text-white flex items-center justify-center font-bold">
+                    <BookOpen className="w-5 h-5" />
+                  </div>
+                  <h4 className="font-bold text-sm text-zinc-900 dark:text-zinc-100">
+                    📖 Serialized Web Novel
+                  </h4>
+                  <p className="text-xs text-zinc-500 leading-relaxed">
+                    Pure text prose chapters with markdown styling, reading typography controls, and real-time word counter.
+                  </p>
+                </button>
 
             {/* 2. Manga (RTL) */}
             <button
@@ -1264,33 +1524,96 @@ export default function CreatorUploadWizardPage() {
                 </div>
               </div>
 
+              {uploadMode === "ADD_CHAPTER" && selectedSeriesId && (
+                <div className="p-3.5 rounded-2xl bg-indigo-500/10 border border-indigo-500/30 flex items-center justify-between text-xs">
+                  <div className="flex items-center gap-2">
+                    <Sparkles className="w-4 h-4 text-indigo-400 flex-shrink-0" />
+                    <div>
+                      <p className="font-bold text-zinc-900 dark:text-zinc-100">
+                        Adding Chapter to Novel: <span className="text-indigo-400">{title}</span>
+                      </p>
+                      <p className="text-[11px] text-zinc-500">Auto-detected next chapter: #{chapterNumber}</p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setStep(1)}
+                    className="px-3 py-1 rounded-xl bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-400 font-bold text-[11px]"
+                  >
+                    Change Series
+                  </button>
+                </div>
+              )}
+
               {/* Chapter Meta */}
-              <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
-                <div>
-                  <label className="block text-xs font-bold text-zinc-700 dark:text-zinc-300 mb-1">
-                    Chapter #
-                  </label>
-                  <input
-                    type="number"
-                    min={1}
-                    value={chapterNumber}
-                    onChange={(e) => setChapterNumber(parseInt(e.target.value, 10) || 1)}
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-xs font-bold text-zinc-900 dark:text-zinc-100 focus:outline-none focus:border-indigo-500"
-                  />
+              <div className="space-y-2">
+                <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
+                  <div>
+                    <label className="block text-xs font-bold text-zinc-700 dark:text-zinc-300 mb-1">
+                      Chapter #
+                    </label>
+                    <div className="flex items-center gap-1 bg-white dark:bg-zinc-900 p-1 rounded-xl border border-zinc-200 dark:border-zinc-800">
+                      <button
+                        type="button"
+                        onClick={() => setChapterNumber((prev) => Math.max(1, prev - 1))}
+                        className="w-7 h-7 rounded-lg bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 font-black text-xs text-zinc-800 dark:text-zinc-200 flex items-center justify-center cursor-pointer"
+                      >
+                        -
+                      </button>
+                      <input
+                        type="number"
+                        min={1}
+                        value={chapterNumber}
+                        onChange={(e) => setChapterNumber(Math.max(1, parseInt(e.target.value, 10) || 1))}
+                        className="w-full text-center bg-transparent text-xs font-black text-zinc-900 dark:text-zinc-100 focus:outline-none"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setChapterNumber((prev) => prev + 1)}
+                        className="w-7 h-7 rounded-lg bg-indigo-600 hover:bg-indigo-500 font-black text-xs text-white flex items-center justify-center cursor-pointer"
+                      >
+                        +
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="sm:col-span-3">
+                    <label className="block text-xs font-bold text-zinc-700 dark:text-zinc-300 mb-1">
+                      Chapter Title *
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={chapterTitle}
+                      onChange={(e) => setChapterTitle(e.target.value)}
+                      placeholder={`e.g. Chapter ${chapterNumber}: The Awakening`}
+                      className="w-full px-4 py-2.5 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-xs sm:text-sm font-semibold text-zinc-900 dark:text-zinc-100 focus:outline-none focus:border-indigo-500"
+                    />
+                  </div>
                 </div>
 
-                <div className="sm:col-span-3">
-                  <label className="block text-xs font-bold text-zinc-700 dark:text-zinc-300 mb-1">
-                    Chapter Title *
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={chapterTitle}
-                    onChange={(e) => setChapterTitle(e.target.value)}
-                    placeholder="e.g. Chapter 1: The Broken Loom of Orion"
-                    className="w-full px-4 py-2.5 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-xs sm:text-sm font-semibold text-zinc-900 dark:text-zinc-100 focus:outline-none focus:border-indigo-500"
-                  />
+                {/* Quick Chapter Selector Pills */}
+                <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-[11px]">
+                  <span className="text-zinc-500 text-[10px] font-bold uppercase whitespace-nowrap">Quick Select Ch:</span>
+                  {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((num) => (
+                    <button
+                      key={num}
+                      type="button"
+                      onClick={() => {
+                        setChapterNumber(num);
+                        if (!chapterTitle || chapterTitle.startsWith("Chapter ")) {
+                          setChapterTitle(`Chapter ${num}`);
+                        }
+                      }}
+                      className={`px-2 py-0.5 rounded-md font-bold whitespace-nowrap transition cursor-pointer ${
+                        chapterNumber === num
+                          ? "bg-indigo-600 text-white"
+                          : "bg-zinc-100 dark:bg-zinc-800 text-zinc-400 hover:text-zinc-200"
+                      }`}
+                    >
+                      Ch {num}
+                    </button>
+                  ))}
                 </div>
               </div>
 
@@ -1580,33 +1903,96 @@ export default function CreatorUploadWizardPage() {
                     </div>
                   </div>
 
+                  {uploadMode === "ADD_CHAPTER" && selectedSeriesId && (
+                    <div className="p-3.5 rounded-2xl bg-indigo-500/10 border border-indigo-500/30 flex items-center justify-between text-xs">
+                      <div className="flex items-center gap-2">
+                        <Sparkles className="w-4 h-4 text-indigo-400 flex-shrink-0" />
+                        <div>
+                          <p className="font-bold text-zinc-900 dark:text-zinc-100">
+                            Adding Episode to: <span className="text-indigo-400">{title}</span>
+                          </p>
+                          <p className="text-[11px] text-zinc-500">Auto-detected next episode: #{chapterNumber}</p>
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setStep(1)}
+                        className="px-3 py-1 rounded-xl bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-400 font-bold text-[11px]"
+                      >
+                        Change Series
+                      </button>
+                    </div>
+                  )}
+
                   {/* Chapter Details */}
-                  <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
-                    <div>
-                      <label className="block text-xs font-bold text-zinc-700 dark:text-zinc-300 mb-1">
-                        Chapter / Ep #
-                      </label>
-                      <input
-                        type="number"
-                        min={1}
-                        value={chapterNumber}
-                        onChange={(e) => setChapterNumber(parseInt(e.target.value, 10) || 1)}
-                        className="w-full px-3.5 py-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 text-xs font-bold text-zinc-900 dark:text-zinc-100 focus:outline-none focus:border-indigo-500"
-                      />
+                  <div className="space-y-2">
+                    <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
+                      <div>
+                        <label className="block text-xs font-bold text-zinc-700 dark:text-zinc-300 mb-1">
+                          Chapter / Ep #
+                        </label>
+                        <div className="flex items-center gap-1 bg-zinc-50 dark:bg-zinc-950 p-1 rounded-xl border border-zinc-200 dark:border-zinc-800">
+                          <button
+                            type="button"
+                            onClick={() => setChapterNumber((prev) => Math.max(1, prev - 1))}
+                            className="w-7 h-7 rounded-lg bg-zinc-200 dark:bg-zinc-800 hover:bg-zinc-300 dark:hover:bg-zinc-700 font-black text-xs text-zinc-800 dark:text-zinc-200 flex items-center justify-center cursor-pointer"
+                          >
+                            -
+                          </button>
+                          <input
+                            type="number"
+                            min={1}
+                            value={chapterNumber}
+                            onChange={(e) => setChapterNumber(Math.max(1, parseInt(e.target.value, 10) || 1))}
+                            className="w-full text-center bg-transparent text-xs font-black text-zinc-900 dark:text-zinc-100 focus:outline-none"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setChapterNumber((prev) => prev + 1)}
+                            className="w-7 h-7 rounded-lg bg-indigo-600 hover:bg-indigo-500 font-black text-xs text-white flex items-center justify-center cursor-pointer"
+                          >
+                            +
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="sm:col-span-3">
+                        <label className="block text-xs font-bold text-zinc-700 dark:text-zinc-300 mb-1">
+                          Chapter Title *
+                        </label>
+                        <input
+                          type="text"
+                          required
+                          value={chapterTitle}
+                          onChange={(e) => setChapterTitle(e.target.value)}
+                          placeholder={`e.g. Episode ${chapterNumber}: Awakening`}
+                          className="w-full px-4 py-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 text-xs sm:text-sm font-semibold text-zinc-900 dark:text-zinc-100 focus:outline-none focus:border-indigo-500"
+                        />
+                      </div>
                     </div>
 
-                    <div className="sm:col-span-3">
-                      <label className="block text-xs font-bold text-zinc-700 dark:text-zinc-300 mb-1">
-                        Chapter Title *
-                      </label>
-                      <input
-                        type="text"
-                        required
-                        value={chapterTitle}
-                        onChange={(e) => setChapterTitle(e.target.value)}
-                        placeholder="e.g. Chapter 1: Awakening Surge"
-                        className="w-full px-4 py-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 text-xs sm:text-sm font-semibold text-zinc-900 dark:text-zinc-100 focus:outline-none focus:border-indigo-500"
-                      />
+                    {/* Quick Chapter Selector Pills */}
+                    <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-[11px]">
+                      <span className="text-zinc-500 text-[10px] font-bold uppercase whitespace-nowrap">Quick Select Ep:</span>
+                      {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((num) => (
+                        <button
+                          key={num}
+                          type="button"
+                          onClick={() => {
+                            setChapterNumber(num);
+                            if (!chapterTitle || chapterTitle.startsWith("Episode ") || chapterTitle.startsWith("Chapter ")) {
+                              setChapterTitle(`Episode ${num}`);
+                            }
+                          }}
+                          className={`px-2 py-0.5 rounded-md font-bold whitespace-nowrap transition cursor-pointer ${
+                            chapterNumber === num
+                              ? "bg-indigo-600 text-white"
+                              : "bg-zinc-100 dark:bg-zinc-800 text-zinc-400 hover:text-zinc-200"
+                          }`}
+                        >
+                          Ep {num}
+                        </button>
+                      ))}
                     </div>
                   </div>
 
