@@ -51,38 +51,7 @@ export default function NovelDetailPage({ params }: PageProps) {
   const [newReviewScore, setNewReviewScore] = useState(5);
   const [newReviewText, setNewReviewText] = useState("");
   const [comments, setComments] = useState<Comment[]>([]);
-  const [reviews, setReviews] = useState<Review[]>([
-    {
-      id: "rev-1",
-      userId: "usr-reader-1",
-      user: {
-        name: "Elena Rostova",
-        username: "elenareads",
-        avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=300&auto=format&fit=crop&q=80",
-      },
-      contentId: novel?.id || "",
-      contentType: "NOVEL",
-      score: 5,
-      review:
-        "The world-building in this story is phenomenal! The tactile way magic is described through star-threads feels fresh and grounded. Can't wait for Chapter 5!",
-      createdAt: "2025-02-12T10:00:00Z",
-    },
-    {
-      id: "rev-2",
-      userId: "usr-reader-2",
-      user: {
-        name: "Devon Vance",
-        username: "devonv",
-        avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=300&auto=format&fit=crop&q=80",
-      },
-      contentId: novel?.id || "",
-      contentType: "NOVEL",
-      score: 5,
-      review:
-        "Fast-paced, great character chemistry, and gorgeous sci-fi concepts. One of the best indie web serials on the platform.",
-      createdAt: "2025-02-08T15:30:00Z",
-    },
-  ]);
+  const [reviews, setReviews] = useState<Review[]>([]);
 
   const readingProgress = novel ? dataStore.getReadingProgress(novel.id) : undefined;
 

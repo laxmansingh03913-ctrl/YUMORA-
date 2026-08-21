@@ -118,18 +118,16 @@ export default function CreatorUploadWizardPage() {
   const [allowPdfDownload, setAllowPdfDownload] = useState(true);
 
   // Metadata
-  const [title, setTitle] = useState("Chronicles of the Astral Weaver");
-  const [description, setDescription] = useState(
-    "In a world where celestial constellations govern mortal souls, an outlaw cartographer discovers a fractured starlight compass capable of reshaping the astral tapestry."
-  );
-  const [coverUrl, setCoverUrl] = useState(PRESET_COVERS[2].url);
-  const [genre, setGenre] = useState("Sci-Fi");
-  const [secondaryGenre, setSecondaryGenre] = useState("Fantasy");
-  const [tagInput, setTagInput] = useState("Sci-Fi, Space Opera, Magic, Starlight, Adventure");
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const [coverUrl, setCoverUrl] = useState("");
+  const [genre, setGenre] = useState("Fantasy");
+  const [secondaryGenre, setSecondaryGenre] = useState("Adventure");
+  const [tagInput, setTagInput] = useState("");
   const [language, setLanguage] = useState<LanguageCode>("en");
   const [contentStatus, setContentStatus] = useState<ContentStatus>("ONGOING");
   const [contentRating, setContentRating] = useState<ContentRating>("TEEN");
-  const [contentWarnings, setContentWarnings] = useState<string[]>(["Mild Violence"]);
+  const [contentWarnings, setContentWarnings] = useState<string[]>([]);
   const [isSeries, setIsSeries] = useState(true);
   const [hasCopyright, setHasCopyright] = useState(true);
 
@@ -146,34 +144,12 @@ export default function CreatorUploadWizardPage() {
   const [pageCompressionMessage, setPageCompressionMessage] = useState<string | null>(null);
   const [pagesError, setPagesError] = useState<string | null>(null);
   const [processedFileName, setProcessedFileName] = useState<string | null>(null);
-  const [pages, setPages] = useState<{ id: string; name: string; url: string; size?: string }[]>(
-    SAMPLE_EXTRACTED_PAGES
-  );
+  const [pages, setPages] = useState<{ id: string; name: string; url: string; size?: string }[]>([]);
 
   // Novel Markdown Manuscript Studio State
   const [chapterNumber, setChapterNumber] = useState(1);
-  const [chapterTitle, setChapterTitle] = useState("Chapter 1: The Broken Loom of Orion");
-  const [chapterContent, setChapterContent] = useState(
-    `# Chapter 1: The Broken Loom of Orion
-
-The filaments never hummed unless they were dying.
-
-Lyra leaned over her carbon-slate workbench, her breath frosting against the ambient temperature regulator. Between her calloused fingertips, a hairline strand of ionized pulsar silk pulsed an irregular, frantic violet.
-
-"Hold still," she whispered, touching the phosphor-tipped needle to the junction point.
-
-> *In the lower underbelly of Port Hyperion, noise was a constant pressure—the hydraulic groan of freighter docks, the ozone hiss of leaking atmospheric seals, and the distant shouts of synthetic fuel hawkers.*
-
-A sharp spark jumped across her knuckles. She didn't flinch. Ten years of repairing star-weft had rendered the skin on her palms tough as tempered ceramic.
-
----
-
-"Another dead conduit?" 
-
-The voice came from the hatchway. Valen stood framed against the amber halogen light of the alley, shaking condensation from his pilot’s duster. His mechanical left eye whirred softly as it adjusted its focal aperture.
-
-"Not dead," Lyra replied without looking up. "Stolen. Someone severed this core while the reactor was still cycling at forty thousand kelvins."`
-  );
+  const [chapterTitle, setChapterTitle] = useState("");
+  const [chapterContent, setChapterContent] = useState("");
 
   // Novel Markdown Studio View Modes
   const [novelViewMode, setNovelViewMode] = useState<"split" | "edit" | "preview">("split");

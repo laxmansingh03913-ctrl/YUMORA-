@@ -377,14 +377,28 @@ export default function HomePage() {
           >
             <span>View All Trending</span>
             <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition" />
-          </Link>
-        </div>
-
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
-          {trendingNovels.slice(0, 4).map((novel) => (
-            <NovelCard key={novel.id} novel={novel} />
-          ))}
-        </div>
+              {trendingNovels.length > 0 ? (
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
+            {trendingNovels.slice(0, 4).map((novel) => (
+              <NovelCard key={novel.id} novel={novel} />
+            ))}
+          </div>
+        ) : (
+          <div className="p-8 rounded-3xl bg-white dark:bg-zinc-900/60 border border-zinc-200 dark:border-zinc-800 text-center space-y-3">
+            <BookOpen className="w-8 h-8 text-rose-500 mx-auto" />
+            <h3 className="font-bold text-base text-zinc-900 dark:text-zinc-100">No Stories Published Yet</h3>
+            <p className="text-xs text-zinc-500 max-w-sm mx-auto">
+              Be the pioneer storyteller to publish the very first novel or serial on Yumora!
+            </p>
+            <Link
+              href="/creator/upload"
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs transition"
+            >
+              <PenTool className="w-3.5 h-3.5" />
+              <span>Publish First Novel</span>
+            </Link>
+          </div>
+        )}
       </section>
 
       {/* 4. ACTIVE CONTEST SPOTLIGHT: $500 Monthly Challenge */}
@@ -429,7 +443,7 @@ export default function HomePage() {
                     <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-ping" />
                     <span>Submissions Open</span>
                   </div>
-                  <p className="text-xl font-extrabold text-white">{activeContest?.submissionCount || 48} Submissions</p>
+                  <p className="text-xl font-extrabold text-white">{activeContest?.submissionCount || 0} Submissions</p>
                   <p className="text-xs text-amber-400 font-semibold">
                     Deadline: {activeContest ? formatDate(activeContest.endDate) : "Sep 30, 2026"}
                   </p>
@@ -456,7 +470,7 @@ export default function HomePage() {
               <span>Explore by Genre</span>
             </h2>
             <p className="text-xs sm:text-sm text-zinc-500 dark:text-zinc-400">
-              Immerse yourself in carefully curated universes and themes
+              Immerse yourself in curated universes and story genres
             </p>
           </div>
           <Link
@@ -477,7 +491,7 @@ export default function HomePage() {
             >
               <div className="flex items-center justify-between">
                 <span className="text-2xl">{g.icon}</span>
-                <span className="text-[10px] text-zinc-400 font-medium">{g.count}</span>
+                <span className="text-[10px] text-zinc-400 font-medium">Explore</span>
               </div>
               <h4 className="font-bold text-sm sm:text-base text-zinc-900 dark:text-zinc-100 group-hover:text-indigo-500 dark:group-hover:text-indigo-400 transition mt-2">
                 {g.name}
@@ -496,7 +510,7 @@ export default function HomePage() {
               <span>Original Comics & Webtoons</span>
             </h2>
             <p className="text-xs sm:text-sm text-zinc-500 dark:text-zinc-400">
-              Full-color vertical scroll serialized visual webtoons
+              Full-color vertical scroll serialized visual webtoons and manga
             </p>
           </div>
           <Link
@@ -508,105 +522,130 @@ export default function HomePage() {
           </Link>
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
-          {comics.map((comic) => (
-            <ComicCard key={comic.id} comic={comic} />
-          ))}
-        </div>
+        {comics.length > 0 ? (
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
+            {comics.map((comic) => (
+              <ComicCard key={comic.id} comic={comic} />
+            ))}
+          </div>
+        ) : (
+          <div className="p-8 rounded-3xl bg-white dark:bg-zinc-900/60 border border-zinc-200 dark:border-zinc-800 text-center space-y-3">
+            <Zap className="w-8 h-8 text-violet-500 mx-auto" />
+            <h3 className="font-bold text-base text-zinc-900 dark:text-zinc-100">No Visual Comics or Manga Yet</h3>
+            <p className="text-xs text-zinc-500 max-w-sm mx-auto">
+              Upload your webtoon or comic chapters to build your visual audience on Yumora.
+            </p>
+            <Link
+              href="/creator/upload"
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-violet-600 hover:bg-violet-500 text-white font-bold text-xs transition"
+            >
+              <PenTool className="w-3.5 h-3.5" />
+              <span>Upload First Comic</span>
+            </Link>
+          </div>
+        )}
       </section>
 
       {/* 7. EDITOR'S PICKS & NEW RELEASES */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* Editor's Picks Column */}
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <h3 className="text-xl font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
-              <Award className="w-5 h-5 text-rose-500" />
-              <span>Editor&apos;s Curated Picks</span>
-            </h3>
-          </div>
-          <div className="space-y-3">
-            {editorsPicks.slice(0, 3).map((novel) => (
-              <NovelCard key={novel.id} novel={novel} variant="horizontal" />
-            ))}
-          </div>
-        </div>
+      {(editorsPicks.length > 0 || newReleases.length > 0) && (
+        <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full grid grid-cols-1 lg:grid-cols-2 gap-8">
+          {/* Editor's Picks Column */}
+          {editorsPicks.length > 0 && (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="text-xl font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
+                  <Award className="w-5 h-5 text-rose-500" />
+                  <span>Editor&apos;s Curated Picks</span>
+                </h3>
+              </div>
+              <div className="space-y-3">
+                {editorsPicks.slice(0, 3).map((novel) => (
+                  <NovelCard key={novel.id} novel={novel} variant="horizontal" />
+                ))}
+              </div>
+            </div>
+          )}
 
-        {/* New Releases Column */}
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <h3 className="text-xl font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
-              <Sparkles className="w-5 h-5 text-indigo-500" />
-              <span>Fresh Chapter Updates</span>
-            </h3>
-          </div>
-          <div className="space-y-3">
-            {newReleases.slice(0, 3).map((novel) => (
-              <NovelCard key={novel.id} novel={novel} variant="horizontal" />
-            ))}
-          </div>
-        </div>
-      </section>
+          {/* New Releases Column */}
+          {newReleases.length > 0 && (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="text-xl font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
+                  <Sparkles className="w-5 h-5 text-indigo-500" />
+                  <span>Fresh Chapter Updates</span>
+                </h3>
+              </div>
+              <div className="space-y-3">
+                {newReleases.slice(0, 3).map((novel) => (
+                  <NovelCard key={novel.id} novel={novel} variant="horizontal" />
+                ))}
+              </div>
+            </div>
+          )}
+        </section>
+      )}
 
       {/* 8. RISING CREATORS SHOWCASE */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full space-y-6">
-        <div className="flex items-center justify-between">
-          <div className="space-y-1">
-            <h2 className="text-2xl sm:text-3xl font-black tracking-tight text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
-              <Users className="w-6 h-6 text-rose-500" />
-              <span>Rising Creators</span>
-            </h2>
-            <p className="text-xs sm:text-sm text-zinc-500 dark:text-zinc-400">
-              Independent authors and artists gaining international fandoms
-            </p>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-          {creators.map((creator) => (
-            <Link
-              key={creator.id}
-              href={`/creator/${creator.username}`}
-              className="p-5 rounded-3xl bg-white dark:bg-zinc-900/60 border border-zinc-200/80 dark:border-zinc-800/80 hover:border-rose-500/50 hover:shadow-xl transition group"
-            >
-              <div className="flex items-center gap-4">
-                <img
-                  src={creator.avatar}
-                  alt={creator.name}
-                  className="w-14 h-14 rounded-2xl object-cover ring-2 ring-rose-500/40 group-hover:scale-105 transition"
-                />
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-1.5">
-                    <h4 className="font-bold text-sm sm:text-base text-zinc-900 dark:text-zinc-100 group-hover:text-rose-500 transition truncate">
-                      {creator.name}
-                    </h4>
-                    {creator.isVerified && (
-                      <CheckCircle2 className="w-3.5 h-3.5 text-rose-500 flex-shrink-0" />
-                    )}
-                  </div>
-                  <p className="text-xs text-zinc-500 dark:text-zinc-400">@{creator.username}</p>
-                  <p className="text-[11px] text-rose-500 font-semibold mt-0.5">
-                    {creator.country || "Global Creator"}
-                  </p>
-                </div>
-              </div>
-
-              <p className="text-xs text-zinc-600 dark:text-zinc-400 line-clamp-2 mt-3 leading-relaxed">
-                {creator.bio}
+      {creators.length > 0 && (
+        <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full space-y-6">
+          <div className="flex items-center justify-between">
+            <div className="space-y-1">
+              <h2 className="text-2xl sm:text-3xl font-black tracking-tight text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
+                <Users className="w-6 h-6 text-rose-500" />
+                <span>Rising Creators</span>
+              </h2>
+              <p className="text-xs sm:text-sm text-zinc-500 dark:text-zinc-400">
+                Independent authors and artists gaining international fandoms
               </p>
+            </div>
+          </div>
 
-              <div className="flex items-center justify-between mt-4 pt-3 border-t border-zinc-100 dark:border-zinc-800/80 text-xs">
-                <span className="font-semibold text-zinc-900 dark:text-zinc-100">
-                  {formatNumber(creator.followersCount)} followers
-                </span>
-                <span className="text-zinc-500 dark:text-zinc-400">
-                  {formatNumber(creator.totalReads)} reads
-                </span>
-              </div>
-            </Link>
-          ))}
-        </div>
-      </section>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+            {creators.map((creator) => (
+              <Link
+                key={creator.id}
+                href={`/creator/${creator.username}`}
+                className="p-5 rounded-3xl bg-white dark:bg-zinc-900/60 border border-zinc-200/80 dark:border-zinc-800/80 hover:border-rose-500/50 hover:shadow-xl transition group"
+              >
+                <div className="flex items-center gap-4">
+                  <img
+                    src={creator.avatar}
+                    alt={creator.name}
+                    className="w-14 h-14 rounded-2xl object-cover ring-2 ring-rose-500/40 group-hover:scale-105 transition"
+                  />
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-1.5">
+                      <h4 className="font-bold text-sm sm:text-base text-zinc-900 dark:text-zinc-100 group-hover:text-rose-500 transition truncate">
+                        {creator.name}
+                      </h4>
+                      {creator.isVerified && (
+                        <CheckCircle2 className="w-3.5 h-3.5 text-rose-500 flex-shrink-0" />
+                      )}
+                    </div>
+                    <p className="text-xs text-zinc-500 dark:text-zinc-400">@{creator.username}</p>
+                    <p className="text-[11px] text-rose-500 font-semibold mt-0.5">
+                      {creator.country || "Global Creator"}
+                    </p>
+                  </div>
+                </div>
+
+                <p className="text-xs text-zinc-600 dark:text-zinc-400 line-clamp-2 mt-3 leading-relaxed">
+                  {creator.bio}
+                </p>
+
+                <div className="flex items-center justify-between mt-4 pt-3 border-t border-zinc-100 dark:border-zinc-800/80 text-xs">
+                  <span className="font-semibold text-zinc-900 dark:text-zinc-100">
+                    {formatNumber(creator.followersCount)} followers
+                  </span>
+                  <span className="text-zinc-500 dark:text-zinc-400">
+                    {formatNumber(creator.totalReads)} reads
+                  </span>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
     </div>
   );
 }
