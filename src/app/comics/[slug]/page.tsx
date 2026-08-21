@@ -35,7 +35,8 @@ interface ComicPageProps {
 
 export default function ComicDetailPage({ params }: ComicPageProps) {
   const resolvedParams = use(params);
-  const comic = dataStore.getComicBySlug(resolvedParams.slug);
+  const [mounted, setMounted] = useState(false);
+  const [comic, setComic] = useState(() => dataStore.getComicBySlug(resolvedParams.slug));
 
   const [activeEpisodeIdx, setActiveEpisodeIdx] = useState(0);
   const [zoomLevel, setZoomLevel] = useState(100);
@@ -44,24 +45,66 @@ export default function ComicDetailPage({ params }: ComicPageProps) {
   const [likesCount, setLikesCount] = useState(comic?.views || 1420);
 
   // Reading Mode: "VERTICAL" | "RTL" | "LTR"
-  const [readingMode, setReadingMode] = useState<"VERTICAL" | "RTL" | "LTR">(() => {
-    if (comic?.format === "VERTICAL") return "VERTICAL";
-    if (comic?.readingDirection === "RTL") return "RTL";
-    return "VERTICAL";
-  });
+  const [readingMode, setReadingMode] = useState<"VERTICAL" | "RTL" | "LTR">("VERTICAL");
 
   // Page index for Page-based Manga / Comic mode
   const [activePageIndex, setActivePageIndex] = useState(0);
   const [isFullscreen, setIsFullscreen] = useState(false);
 
   useEffect(() => {
-    if (!comic) return;
-    setIsBookmarked(dataStore.isBookmarked(comic.id));
-    setIsLiked(dataStore.isLiked(comic.id));
+    setMounted(true);
+    const found = dataStore.getComicBySlug(resolvedParams.slug);
+    setComic(found);
+    if (found) {
+      setIsBookmarked(dataStore.isBookmarked(found.id));
+      setIsLiked(dataStore.isLiked(found.id));
+      setLikesCount(found.views || 1420);
+      if (found.format === "VERTICAL") {
+        setReadingMode("VERTICAL");
+      } else if (found.readingDirection === "RTL") {
+        setReadingMode("RTL");
+      } else {
+        setReadingMode("VERTICAL");
+      }
+    }
   }, [resolvedParams.slug]);
 
   if (!comic) {
-    return notFound();
+    if (!mounted) {
+      return (
+        <div className="min-h-screen bg-zinc-950 flex items-center justify-center text-zinc-400">
+          <div className="flex flex-col items-center gap-3">
+            <div className="w-8 h-8 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
+            <p className="text-sm font-medium">Loading comic...</p>
+          </div>
+        </div>
+      );
+    }
+    return (
+      <div className="min-h-screen bg-zinc-950 flex flex-col items-center justify-center p-6 text-center">
+        <div className="w-16 h-16 rounded-2xl bg-zinc-900 border border-zinc-800 flex items-center justify-center mb-4 text-zinc-400">
+          <Layers className="w-8 h-8" />
+        </div>
+        <h1 className="text-2xl font-bold text-white mb-2">Comic Not Found</h1>
+        <p className="text-sm text-zinc-400 max-w-md mb-6">
+          The comic or webtoon you are looking for does not exist or may have been removed.
+        </p>
+        <div className="flex flex-wrap gap-3 justify-center">
+          <Link
+            href="/comics"
+            className="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition shadow-lg shadow-indigo-600/20"
+          >
+            Browse All Comics
+          </Link>
+          <Link
+            href="/discover"
+            className="px-5 py-2.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-zinc-200 text-xs font-bold transition"
+          >
+            Discover Feed
+          </Link>
+        </div>
+      </div>
+    );
   }
 
   const activeEpisode = comic.episodes[activeEpisodeIdx] || comic.episodes[0];

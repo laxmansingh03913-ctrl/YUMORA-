@@ -35,7 +35,8 @@ interface PageProps {
 
 export default function NovelDetailPage({ params }: PageProps) {
   const resolvedParams = use(params);
-  const novel = dataStore.getNovelBySlug(resolvedParams.slug);
+  const [mounted, setMounted] = useState(false);
+  const [novel, setNovel] = useState(() => dataStore.getNovelBySlug(resolvedParams.slug));
 
   const { user, requireAuth } = useAuth();
   const [isBookmarked, setIsBookmarked] = useState(false);
@@ -86,16 +87,54 @@ export default function NovelDetailPage({ params }: PageProps) {
   const readingProgress = novel ? dataStore.getReadingProgress(novel.id) : undefined;
 
   useEffect(() => {
-    if (!novel) return;
-    setIsBookmarked(dataStore.isBookmarked(novel.id));
-    setIsLiked(dataStore.isLiked(novel.id));
-    setLikesCount(novel.likesCount);
-    setIsFollowingAuthor(dataStore.isFollowing(novel.creatorId));
-    setComments(dataStore.getComments(novel.id));
+    setMounted(true);
+    const found = dataStore.getNovelBySlug(resolvedParams.slug);
+    setNovel(found);
+    if (found) {
+      setIsBookmarked(dataStore.isBookmarked(found.id));
+      setIsLiked(dataStore.isLiked(found.id));
+      setLikesCount(found.likesCount);
+      setIsFollowingAuthor(dataStore.isFollowing(found.creatorId));
+      setComments(dataStore.getComments(found.id));
+    }
   }, [resolvedParams.slug]);
 
   if (!novel) {
-    return notFound();
+    if (!mounted) {
+      return (
+        <div className="min-h-screen bg-zinc-950 flex items-center justify-center text-zinc-400">
+          <div className="flex flex-col items-center gap-3">
+            <div className="w-8 h-8 border-2 border-rose-500 border-t-transparent rounded-full animate-spin" />
+            <p className="text-sm font-medium">Loading novel...</p>
+          </div>
+        </div>
+      );
+    }
+    return (
+      <div className="min-h-screen bg-zinc-950 flex flex-col items-center justify-center p-6 text-center">
+        <div className="w-16 h-16 rounded-2xl bg-zinc-900 border border-zinc-800 flex items-center justify-center mb-4 text-zinc-400">
+          <BookOpen className="w-8 h-8" />
+        </div>
+        <h1 className="text-2xl font-bold text-white mb-2">Novel Not Found</h1>
+        <p className="text-sm text-zinc-400 max-w-md mb-6">
+          The novel or serial you are looking for does not exist or may have been removed.
+        </p>
+        <div className="flex flex-wrap gap-3 justify-center">
+          <Link
+            href="/novels"
+            className="px-5 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold transition shadow-lg shadow-rose-600/20"
+          >
+            Browse All Novels
+          </Link>
+          <Link
+            href="/discover"
+            className="px-5 py-2.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-zinc-200 text-xs font-bold transition"
+          >
+            Discover Feed
+          </Link>
+        </div>
+      </div>
+    );
   }
 
   const handleBookmarkToggle = () => {
