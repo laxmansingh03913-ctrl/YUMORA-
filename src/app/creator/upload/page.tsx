@@ -1235,6 +1235,8 @@ export default function CreatorUploadWizardPage() {
           </div>
         </div>
       )}
+    </div>
+  )}
 
       {/* STEP 2: SERIES DETAILS & COVER UPLOAD (WITH SIZE LIMITS & WEBP AUTO-COMPRESSION) */}
       {step === 2 && (
