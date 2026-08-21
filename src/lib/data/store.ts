@@ -200,6 +200,26 @@ class DataStore {
     return comic;
   }
 
+  deleteNovel(novelId: string): boolean {
+    this.memoryNovels.delete(novelId);
+    const novels = this.getItem<Novel[]>(STORAGE_KEYS.NOVELS, []).filter((n) => n.id !== novelId);
+    this.setItem(STORAGE_KEYS.NOVELS, novels);
+    if (this.isBrowser()) {
+      idbSet(STORAGE_KEYS.NOVELS, Array.from(this.memoryNovels.values())).catch(() => {});
+    }
+    return true;
+  }
+
+  deleteComic(comicId: string): boolean {
+    this.memoryComics.delete(comicId);
+    const comics = this.getItem<Comic[]>(STORAGE_KEYS.COMICS, []).filter((c) => c.id !== comicId);
+    this.setItem(STORAGE_KEYS.COMICS, comics);
+    if (this.isBrowser()) {
+      idbSet(STORAGE_KEYS.COMICS, Array.from(this.memoryComics.values())).catch(() => {});
+    }
+    return true;
+  }
+
   addComicEpisode(comicId: string, episode: ComicEpisode): boolean {
     const allComics = this.getComics();
     const comic = allComics.find((c) => c.id === comicId);

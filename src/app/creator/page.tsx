@@ -200,9 +200,8 @@ export default function CreatorDashboardPage() {
 
   const handleDeleteNovel = (id: string, title: string) => {
     if (window.confirm(`Are you sure you want to delete "${title}"?`)) {
-      const updated = novels.filter((n) => n.id !== id);
-      setNovels(updated);
-      localStorage.setItem("yumora_novels", JSON.stringify(updated));
+      dataStore.deleteNovel(id);
+      setNovels((prev) => prev.filter((n) => n.id !== id));
     }
   };
 
@@ -216,9 +215,8 @@ export default function CreatorDashboardPage() {
 
   const handleDeleteComic = (id: string, title: string) => {
     if (window.confirm(`Are you sure you want to delete "${title}"?`)) {
-      const updated = comics.filter((c) => c.id !== id);
-      setComics(updated);
-      localStorage.setItem("yumora_comics", JSON.stringify(updated));
+      dataStore.deleteComic(id);
+      setComics((prev) => prev.filter((c) => c.id !== id));
     }
   };
 
