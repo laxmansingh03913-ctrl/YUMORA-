@@ -156,6 +156,7 @@ export interface Comic {
   views: number;
   reads: number;
   likesCount?: number;
+  bookmarksCount?: number;
   rating: number;
   totalRatings: number;
   isFeatured: boolean;
