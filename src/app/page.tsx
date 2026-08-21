@@ -377,7 +377,10 @@ export default function HomePage() {
           >
             <span>View All Trending</span>
             <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition" />
-              {trendingNovels.length > 0 ? (
+          </Link>
+        </div>
+
+        {trendingNovels.length > 0 ? (
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
             {trendingNovels.slice(0, 4).map((novel) => (
               <NovelCard key={novel.id} novel={novel} />
