@@ -135,6 +135,10 @@ class DataStore {
     return this.getNovels().find((n) => n.slug === slug || n.id === slug);
   }
 
+  getNovelById(id: string): Novel | undefined {
+    return this.getNovels().find((n) => n.id === id || n.slug === id);
+  }
+
   getChapter(novelSlug: string, chapterNumber: number): Chapter | undefined {
     const novel = this.getNovelBySlug(novelSlug);
     if (!novel) return undefined;
@@ -186,6 +190,10 @@ class DataStore {
 
   getComicBySlug(slug: string): Comic | undefined {
     return this.getComics().find((c) => c.slug === slug || c.id === slug);
+  }
+
+  getComicById(id: string): Comic | undefined {
+    return this.getComics().find((c) => c.id === id || c.slug === id);
   }
 
   saveComic(comic: Comic): Comic {
