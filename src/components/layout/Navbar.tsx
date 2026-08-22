@@ -51,7 +51,7 @@ const LANGUAGES: { code: LanguageCode; label: string; flag: string }[] = [
 
 export function Navbar() {
   const pathname = usePathname();
-  const { user, role, switchRole, openAuthModal, logout } = useAuth();
+  const { user, role, switchRole, openAuthModal, requireAuth, logout } = useAuth();
   const { resolvedTheme, setTheme } = useTheme();
 
   const [mounted, setMounted] = useState(false);
