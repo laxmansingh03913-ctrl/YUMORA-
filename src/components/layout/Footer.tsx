@@ -14,11 +14,11 @@ export function Footer() {
                 Y
               </div>
               <span className="font-extrabold text-lg tracking-tight text-zinc-900 dark:text-zinc-100">
-                Yumora
+                Yomika
               </span>
             </div>
             <p className="text-sm text-zinc-500 dark:text-zinc-400 leading-relaxed max-w-sm">
-              The global home for independent storytelling. Empowering authors and artists to publish novels, serialize webtoons, build passionate fandoms, and bring worlds to life.
+              Yomika is a global storytelling platform where writers, manga artists, comic creators, and readers come together to create, discover, and experience original stories.
             </p>
             <div className="p-3 rounded-2xl bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-xs flex items-center gap-2">
               <Sparkles className="w-4 h-4 text-amber-500 flex-shrink-0" />
@@ -134,7 +134,7 @@ export function Footer() {
         {/* Bottom Bar */}
         <div className="pt-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-zinc-500">
           <div className="flex flex-wrap items-center gap-4 sm:gap-6">
-            <p>© 2026 Yumora Platform. All rights reserved.</p>
+            <p>© 2026 Yomika. All rights reserved.</p>
             <Link href="/privacy" className="hover:text-rose-500 transition underline underline-offset-4">
               Privacy Policy
             </Link>

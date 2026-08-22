@@ -92,7 +92,7 @@ export function AuthModal() {
               Y
             </div>
             <span className="font-extrabold text-lg tracking-tight bg-gradient-to-r from-white via-zinc-200 to-zinc-400 bg-clip-text text-transparent">
-              Yumora
+              Yomika
             </span>
           </div>
 
@@ -152,7 +152,7 @@ export function AuthModal() {
           {/* Heading & Subtitle */}
           <div className="text-center space-y-1.5">
             <h2 className="text-2xl font-black tracking-tight text-white">
-              {isLogin ? "Welcome back to Yumora" : "Create your Yumora account"}
+              {isLogin ? "Welcome back to Yomika" : "Create your Yomika account"}
             </h2>
             <p className="text-xs sm:text-sm text-zinc-400">
               {isLogin
@@ -386,7 +386,7 @@ export function AuthModal() {
 
         {/* Modal Footer Terms */}
         <div className="p-4 bg-zinc-950/60 border-t border-zinc-800/80 text-center text-[10px] text-zinc-500 leading-relaxed">
-          By continuing, you agree to Yumora&apos;s Terms of Service and Privacy Policy.
+          By continuing, you agree to Yomika&apos;s Terms of Service and Privacy Policy.
         </div>
       </div>
     </div>

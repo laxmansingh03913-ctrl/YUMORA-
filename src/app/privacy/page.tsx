@@ -22,9 +22,9 @@ import { LegalSection } from "@/components/legal/LegalSection";
 import { TOCItem } from "@/components/legal/TableOfContents";
 
 export const metadata: Metadata = {
-  title: "Privacy Policy | Yumora",
+  title: "Privacy Policy | Yomika",
   description:
-    "Learn how Yumora collects, uses, and protects information when you use the platform to read, write, and discover stories.",
+    "Learn how Yomika collects, uses, and protects information when you use the platform to read, write, and discover stories.",
 };
 
 const TOC_ITEMS: TOCItem[] = [
@@ -56,14 +56,14 @@ export default function PrivacyPolicyPage() {
       title="Privacy Policy"
       badge="Legal & Privacy"
       lastUpdated="[EFFECTIVE DATE]"
-      introduction="Yumora is a platform where readers discover and read novels, comics, manga, webtoons, and other creative works, and where creators can publish their content."
+      introduction="Yomika is a platform where readers discover and read novels, comics, manga, webtoons, and other creative works, and where creators can publish their content."
       tocItems={TOC_ITEMS}
-      disclaimer="This Privacy Policy is intended to describe Yumora's privacy practices. It should be reviewed and finalized for the jurisdictions in which Yumora operates before public launch."
+      disclaimer="This Privacy Policy is intended to describe Yomika's privacy practices. It should be reviewed and finalized for the jurisdictions in which Yomika operates before public launch."
     >
       {/* 1. INTRODUCTION */}
       <LegalSection id="introduction" number={1} title="Introduction">
         <p>
-          Welcome to Yumora. This Privacy Policy explains how Yumora (&ldquo;we,&rdquo; &ldquo;our,&rdquo; or &ldquo;us&rdquo;)
+          Welcome to Yomika. This Privacy Policy explains how Yomika (&ldquo;we,&rdquo; &ldquo;our,&rdquo; or &ldquo;us&rdquo;)
           collects, uses, stores, and shares personal information when you access or use our websites, applications, reader
           interfaces, creator tools, and related services (collectively, the &ldquo;Service&rdquo;).
         </p>
@@ -150,18 +150,18 @@ export default function PrivacyPolicyPage() {
       {/* 4. ACCOUNT AND AUTHENTICATION INFORMATION */}
       <LegalSection id="account-and-authentication" number={4} title="Account and Authentication Information">
         <p>
-          You may register for and authenticate your Yumora account through supported authentication methods:
+          You may register for and authenticate your Yomika account through supported authentication methods:
         </p>
         <ul className="list-disc list-inside space-y-1.5 text-xs sm:text-sm pl-2">
           <li><strong>Email and Password:</strong> When you register directly with an email address, your password is encrypted using cryptographic hashing before storage. We never store or view raw plaintext passwords.</li>
-          <li><strong>Third-Party OAuth Providers (Google, Apple if configured):</strong> When you sign in using a third-party authentication provider, that provider shares basic account details (such as your verified email address and public name) required to create or authenticate your Yumora account.</li>
+          <li><strong>Third-Party OAuth Providers (Google, Apple if configured):</strong> When you sign in using a third-party authentication provider, that provider shares basic account details (such as your verified email address and public name) required to create or authenticate your Yomika account.</li>
         </ul>
       </LegalSection>
 
       {/* 5. CREATOR INFORMATION */}
       <LegalSection id="creator-information" number={5} title="Creator Information">
         <p>
-          When you establish a creator profile on Yumora, certain information is publicly visible to readers and other platform members to foster discoverability and reader-author connections.
+          When you establish a creator profile on Yomika, certain information is publicly visible to readers and other platform members to foster discoverability and reader-author connections.
         </p>
         <p>Public creator information includes:</p>
         <ul className="list-disc list-inside space-y-1 text-xs sm:text-sm pl-2">
@@ -178,12 +178,12 @@ export default function PrivacyPolicyPage() {
       {/* 6. USER-GENERATED CONTENT */}
       <LegalSection id="user-generated-content" number={6} title="User-Generated Content">
         <p>
-          Yumora enables creators to upload and publish diverse creative formats, including novels, manga, comics, webtoons, illustrated novels, images, manuscripts, and PDF files.
+          Yomika enables creators to upload and publish diverse creative formats, including novels, manga, comics, webtoons, illustrated novels, images, manuscripts, and PDF files.
         </p>
         <div className="p-4 rounded-2xl bg-rose-950/20 border border-rose-500/30 text-rose-200 text-xs sm:text-sm leading-relaxed space-y-1">
           <p className="font-bold text-rose-300">Intellectual Property & Ownership:</p>
           <p>
-            Yumora does <strong>not</strong> claim ownership of creator content. Creators retain full copyright and ownership of their original works. By uploading content to Yumora, creators grant Yumora the non-exclusive license to host, store, display, moderate, format, and distribute the work on the platform in accordance with the Terms of Service and Creator Agreement.
+            Yomika does <strong>not</strong> claim ownership of creator content. Creators retain full copyright and ownership of their original works. By uploading content to Yomika, creators grant Yomika the non-exclusive license to host, store, display, moderate, format, and distribute the work on the platform in accordance with the Terms of Service and Creator Agreement.
           </p>
         </div>
       </LegalSection>
@@ -191,7 +191,7 @@ export default function PrivacyPolicyPage() {
       {/* 7. READING, FOLLOWING AND INTERACTION DATA */}
       <LegalSection id="reading-and-interaction-data" number={7} title="Reading, Following and Interaction Data">
         <p>
-          To deliver a seamless reading experience across devices, Yumora processes activity data related to your platform interactions:
+          To deliver a seamless reading experience across devices, Yomika processes activity data related to your platform interactions:
         </p>
         <ul className="list-disc list-inside space-y-1 text-xs sm:text-sm pl-2">
           <li>Chapters, episodes, and stories accessed</li>
@@ -240,8 +240,8 @@ export default function PrivacyPolicyPage() {
         </p>
         <ul className="list-disc list-inside space-y-1.5 text-xs sm:text-sm pl-2">
           <li>Payments and financial transactions are processed by PCI-DSS compliant third-party payment processors.</li>
-          <li>Yumora does <strong>not</strong> collect or store full credit card or debit card numbers on its servers.</li>
-          <li>Yumora receives transaction confirmations, order identifiers, and settlement statuses necessary to fulfill purchases and update account balances.</li>
+          <li>Yomika does <strong>not</strong> collect or store full credit card or debit card numbers on its servers.</li>
+          <li>Yomika receives transaction confirmations, order identifiers, and settlement statuses necessary to fulfill purchases and update account balances.</li>
           <li>Creators receiving earnings or payouts may be required to complete identity verification and submit payout details directly to authorized payout partners.</li>
         </ul>
         <p>
@@ -293,7 +293,7 @@ export default function PrivacyPolicyPage() {
         <ul className="list-disc list-inside space-y-1.5 text-xs sm:text-sm pl-2">
           <li><strong>Service Providers:</strong> With contractors and service vendors who need access to perform technical, operational, or infrastructure tasks on our behalf under confidentiality agreements.</li>
           <li><strong>Legal & Regulatory Compliance:</strong> When required by law, subpoena, legal process, or lawful request by public authorities.</li>
-          <li><strong>Safety, Rights & Security:</strong> To enforce platform agreements, investigate violations, detect fraud, and protect the rights, property, and safety of Yumora, our users, or the public.</li>
+          <li><strong>Safety, Rights & Security:</strong> To enforce platform agreements, investigate violations, detect fraud, and protect the rights, property, and safety of Yomika, our users, or the public.</li>
           <li><strong>Business Transfers:</strong> In connection with or during negotiations of any merger, sale of company assets, financing, or acquisition of all or a portion of our business.</li>
         </ul>
       </LegalSection>
@@ -301,7 +301,7 @@ export default function PrivacyPolicyPage() {
       {/* 13. INTERNATIONAL DATA TRANSFERS */}
       <LegalSection id="international-transfers" number={13} title="International Data Transfers">
         <p>
-          Yumora operates a global storytelling service. Information we collect may be transferred to, stored, and processed in jurisdictions other than your country of residence, where data protection laws may differ from those in your jurisdiction.
+          Yomika operates a global storytelling service. Information we collect may be transferred to, stored, and processed in jurisdictions other than your country of residence, where data protection laws may differ from those in your jurisdiction.
         </p>
         <p>
           Where cross-border data transfers occur, we implement reasonable and legally recognized administrative, contractual, and technical safeguards to protect your personal data in accordance with this Privacy Policy.
@@ -363,7 +363,7 @@ export default function PrivacyPolicyPage() {
       {/* 17. CHILDREN'S PRIVACY */}
       <LegalSection id="childrens-privacy" number={17} title="Children's Privacy">
         <p>
-          Yumora is not directed to children under the age of [YUMORA MINIMUM AGE POLICY TO BE FINALIZED]. We do not knowingly collect or solicit personal information from children in circumstances where applicable law prohibits such collection.
+          Yomika is not directed to children under the age of [YOMIKA MINIMUM AGE POLICY TO BE FINALIZED]. We do not knowingly collect or solicit personal information from children in circumstances where applicable law prohibits such collection.
         </p>
         <p>
           If you are a parent or legal guardian and believe that a child has provided us with personal information without required authorization, please contact us at{" "}

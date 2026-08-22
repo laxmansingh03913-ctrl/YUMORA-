@@ -543,7 +543,7 @@ export function CreatorProfileGate({ onProfileCompleted }: CreatorProfileGatePro
                   className="w-full px-3.5 py-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 text-xs font-semibold text-zinc-900 dark:text-zinc-100 focus:outline-none focus:border-indigo-500 font-mono"
                 />
                 <p className="text-[11px] text-zinc-400 mt-1">
-                  Your unique public identity on Yumora.
+                  Your unique public identity on Yomika.
                 </p>
               </div>
             </div>
@@ -665,7 +665,7 @@ export function CreatorProfileGate({ onProfileCompleted }: CreatorProfileGatePro
                     Creator Agreement & Publishing Rights
                   </label>
                   <p className="text-xs text-zinc-600 dark:text-zinc-400 leading-relaxed">
-                    I confirm that I have the necessary rights to publish the stories, characters, artwork, and other content I upload to Yumora. I agree to follow Yumora&apos;s{" "}
+                    I confirm that I have the necessary rights to publish the stories, characters, artwork, and other content I upload to Yomika. I agree to follow Yomika&apos;s{" "}
                     <button
                       type="button"
                       onClick={() => setShowLegalModal("terms")}
@@ -754,7 +754,7 @@ export function CreatorProfileGate({ onProfileCompleted }: CreatorProfileGatePro
               <div className="flex items-center gap-2">
                 <FileCheck className="w-5 h-5 text-rose-500" />
                 <h4 className="font-bold text-base">
-                  {showLegalModal === "terms" && "Yumora Creator Terms"}
+                  {showLegalModal === "terms" && "Yomika Creator Terms"}
                   {showLegalModal === "copyright" && "Copyright & Ownership Policy"}
                   {showLegalModal === "guidelines" && "Community Content Guidelines"}
                 </h4>
@@ -771,10 +771,10 @@ export function CreatorProfileGate({ onProfileCompleted }: CreatorProfileGatePro
               {showLegalModal === "terms" && (
                 <>
                   <p>
-                    <strong>1. 100% Creator Ownership:</strong> You retain 100% full intellectual property ownership and copyright of all stories, characters, universe settings, and artwork you upload to Yumora.
+                    <strong>1. 100% Creator Ownership:</strong> You retain 100% full intellectual property ownership and copyright of all stories, characters, universe settings, and artwork you upload to Yomika.
                   </p>
                   <p>
-                    <strong>2. Non-Exclusive License:</strong> You grant Yumora a non-exclusive license solely to host, display, index, format, and distribute your serialized work to readers on our web platform.
+                    <strong>2. Non-Exclusive License:</strong> You grant Yomika a non-exclusive license solely to host, display, index, format, and distribute your serialized work to readers on our web platform.
                   </p>
                   <p>
                     <strong>3. Commercial Freedom:</strong> You are free to publish your stories elsewhere, print physical copies, or sign adaptation deals with third parties at any time.
@@ -788,7 +788,7 @@ export function CreatorProfileGate({ onProfileCompleted }: CreatorProfileGatePro
                     <strong>1. Original Works Only:</strong> You represent and warrant that you hold all necessary copyrights or permissions for all text and illustrations you publish.
                   </p>
                   <p>
-                    <strong>2. DMCA & Takedown Compliance:</strong> Yumora respects copyright owners and will remove any infringing content upon receiving valid notice under applicable laws.
+                    <strong>2. DMCA & Takedown Compliance:</strong> Yomika respects copyright owners and will remove any infringing content upon receiving valid notice under applicable laws.
                   </p>
                 </>
               )}

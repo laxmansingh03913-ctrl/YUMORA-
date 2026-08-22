@@ -63,7 +63,7 @@ export function ReportModal({
             </div>
             <div>
               <h3 className="font-bold text-sm text-zinc-100">Report Story</h3>
-              <p className="text-[11px] text-zinc-400">Yumora Trust & Safety Moderation</p>
+              <p className="text-[11px] text-zinc-400">Yomika Trust & Safety Moderation</p>
             </div>
           </div>
           <button

@@ -86,7 +86,7 @@ function CallbackHandler() {
                 metadata.avatar_url ||
                 metadata.picture ||
                 `https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300&auto=format&fit=crop&q=80`,
-              bio: "Reader and storyteller on Yumora.",
+              bio: "Reader and storyteller on Yomika.",
               country: "Global",
               isVerified: false,
               isCreatorProfileComplete: false,
@@ -171,7 +171,7 @@ function CallbackHandler() {
           </div>
           <div className="space-y-1">
             <h2 className="text-xl font-black text-zinc-900 dark:text-zinc-100">
-              Authenticating with Yumora...
+              Authenticating with Yomika...
             </h2>
             <p className="text-xs text-zinc-500 dark:text-zinc-400">
               Securing session and loading your personal reading universe
@@ -213,7 +213,7 @@ function CallbackHandler() {
               href={destinationPath || "/"}
               className="w-full py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs transition flex items-center justify-center gap-1.5 shadow-md"
             >
-              <span>Continue to Yumora</span>
+              <span>Continue to Yomika</span>
               <ArrowRight className="w-3.5 h-3.5" />
             </Link>
 
@@ -236,7 +236,7 @@ export default function AuthCallbackPage() {
       fallback={
         <div className="min-h-[75vh] flex flex-col items-center justify-center p-6 space-y-4">
           <Loader2 className="w-8 h-8 text-indigo-500 animate-spin" />
-          <p className="text-xs font-semibold text-zinc-400">Loading Yumora authentication...</p>
+          <p className="text-xs font-semibold text-zinc-400">Loading Yomika authentication...</p>
         </div>
       }
     >

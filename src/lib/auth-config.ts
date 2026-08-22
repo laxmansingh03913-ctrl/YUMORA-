@@ -1,5 +1,5 @@
 /**
- * Centralized Site URL & OAuth Redirect Configuration for Yumora
+ * Centralized Site URL & OAuth Redirect Configuration for Yomika
  * Supports both Localhost (Development) and Deployed Vercel/Custom Domains (Production).
  */
 
@@ -45,7 +45,7 @@ export function getSiteUrl(): string {
 }
 
 /**
- * Generates the standardized OAuth callback URL for Yumora.
+ * Generates the standardized OAuth callback URL for Yomika.
  * Works seamlessly across both Development (localhost:3000) and Production (Vercel / custom domain).
  *
  * @param destination Optional path to redirect the user after successful authentication (e.g. "/creator/upload")

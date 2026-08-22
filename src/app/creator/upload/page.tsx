@@ -560,7 +560,7 @@ export default function CreatorUploadWizardPage() {
         bio:
           user.bio && user.bio.length >= 20
             ? user.bio
-            : "Original storyteller and visual artist creating stories on Yumora.",
+            : "Original storyteller and visual artist creating stories on Yomika.",
         country: user.country || "Global",
         primaryGenres: user.primaryGenres?.length ? user.primaryGenres : [genre, secondaryGenre],
         preferredTypes: user.preferredTypes?.length
@@ -876,7 +876,7 @@ export default function CreatorUploadWizardPage() {
         <div>
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-indigo-500/10 text-indigo-500 border border-indigo-500/30 mb-1">
             <Zap className="w-3.5 h-3.5" />
-            <span>Yumora Studio • High-Performance Publishing Pipeline</span>
+            <span>Yomika Studio • High-Performance Publishing Pipeline</span>
           </div>
           <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-zinc-900 dark:text-zinc-100">
             Publish to the Story Universe
@@ -2181,7 +2181,7 @@ export default function CreatorUploadWizardPage() {
                           <p className="text-xs text-zinc-500 max-w-md mx-auto mt-1">
                             {isProcessingPdf
                               ? "Extracting high-resolution pages and generating WebP stream..."
-                              : "Yumora processes PDF files into interactive web reader pages."}
+                              : "Yomika processes PDF files into interactive web reader pages."}
                           </p>
                         </div>
 
@@ -2396,7 +2396,7 @@ export default function CreatorUploadWizardPage() {
 
           <div className="space-y-2">
             <h2 className="text-2xl sm:text-3xl font-black text-white">
-              🎉 Your Work is Live on Yumora!
+              🎉 Your Work is Live on Yomika!
             </h2>
             <p className="text-xs sm:text-sm text-zinc-400 max-w-md mx-auto leading-relaxed">
               &ldquo;{title}&rdquo; has been processed and published to the global story universe with full online web reader support.

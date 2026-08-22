@@ -723,7 +723,7 @@ class DataStore {
         avatar:
           updates.avatar ||
           "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300&auto=format&fit=crop&q=80",
-        bio: updates.bio || "Storyteller on Yumora.",
+        bio: updates.bio || "Storyteller on Yomika.",
         country: updates.country || "Global",
         isVerified: false,
         isCreatorProfileComplete: false,
@@ -975,7 +975,7 @@ class DataStore {
       id: `notif-monetize-${Date.now()}`,
       userId,
       creatorId: "usr-admin-1",
-      creatorName: "Yumora Monetization Team",
+      creatorName: "Yomika Monetization Team",
       creatorAvatar: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=300",
       title: `🎉 Congratulations! ${targetTier.replace("_", " ")} Unlocked`,
       message: `Your monetization application has been approved. You can now enable tips, paid chapters, and reader subscriptions!`,

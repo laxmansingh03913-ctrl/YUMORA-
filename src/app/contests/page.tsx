@@ -25,7 +25,7 @@ export default function ContestsPage() {
 
   const contest = contests[0] || {
     id: "contest-monthly-active",
-    title: "Yumora Monthly Story Challenge — Sci-Fi & Fantasy",
+    title: "Yomika Monthly Story Challenge — Sci-Fi & Fantasy",
     slug: "monthly-challenge",
     description: "Write an original serialized story with captivating characters and immersive world-building. Open to all creators worldwide.",
     prizePool: "$850 USD",
@@ -89,7 +89,7 @@ export default function ContestsPage() {
           <div className="lg:col-span-8 space-y-4">
             <div className="flex items-center gap-2">
               <span className="px-3 py-1 rounded-full text-xs font-black bg-amber-500 text-zinc-950 shadow-md flex items-center gap-1">
-                <Trophy className="w-3.5 h-3.5" /> OFFICIAL YUMORA CHALLENGE
+                <Trophy className="w-3.5 h-3.5" /> OFFICIAL YOMIKA CHALLENGE
               </span>
               <span className="px-3 py-1 rounded-full text-xs font-bold bg-white/10 text-amber-300">
                 Active Competition

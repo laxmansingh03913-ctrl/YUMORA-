@@ -120,7 +120,7 @@ export function Navbar() {
               </div>
               <div className="flex flex-col">
                 <span className="font-extrabold text-xl tracking-tight bg-gradient-to-r from-zinc-900 via-zinc-800 to-zinc-950 dark:from-white dark:via-zinc-200 dark:to-zinc-400 bg-clip-text text-transparent">
-                  Yumora
+                  Yomika
                 </span>
                 <span className="text-[9px] uppercase tracking-widest font-semibold text-rose-500 -mt-1 hidden sm:inline">
                   Story Universe
@@ -160,7 +160,7 @@ export function Navbar() {
             <button
               onClick={() => setIsSearchOpen(true)}
               className="w-full min-w-[140px] md:min-w-[160px] max-w-[240px] lg:max-w-[260px] flex items-center justify-between gap-2 h-9 sm:h-10 px-3 sm:px-3.5 rounded-xl bg-zinc-100/90 dark:bg-zinc-900/90 border border-zinc-200/90 dark:border-zinc-800/90 text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200 hover:border-zinc-300 dark:hover:border-zinc-700 transition text-xs sm:text-sm shadow-xs flex-shrink"
-              title="Search Yumora (⌘K)"
+              title="Search Yomika (⌘K)"
             >
               <div className="flex items-center gap-2 min-w-0 overflow-hidden">
                 <Search className="w-3.5 h-3.5 lg:w-4 lg:h-4 text-zinc-400 flex-shrink-0" />

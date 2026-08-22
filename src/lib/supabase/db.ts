@@ -1,5 +1,5 @@
 /**
- * Supabase Real PostgreSQL Database Client Service for Yumora
+ * Supabase Real PostgreSQL Database Client Service for Yomika
  */
 
 import { supabase } from "./client";

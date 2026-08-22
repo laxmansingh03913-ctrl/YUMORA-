@@ -910,7 +910,7 @@ export default function CreatorDashboardPage() {
                     </span>
                   </div>
                   <p className="text-xs text-zinc-500 mt-0.5">
-                    Yumora evaluates content originality, authentic readership, and account standing
+                    Yomika evaluates content originality, authentic readership, and account standing
                   </p>
                 </div>
 

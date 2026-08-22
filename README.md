@@ -1,6 +1,6 @@
-# Yumora - Global Web Novel & Comic Platform
+# Yomika — Stories. Comics. Worlds.
 
-**Yumora** is a high-performance, dark-themed storytelling universe where readers discover serial novels, manga, webtoons, and comics, and creators publish original stories with integrated monetization and reader analytics.
+**Yomika** is a global storytelling platform where writers, manga artists, comic creators, and readers come together to create, discover, and experience original stories.
 
 ---
 
@@ -50,4 +50,4 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 ---
 
 ## 📄 License
-All rights reserved © 2026 Yumora Platform.
+All rights reserved © 2026 Yomika.

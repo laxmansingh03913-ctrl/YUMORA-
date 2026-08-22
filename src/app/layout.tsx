@@ -20,12 +20,14 @@ const merriweather = Merriweather({
 });
 
 export const metadata: Metadata = {
-  title: "Yumora — Global Novel & Comics Creator Platform",
+  metadataBase: new URL("https://yomika.co.uk"),
+  title: "Yomika — Stories. Comics. Worlds.",
   description:
-    "Read original serialized novels, discover visionary independent creators, and explore webtoons from around the world. Stories worth getting lost in.",
+    "Discover original novels, manga, webtoons, and comics from independent creators around the world. Yomika is the global home for original storytelling.",
   keywords: [
     "novels",
     "web novels",
+    "manga",
     "serialized fiction",
     "comics",
     "webtoons",
@@ -33,13 +35,20 @@ export const metadata: Metadata = {
     "indie publishing",
     "scifi",
     "fantasy",
+    "yomika",
   ],
-  authors: [{ name: "Yumora Publishing" }],
+  authors: [{ name: "Yomika Publishing", url: "https://yomika.co.uk" }],
   openGraph: {
-    title: "Yumora — Stories Worth Getting Lost In",
-    description: "The global home for independent storytelling.",
-    siteName: "Yumora",
+    title: "Yomika — Stories. Comics. Worlds.",
+    description: "Discover original novels, manga, webtoons, and comics from independent creators around the world.",
+    siteName: "Yomika",
+    url: "https://yomika.co.uk",
     type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Yomika — Stories. Comics. Worlds.",
+    description: "Discover original novels, manga, webtoons, and comics from independent creators around the world.",
   },
 };
 

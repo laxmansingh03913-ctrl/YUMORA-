@@ -1,5 +1,5 @@
 /**
- * Image processing and client-side WebP compression utility for Yumora Studio
+ * Image processing and client-side WebP compression utility for Yomika Studio
  */
 
 export interface ImageValidationOptions {

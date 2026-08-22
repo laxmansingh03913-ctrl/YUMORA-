@@ -391,7 +391,7 @@ export default function HomePage() {
             <BookOpen className="w-8 h-8 text-rose-500 mx-auto" />
             <h3 className="font-bold text-base text-zinc-900 dark:text-zinc-100">No Stories Published Yet</h3>
             <p className="text-xs text-zinc-500 max-w-sm mx-auto">
-              Be the pioneer storyteller to publish the very first novel or serial on Yumora!
+              Be the pioneer storyteller to publish the very first novel or serial on Yomika!
             </p>
             <Link
               href="/creator/upload"
@@ -536,7 +536,7 @@ export default function HomePage() {
             <Zap className="w-8 h-8 text-violet-500 mx-auto" />
             <h3 className="font-bold text-base text-zinc-900 dark:text-zinc-100">No Visual Comics or Manga Yet</h3>
             <p className="text-xs text-zinc-500 max-w-sm mx-auto">
-              Upload your webtoon or comic chapters to build your visual audience on Yumora.
+              Upload your webtoon or comic chapters to build your visual audience on Yomika.
             </p>
             <Link
               href="/creator/upload"
