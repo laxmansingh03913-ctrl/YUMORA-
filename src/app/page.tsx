@@ -213,35 +213,45 @@ export default function HomePage() {
             </div>
           </div>
 
-          {/* RIGHT SIDE: Neo-Japan Graphic Composition + "BE THE FIRST CREATOR" Card */}
-          <div className="lg:col-span-5 relative flex items-center justify-center min-h-[380px] lg:min-h-[460px]">
+          {/* RIGHT SIDE: Neo-Japan Character Graphic Composition + "BE THE FIRST CREATOR" Card */}
+          <div className="lg:col-span-5 relative flex items-center justify-center min-h-[420px] sm:min-h-[500px] lg:min-h-[560px] pt-4 lg:pt-0">
             
             {/* 1. Japanese Red Sun Background Circle */}
-            <div className="w-64 h-64 sm:w-80 sm:h-80 md:w-96 md:h-96 rounded-full bg-[#D91E18] absolute top-2 right-6 sm:right-16 lg:right-20 -z-10 shadow-lg shadow-red-500/10 pointer-events-none" />
+            <div className="w-72 h-72 sm:w-96 sm:h-96 lg:w-[420px] lg:h-[420px] rounded-full bg-[#D91E18] absolute top-1/2 -translate-y-1/2 right-1/2 translate-x-1/2 lg:right-4 lg:translate-x-0 -z-10 shadow-2xl shadow-red-600/15 pointer-events-none" />
 
-            {/* 2. Manga Protagonist Ink Art & Ink Splashes */}
-            <div className="relative w-full h-[380px] sm:h-[420px] rounded-2xl overflow-hidden pointer-events-none select-none">
-              <img
-                src="https://images.unsplash.com/photo-1578632767115-351597cf2477?w=1000&auto=format&fit=crop&q=90"
-                alt="Manga Storyteller Visual"
-                className="w-full h-full object-cover object-top filter grayscale contrast-125 mix-blend-multiply dark:mix-blend-normal opacity-90"
-              />
-              {/* Dynamic Ink Splatters / Gradient overlay */}
-              <div className="absolute inset-0 bg-gradient-to-t from-[#FAFAF7] via-transparent to-transparent dark:from-[#121214] opacity-80" />
+            {/* 2. Ink Brush Accent Ring */}
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none -z-10 opacity-25 dark:opacity-20">
+              <div className="w-80 h-80 sm:w-[440px] sm:h-[440px] rounded-full border-2 border-dashed border-[#111111] dark:border-zinc-400" />
             </div>
 
-            {/* 3. Vertical Japanese Typography & Stamp along the right */}
-            <div className="absolute right-0 top-6 bottom-6 hidden xl:flex flex-col items-center justify-between text-zinc-400 select-none pointer-events-none">
-              <span className="text-[11px] font-bold [writing-mode:vertical-rl] tracking-widest text-[#111111] dark:text-zinc-300">
+            {/* 3. Hero Character Artwork (Large, visually dominant, uncropped head/body, transparent integration) */}
+            <div className="relative w-full max-w-md sm:max-w-lg lg:max-w-none h-[420px] sm:h-[500px] lg:h-[560px] flex items-end justify-center select-none pointer-events-none">
+              <img
+                src="/hero-character.png"
+                alt="YOMIKA Hero Character"
+                className="w-full h-full object-contain object-bottom drop-shadow-[0_20px_35px_rgba(0,0,0,0.25)] transition-transform duration-700 hover:scale-105"
+                onError={(e) => {
+                  // Fallback gracefully if custom file is not placed yet
+                  (e.target as HTMLImageElement).src = "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=1000&auto=format&fit=crop&q=90";
+                }}
+              />
+
+              {/* Subtle bottom fade into the page background */}
+              <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-[#FAFAF7] dark:from-[#121214] to-transparent pointer-events-none" />
+            </div>
+
+            {/* 4. Vertical Japanese Calligraphy & Seal Stamp */}
+            <div className="absolute right-0 top-4 bottom-12 hidden xl:flex flex-col items-center justify-between text-zinc-400 select-none pointer-events-none z-10">
+              <span className="text-[11px] font-bold [writing-mode:vertical-rl] tracking-widest text-[#111111] dark:text-zinc-300 drop-shadow-xs">
                 すべての物語は、ここから始まる。
               </span>
-              <span className="w-5 h-5 border border-[#D91E18] text-[#D91E18] text-[9px] font-black flex items-center justify-center rounded-2xs">
+              <span className="w-6 h-6 border-2 border-[#D91E18] text-[#D91E18] text-[10px] font-black flex items-center justify-center rounded-xs bg-white/90 dark:bg-zinc-900/90 backdrop-blur-xs shadow-xs">
                 創造
               </span>
             </div>
 
-            {/* 4. Floating "BE THE FIRST CREATOR" Card */}
-            <div className="absolute bottom-2 right-2 sm:right-6 max-w-xs w-full bg-white dark:bg-zinc-900 border border-[#111111] dark:border-zinc-700 rounded-xl p-4 sm:p-5 shadow-xl space-y-3 z-20">
+            {/* 5. Floating "BE THE FIRST CREATOR" Card */}
+            <div className="absolute -bottom-4 right-0 sm:right-2 md:right-4 max-w-[280px] sm:max-w-xs w-full bg-white dark:bg-zinc-900 border border-[#111111] dark:border-zinc-700 rounded-xl p-4 sm:p-5 shadow-2xl space-y-3 z-20">
               <div className="flex items-center justify-between">
                 <h3 className="font-black text-xs sm:text-sm tracking-tight text-[#111111] dark:text-white uppercase">
                   BE THE FIRST CREATOR
