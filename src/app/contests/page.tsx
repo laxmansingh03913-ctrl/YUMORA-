@@ -639,63 +639,75 @@ export default function ContestsPage() {
                     </label>
 
                     {novels.length > 0 ? (
-                      <select
-                        value={selectedNovelId}
-                        onChange={(e) => setSelectedNovelId(e.target.value)}
-                        className="w-full px-3.5 py-2.5 rounded-lg bg-zinc-50 dark:bg-zinc-950 border border-[#EAEAE5] dark:border-zinc-800 text-xs font-bold focus:outline-none focus:border-[#D91E18]"
-                      >
-                        {novels.map((n) => (
-                          <option key={n.id} value={n.id}>
-                            {n.title} ({n.chaptersCount || 3} Chapters) — {n.genre}
-                          </option>
-                        ))}
-                      </select>
+                      <>
+                        <select
+                          value={selectedNovelId}
+                          onChange={(e) => setSelectedNovelId(e.target.value)}
+                          className="w-full px-3.5 py-2.5 rounded-lg bg-zinc-50 dark:bg-zinc-950 border border-[#EAEAE5] dark:border-zinc-800 text-xs font-bold focus:outline-none focus:border-[#D91E18]"
+                        >
+                          {novels.map((n) => (
+                            <option key={n.id} value={n.id}>
+                              {n.title} ({n.chaptersCount || 3} Chapters) — {n.genre}
+                            </option>
+                          ))}
+                        </select>
+
+                        {/* Live Preview Card */}
+                        {selectedStory && (
+                          <div className="p-3.5 rounded-lg bg-zinc-50 dark:bg-zinc-950 border border-[#EAEAE5] dark:border-zinc-800 flex items-center gap-3">
+                            <div className="w-14 h-18 rounded-md overflow-hidden bg-zinc-200 flex-shrink-0">
+                              <img
+                                src={selectedStory.coverUrl}
+                                alt={selectedStory.title}
+                                className="w-full h-full object-cover"
+                              />
+                            </div>
+                            <div className="space-y-0.5 min-w-0">
+                              <p className="font-black text-sm text-[#111111] dark:text-white truncate">{selectedStory.title}</p>
+                              <p className="text-xs text-[#D91E18] font-bold">{selectedStory.genre}</p>
+                              <p className="text-[11px] text-zinc-500">{selectedStory.chaptersCount || 3} Published Chapters • ★ {selectedStory.rating || 5.0}</p>
+                            </div>
+                          </div>
+                        )}
+
+                        <div className="flex justify-end gap-2 pt-2">
+                          <button
+                            type="button"
+                            onClick={() => setIsSubmitModalOpen(false)}
+                            className="px-4 py-2 rounded-lg border border-zinc-300 dark:border-zinc-700 text-xs font-bold hover:bg-zinc-100 dark:hover:bg-zinc-800"
+                          >
+                            Cancel
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setSubmissionStep(2)}
+                            className="px-5 py-2 rounded-lg bg-[#D91E18] hover:bg-[#B71813] text-white text-xs font-black uppercase tracking-wider shadow-xs"
+                          >
+                            Next: Review Entry →
+                          </button>
+                        </div>
+                      </>
                     ) : (
-                      <div className="p-4 rounded-lg bg-zinc-50 dark:bg-zinc-800 border border-[#EAEAE5] text-center space-y-2">
-                        <p className="text-xs font-bold text-zinc-500">You haven&apos;t published a story yet.</p>
+                      <div className="p-6 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-[#EAEAE5] dark:border-zinc-800 text-center space-y-3">
+                        <div className="w-10 h-10 rounded-full bg-red-50 dark:bg-red-950/50 text-[#D91E18] flex items-center justify-center mx-auto">
+                          <BookOpen className="w-5 h-5" />
+                        </div>
+                        <div className="space-y-1">
+                          <p className="font-black text-sm text-[#111111] dark:text-white">
+                            You haven&apos;t published a story yet
+                          </p>
+                          <p className="text-xs text-[#555555] dark:text-zinc-400 max-w-xs mx-auto">
+                            To enter the monthly Tournament, publish your first novel or comic on Yomika.
+                          </p>
+                        </div>
                         <Link
                           href="/creator/upload"
-                          className="inline-block px-4 py-1.5 rounded-md bg-[#D91E18] text-white text-xs font-black uppercase"
+                          className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-lg bg-[#D91E18] hover:bg-[#B71813] text-white text-xs font-black uppercase tracking-wider shadow-xs transition"
                         >
-                          Create Story First →
+                          <span>CREATE STORY FIRST →</span>
                         </Link>
                       </div>
                     )}
-
-                    {/* Live Preview Card */}
-                    {selectedStory && (
-                      <div className="p-3.5 rounded-lg bg-zinc-50 dark:bg-zinc-950 border border-[#EAEAE5] dark:border-zinc-800 flex items-center gap-3">
-                        <div className="w-14 h-18 rounded-md overflow-hidden bg-zinc-200 flex-shrink-0">
-                          <img
-                            src={selectedStory.coverUrl}
-                            alt={selectedStory.title}
-                            className="w-full h-full object-cover"
-                          />
-                        </div>
-                        <div className="space-y-0.5">
-                          <p className="font-black text-sm text-[#111111] dark:text-white">{selectedStory.title}</p>
-                          <p className="text-xs text-[#D91E18] font-bold">{selectedStory.genre}</p>
-                          <p className="text-[11px] text-zinc-500">{selectedStory.chaptersCount || 3} Published Chapters • ★ {selectedStory.rating || 5.0}</p>
-                        </div>
-                      </div>
-                    )}
-
-                    <div className="flex justify-end gap-2 pt-2">
-                      <button
-                        type="button"
-                        onClick={() => setIsSubmitModalOpen(false)}
-                        className="px-4 py-2 rounded-lg border border-zinc-300 text-xs font-bold hover:bg-zinc-100 dark:hover:bg-zinc-800"
-                      >
-                        Cancel
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setSubmissionStep(2)}
-                        className="px-5 py-2 rounded-lg bg-[#D91E18] hover:bg-[#B71813] text-white text-xs font-black uppercase tracking-wider"
-                      >
-                        Next: Review Entry →
-                      </button>
-                    </div>
                   </div>
                 )}
 
