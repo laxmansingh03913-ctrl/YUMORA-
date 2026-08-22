@@ -4,36 +4,36 @@
 
 @layer base {
   :root {
-    --background: #fcfcfd;
-    --foreground: #09090b;
+    --background: #FAFAF7;
+    --foreground: #111111;
     --card: #ffffff;
-    --card-foreground: #09090b;
-    --border: #e4e4e7;
-    --muted: #f4f4f5;
-    --muted-foreground: #71717a;
-    --accent: #f43f5e;
-    --accent-hover: #e11d48;
+    --card-foreground: #111111;
+    --border: #EAEAE5;
+    --muted: #F2F2EC;
+    --muted-foreground: #555555;
+    --accent: #D91E18;
+    --accent-hover: #B71813;
   }
 
   .dark {
-    --background: #09090e;
-    --foreground: #f4f4f7;
-    --card: #12121a;
-    --card-foreground: #f4f4f7;
-    --border: #222230;
-    --muted: #1a1a24;
-    --muted-foreground: #a1a1aa;
-    --accent: #f43f5e;
-    --accent-hover: #fb7185;
+    --background: #121214;
+    --foreground: #F5F5F3;
+    --card: #1A1A1E;
+    --card-foreground: #F5F5F3;
+    --border: #2B2B32;
+    --muted: #222228;
+    --muted-foreground: #9E9EA8;
+    --accent: #D91E18;
+    --accent-hover: #EF3B36;
   }
 
   /* Reader themes */
   .reader-light {
-    --reader-bg: #ffffff;
+    --reader-bg: #FAFAF7;
     --reader-text: #18181b;
-    --reader-accent: #e11d48;
-    --reader-border: #e4e4e7;
-    --reader-bar: #f4f4f5;
+    --reader-accent: #D91E18;
+    --reader-border: #EAEAE5;
+    --reader-bar: #F2F2EC;
   }
 
   .reader-sepia {
@@ -53,17 +53,17 @@
   }
 
   .reader-dark {
-    --reader-bg: #0d0d12;
+    --reader-bg: #121214;
     --reader-text: #d4d4d8;
-    --reader-accent: #f43f5e;
-    --reader-border: #22222e;
-    --reader-bar: #14141e;
+    --reader-accent: #D91E18;
+    --reader-border: #2B2B32;
+    --reader-bar: #1A1A1E;
   }
 
   .reader-midnight {
     --reader-bg: #000000;
     --reader-text: #a1a1aa;
-    --reader-accent: #fb7185;
+    --reader-accent: #D91E18;
     --reader-border: #18181b;
     --reader-bar: #09090b;
   }

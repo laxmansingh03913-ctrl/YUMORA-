@@ -75,42 +75,44 @@ export function AuthModal() {
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 md:p-6 bg-black/80 backdrop-blur-md animate-in fade-in duration-200 overflow-y-auto"
+      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 md:p-6 bg-black/75 backdrop-blur-sm animate-in fade-in duration-200 overflow-y-auto"
       onClick={closeAuthModal}
     >
       <div
-        className="w-full max-w-[480px] bg-zinc-900 border border-zinc-800 rounded-3xl shadow-2xl overflow-hidden text-zinc-100 relative my-auto max-h-[92vh] flex flex-col animate-in zoom-in-95 duration-200"
+        className="w-full max-w-[460px] bg-white dark:bg-zinc-900 border-2 border-[#111111] dark:border-zinc-700 rounded-2xl shadow-2xl overflow-hidden text-[#111111] dark:text-zinc-100 relative my-auto max-h-[92vh] flex flex-col animate-in zoom-in-95 duration-200"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Glow ambient background effect */}
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-80 h-28 bg-gradient-to-r from-rose-500/20 via-purple-500/20 to-indigo-500/20 blur-3xl pointer-events-none rounded-full" />
-
         {/* Modal Header */}
-        <div className="flex items-center justify-between px-6 sm:px-8 pt-6 pb-2 relative z-10">
+        <div className="flex items-center justify-between px-6 sm:px-8 pt-6 pb-3 border-b border-[#EAEAE5] dark:border-zinc-800">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-rose-600 via-rose-500 to-indigo-600 flex items-center justify-center font-black text-white text-sm shadow-lg shadow-rose-500/25">
-              Y
+            <div className="w-8 h-8 rounded-lg bg-[#D91E18] flex items-center justify-center font-black text-white text-base shadow-sm">
+              Y.
             </div>
-            <span className="font-extrabold text-lg tracking-tight bg-gradient-to-r from-white via-zinc-200 to-zinc-400 bg-clip-text text-transparent">
-              Yomika
-            </span>
+            <div className="flex flex-col">
+              <span className="font-black text-lg tracking-tight text-[#111111] dark:text-white">
+                YOMIKA
+              </span>
+              <span className="text-[9px] font-medium text-zinc-400 dark:text-zinc-500 -mt-1 tracking-wider">
+                物語を、世界へ。
+              </span>
+            </div>
           </div>
 
           <button
             onClick={closeAuthModal}
             aria-label="Close"
-            className="p-2 rounded-full hover:bg-zinc-800 text-zinc-400 hover:text-white transition"
+            className="p-1.5 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-400 hover:text-black dark:hover:text-white transition"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Scrollable Form Body */}
-        <div className="px-6 sm:px-8 py-4 relative z-10 overflow-y-auto space-y-5 flex-1">
+        <div className="px-6 sm:px-8 py-5 overflow-y-auto space-y-4 flex-1">
           {/* Intended Destination Context Banner */}
           {intendedDestination && (
-            <div className="p-3 rounded-2xl bg-indigo-950/60 border border-indigo-500/40 text-indigo-300 text-xs flex items-center gap-2.5 animate-in fade-in">
-              <Compass className="w-4 h-4 flex-shrink-0 text-indigo-400" />
+            <div className="p-3 rounded-lg bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900/40 text-[#D91E18] text-xs flex items-center gap-2 animate-in fade-in font-medium">
+              <Compass className="w-4 h-4 flex-shrink-0" />
               <span>
                 {isLogin ? "Sign in" : "Create an account"} to continue to your reading destination.
               </span>
@@ -118,17 +120,17 @@ export function AuthModal() {
           )}
 
           {/* Top Tab Toggle: Create Account vs Sign In */}
-          <div className="grid grid-cols-2 p-1 rounded-2xl bg-zinc-950 border border-zinc-800">
+          <div className="grid grid-cols-2 p-1 rounded-lg bg-zinc-100 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800">
             <button
               type="button"
               onClick={() => {
                 openAuthModal("signup");
                 setErrorMessage(null);
               }}
-              className={`py-2.5 rounded-xl text-xs sm:text-sm font-bold transition flex items-center justify-center gap-1.5 ${
+              className={`py-2 rounded-md text-xs font-black transition flex items-center justify-center gap-1.5 ${
                 !isLogin
-                  ? "bg-gradient-to-r from-rose-600 to-indigo-600 text-white shadow-md shadow-rose-600/20"
-                  : "text-zinc-400 hover:text-zinc-200"
+                  ? "bg-[#D91E18] text-white shadow-xs"
+                  : "text-zinc-500 hover:text-black dark:hover:text-white"
               }`}
             >
               <span>Create Account</span>
@@ -139,10 +141,10 @@ export function AuthModal() {
                 openAuthModal("login");
                 setErrorMessage(null);
               }}
-              className={`py-2.5 rounded-xl text-xs sm:text-sm font-bold transition flex items-center justify-center gap-1.5 ${
+              className={`py-2 rounded-md text-xs font-black transition flex items-center justify-center gap-1.5 ${
                 isLogin
-                  ? "bg-zinc-800 text-white shadow-md"
-                  : "text-zinc-400 hover:text-zinc-200"
+                  ? "bg-[#D91E18] text-white shadow-xs"
+                  : "text-zinc-500 hover:text-black dark:hover:text-white"
               }`}
             >
               <span>Sign In</span>
@@ -150,11 +152,11 @@ export function AuthModal() {
           </div>
 
           {/* Heading & Subtitle */}
-          <div className="text-center space-y-1.5">
-            <h2 className="text-2xl font-black tracking-tight text-white">
+          <div className="text-center space-y-1">
+            <h2 className="text-xl sm:text-2xl font-black tracking-tight text-[#111111] dark:text-white">
               {isLogin ? "Welcome back to Yomika" : "Create your Yomika account"}
             </h2>
-            <p className="text-xs sm:text-sm text-zinc-400">
+            <p className="text-xs text-zinc-500 dark:text-zinc-400">
               {isLogin
                 ? "Sign in to your account to continue your journey."
                 : "Join readers and creators from around the world."}
@@ -265,14 +267,14 @@ export function AuthModal() {
                   <label className="block text-xs font-semibold text-zinc-300 mb-1.5">
                     I want to:
                   </label>
-                  <div className="grid grid-cols-2 gap-2.5">
+                  <div className="grid grid-cols-2 gap-2">
                     <button
                       type="button"
                       onClick={() => setSelectedRole("CREATOR")}
-                      className={`h-11 rounded-2xl border text-xs font-bold transition flex items-center justify-center gap-2 ${
+                      className={`h-10 rounded-lg border text-xs font-black transition flex items-center justify-center gap-1.5 ${
                         selectedRole === "CREATOR"
-                          ? "bg-indigo-600 text-white border-indigo-500 shadow-md shadow-indigo-600/20"
-                          : "bg-zinc-950 border-zinc-800 text-zinc-400 hover:text-zinc-200"
+                          ? "bg-[#D91E18] text-white border-[#D91E18] shadow-xs"
+                          : "bg-white dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-400 hover:text-black dark:hover:text-white"
                       }`}
                     >
                       <PenTool className="w-3.5 h-3.5" />
@@ -281,10 +283,10 @@ export function AuthModal() {
                     <button
                       type="button"
                       onClick={() => setSelectedRole("READER")}
-                      className={`h-11 rounded-2xl border text-xs font-bold transition flex items-center justify-center gap-2 ${
+                      className={`h-10 rounded-lg border text-xs font-black transition flex items-center justify-center gap-1.5 ${
                         selectedRole === "READER"
-                          ? "bg-rose-600 text-white border-rose-500 shadow-md shadow-rose-600/20"
-                          : "bg-zinc-950 border-zinc-800 text-zinc-400 hover:text-zinc-200"
+                          ? "bg-[#D91E18] text-white border-[#D91E18] shadow-xs"
+                          : "bg-white dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-400 hover:text-black dark:hover:text-white"
                       }`}
                     >
                       <BookOpen className="w-3.5 h-3.5" />
@@ -297,7 +299,7 @@ export function AuthModal() {
 
             {/* Email Address */}
             <div>
-              <label className="block text-xs font-semibold text-zinc-300 mb-1.5">
+              <label className="block text-xs font-bold text-zinc-700 dark:text-zinc-300 mb-1">
                 Email Address
               </label>
               <div className="relative">
@@ -307,15 +309,15 @@ export function AuthModal() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="name@example.com"
-                  className="w-full h-12 pl-10 pr-3.5 rounded-2xl bg-zinc-950 border border-zinc-800 text-zinc-100 placeholder-zinc-600 focus:outline-none focus:border-rose-500 text-xs sm:text-sm transition"
+                  className="w-full h-10 pl-9 pr-3 rounded-lg bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 text-[#111111] dark:text-white placeholder-zinc-400 focus:outline-none focus:border-[#D91E18] text-xs transition"
                 />
-                <Mail className="w-4 h-4 text-zinc-500 absolute left-3.5 top-4" />
+                <Mail className="w-4 h-4 text-zinc-400 absolute left-3 top-3" />
               </div>
             </div>
 
             {/* Password with Visibility Toggle */}
             <div>
-              <label className="block text-xs font-semibold text-zinc-300 mb-1.5">
+              <label className="block text-xs font-bold text-zinc-700 dark:text-zinc-300 mb-1">
                 Password
               </label>
               <div className="relative">
@@ -325,13 +327,13 @@ export function AuthModal() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
-                  className="w-full h-12 pl-10 pr-11 rounded-2xl bg-zinc-950 border border-zinc-800 text-zinc-100 placeholder-zinc-600 focus:outline-none focus:border-rose-500 text-xs sm:text-sm transition"
+                  className="w-full h-10 pl-9 pr-10 rounded-lg bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 text-[#111111] dark:text-white placeholder-zinc-400 focus:outline-none focus:border-[#D91E18] text-xs transition"
                 />
-                <Lock className="w-4 h-4 text-zinc-500 absolute left-3.5 top-4" />
+                <Lock className="w-4 h-4 text-zinc-400 absolute left-3 top-3" />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="p-1.5 rounded-xl hover:bg-zinc-800 text-zinc-400 hover:text-zinc-200 absolute right-2.5 top-2.5 transition"
+                  className="p-1 rounded-md hover:bg-zinc-200 dark:hover:bg-zinc-800 text-zinc-400 hover:text-black dark:hover:text-white absolute right-2.5 top-2 transition"
                   title={showPassword ? "Hide password" : "Show password"}
                 >
                   {showPassword ? (
@@ -347,7 +349,7 @@ export function AuthModal() {
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full h-12 rounded-2xl bg-gradient-to-r from-rose-600 via-rose-500 to-indigo-600 hover:from-rose-500 hover:to-indigo-500 text-white font-bold text-xs sm:text-sm shadow-lg shadow-rose-600/25 transition transform active:scale-[0.99] flex items-center justify-center gap-2 mt-2 disabled:opacity-50"
+              className="w-full h-10 rounded-lg bg-[#D91E18] hover:bg-[#B71813] text-white font-black text-xs uppercase tracking-wider shadow-xs transition transform active:scale-[0.99] flex items-center justify-center gap-2 mt-2 disabled:opacity-50"
             >
               {isLoading ? (
                 <Loader2 className="w-4 h-4 animate-spin" />

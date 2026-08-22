@@ -110,44 +110,48 @@ export function Navbar() {
 
   return (
     <>
-      <header className="sticky top-0 z-40 w-full border-b border-zinc-200/80 dark:border-zinc-800/80 bg-white/80 dark:bg-zinc-950/80 backdrop-blur-xl transition-colors">
-        <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-2 sm:gap-3 lg:gap-6">
+      <header className="sticky top-0 z-40 w-full border-b border-[#EAEAE5] dark:border-zinc-800 bg-[#FFFFFF]/95 dark:bg-[#121214]/95 backdrop-blur-md transition-colors">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-3 sm:gap-6">
           {/* ZONE 1: LEFT - Logo & Desktop Navigation */}
-          <div className="flex items-center gap-2 sm:gap-4 lg:gap-5 xl:gap-6 flex-shrink-0">
-            <Link href="/" className="flex items-center gap-2 group flex-shrink-0">
-              <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-rose-600 via-rose-500 to-indigo-600 flex items-center justify-center font-black text-white text-lg shadow-lg shadow-rose-500/25 group-hover:scale-105 transition transform">
-                Y
+          <div className="flex items-center gap-4 lg:gap-8 flex-shrink-0">
+            <Link href="/" className="flex items-center gap-2.5 group flex-shrink-0">
+              {/* Red Square Y. Logo */}
+              <div className="w-8 h-8 rounded-lg bg-[#D91E18] flex items-center justify-center font-black text-white text-base shadow-sm group-hover:scale-105 transition transform">
+                Y.
               </div>
               <div className="flex flex-col">
-                <span className="font-extrabold text-xl tracking-tight bg-gradient-to-r from-zinc-900 via-zinc-800 to-zinc-950 dark:from-white dark:via-zinc-200 dark:to-zinc-400 bg-clip-text text-transparent">
-                  Yomika
+                <span className="font-black text-lg sm:text-xl tracking-tight text-[#111111] dark:text-white">
+                  YOMIKA
                 </span>
-                <span className="text-[9px] uppercase tracking-widest font-semibold text-rose-500 -mt-1 hidden sm:inline">
-                  Story Universe
+                <span className="text-[9px] font-medium text-zinc-400 dark:text-zinc-500 -mt-1 tracking-wider">
+                  物語を、世界へ。
                 </span>
               </div>
             </Link>
 
             {/* Desktop Navigation Links */}
-            <nav className="hidden md:flex items-center gap-0.5 lg:gap-1 flex-shrink-0">
+            <nav className="hidden md:flex items-center gap-1 lg:gap-2 flex-shrink-0">
               {NAV_LINKS.map((link) => {
-                const isActive = pathname === link.href || pathname.startsWith(link.href + "/");
+                const isActive = pathname === link.href || (link.href !== "/" && pathname.startsWith(link.href + "/"));
                 return (
                   <Link
                     key={link.name}
                     href={link.href}
-                    className={`px-2 lg:px-3 py-1.5 rounded-xl text-xs lg:text-sm font-medium transition flex items-center gap-1 lg:gap-1.5 relative whitespace-nowrap ${
+                    className={`px-3 py-2 text-xs lg:text-sm font-semibold transition flex items-center gap-1.5 relative whitespace-nowrap ${
                       isActive
-                        ? "text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/40 font-semibold"
-                        : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-900"
+                        ? "text-[#111111] dark:text-white font-bold"
+                        : "text-zinc-600 dark:text-zinc-400 hover:text-[#111111] dark:hover:text-white"
                     }`}
                   >
-                    <link.icon className="w-3.5 h-3.5 lg:w-4 lg:h-4 flex-shrink-0" />
+                    <link.icon className={`w-4 h-4 flex-shrink-0 ${isActive ? "text-[#D91E18]" : "text-zinc-400"}`} />
                     <span className="whitespace-nowrap">{link.name}</span>
                     {link.badge && (
-                      <span className="px-1.5 py-0.2 rounded-full text-[9px] lg:text-[10px] font-bold bg-gradient-to-r from-amber-500 to-rose-500 text-white shadow-xs">
+                      <span className="px-1.5 py-0.2 rounded-full text-[9px] font-black bg-[#D91E18] text-white">
                         {link.badge}
                       </span>
+                    )}
+                    {isActive && (
+                      <span className="absolute bottom-0 left-2 right-2 h-[2.5px] bg-[#D91E18] rounded-full" />
                     )}
                   </Link>
                 );
@@ -155,20 +159,17 @@ export function Navbar() {
             </nav>
           </div>
 
-          {/* ZONE 2: CENTER / FLEXIBLE - Dedicated Search Zone (Hidden on mobile <640px, fluid 140px-260px on desktop) */}
-          <div className="hidden sm:flex flex-1 items-center justify-center min-w-0 px-2 lg:px-6">
+          {/* ZONE 2: CENTER / FLEXIBLE - Dedicated Search Zone */}
+          <div className="hidden sm:flex flex-1 items-center justify-center max-w-xs lg:max-w-sm px-2">
             <button
               onClick={() => setIsSearchOpen(true)}
-              className="w-full min-w-[140px] md:min-w-[160px] max-w-[240px] lg:max-w-[260px] flex items-center justify-between gap-2 h-9 sm:h-10 px-3 sm:px-3.5 rounded-xl bg-zinc-100/90 dark:bg-zinc-900/90 border border-zinc-200/90 dark:border-zinc-800/90 text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200 hover:border-zinc-300 dark:hover:border-zinc-700 transition text-xs sm:text-sm shadow-xs flex-shrink"
-              title="Search Yomika (⌘K)"
+              className="w-full flex items-center justify-between gap-2 h-9 px-3.5 rounded-lg bg-zinc-50 dark:bg-zinc-900/90 border border-zinc-200 dark:border-zinc-800 text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200 hover:border-zinc-300 dark:hover:border-zinc-700 transition text-xs shadow-2xs"
+              title="Search stories (⌘K)"
             >
               <div className="flex items-center gap-2 min-w-0 overflow-hidden">
-                <Search className="w-3.5 h-3.5 lg:w-4 lg:h-4 text-zinc-400 flex-shrink-0" />
                 <span className="truncate text-zinc-400 text-xs">Search stories...</span>
               </div>
-              <kbd className="hidden xl:inline-flex items-center px-1.5 py-0.5 rounded bg-zinc-200/80 dark:bg-zinc-800 text-[10px] text-zinc-500 font-mono flex-shrink-0">
-                ⌘K
-              </kbd>
+              <Search className="w-3.5 h-3.5 text-zinc-400 flex-shrink-0" />
             </button>
           </div>
 
@@ -327,14 +328,14 @@ export function Navbar() {
 
             {/* User Profile / Auth Buttons */}
             {user ? (
-              <div className="flex items-center gap-1.5 sm:gap-2">
+              <div className="flex items-center gap-2 sm:gap-2.5">
                 <Link
-                  href="/creator"
-                  className="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-rose-600 via-rose-500 to-indigo-600 hover:from-rose-500 hover:to-indigo-500 text-white font-bold text-xs shadow-md shadow-rose-600/20 transition transform hover:scale-[1.02] active:scale-[0.98] whitespace-nowrap"
-                  title="Open Creator Studio Dashboard"
+                  href="/creator/upload"
+                  className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-[#D91E18] hover:bg-[#B71813] text-white font-bold text-xs shadow-xs transition transform hover:scale-[1.02] active:scale-[0.98] whitespace-nowrap"
+                  title="Create new story or episode"
                 >
                   <PenTool className="w-3.5 h-3.5" />
-                  <span>Studio</span>
+                  <span>Create</span>
                 </Link>
 
                 <div className="relative" ref={userMenuRef}>
@@ -495,16 +496,17 @@ export function Navbar() {
             ) : (
               <div className="flex items-center gap-2">
                 <button
-                  onClick={() => openAuthModal("login")}
-                  className="px-3.5 py-2 rounded-xl text-zinc-700 dark:text-zinc-200 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-900 font-bold text-xs sm:text-sm transition whitespace-nowrap"
+                  onClick={() => requireAuth("/creator/upload")}
+                  className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-[#D91E18] hover:bg-[#B71813] text-white font-bold text-xs shadow-xs transition transform hover:scale-[1.02] active:scale-[0.98] whitespace-nowrap"
                 >
-                  Sign In
+                  <PenTool className="w-3.5 h-3.5" />
+                  <span>Create</span>
                 </button>
                 <button
-                  onClick={() => openAuthModal("signup")}
-                  className="px-4 sm:px-5 py-2 rounded-xl bg-gradient-to-r from-rose-600 via-rose-500 to-indigo-600 hover:from-rose-500 hover:to-indigo-500 text-white font-black text-xs sm:text-sm shadow-md shadow-rose-600/30 transition transform hover:scale-[1.03] active:scale-[0.97] whitespace-nowrap flex items-center gap-1.5"
+                  onClick={() => openAuthModal("login")}
+                  className="px-3.5 py-1.5 rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-zinc-800 dark:text-zinc-200 hover:border-black dark:hover:border-white font-bold text-xs transition whitespace-nowrap"
                 >
-                  <span>Sign Up</span>
+                  Sign In
                 </button>
               </div>
             )}

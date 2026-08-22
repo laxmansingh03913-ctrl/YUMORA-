@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Inter, Merriweather } from "next/font/google";
+import { Inter, Merriweather, Noto_Sans_JP } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/context/ThemeContext";
 import { AuthProvider } from "@/context/AuthContext";
@@ -11,6 +11,12 @@ import { MobileNav } from "@/components/layout/MobileNav";
 const inter = Inter({
   subsets: ["latin"],
   variable: "--font-inter",
+});
+
+const notoSansJP = Noto_Sans_JP({
+  weight: ["400", "500", "700", "900"],
+  subsets: ["latin"],
+  variable: "--font-noto-jp",
 });
 
 const merriweather = Merriweather({
@@ -58,8 +64,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="dark" suppressHydrationWarning>
-      <body className={`${inter.variable} ${merriweather.variable} font-sans min-h-screen flex flex-col antialiased selection:bg-rose-500 selection:text-white`}>
+    <html lang="en" suppressHydrationWarning>
+      <body className={`${inter.variable} ${notoSansJP.variable} ${merriweather.variable} font-sans min-h-screen flex flex-col antialiased selection:bg-[#D91E18] selection:text-white bg-[#FAFAF7] text-[#111111]`}>
         <ThemeProvider>
           <AuthProvider>
             <ReaderProvider>

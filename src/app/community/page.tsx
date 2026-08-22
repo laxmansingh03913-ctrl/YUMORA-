@@ -91,41 +91,43 @@ export default function CommunityPage() {
   };
 
   return (
-    <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+    <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 border-b border-[#EAEAE5] dark:border-zinc-800 pb-4">
         <div>
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-indigo-50 dark:bg-indigo-950/40 text-indigo-500 border border-indigo-200/50 dark:border-indigo-900/40 mb-2">
-            <Users className="w-3.5 h-3.5" />
-            <span>Community Hub</span>
+          <div className="flex items-center gap-2 mb-1">
+            <span className="w-1.5 h-5 bg-[#D91E18] rounded-2xs" />
+            <span className="text-[11px] font-black text-[#D91E18] tracking-widest uppercase">
+              COMMUNITY FORUM • コミュニティ
+            </span>
           </div>
-          <h1 className="text-3xl sm:text-4xl font-black text-zinc-900 dark:text-zinc-100 tracking-tight">
-            Storytellers & Readers Forum
+          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black text-[#111111] dark:text-white tracking-tight">
+            Storytellers & Readers Hub
           </h1>
-          <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1">
+          <p className="text-xs sm:text-sm text-[#555555] dark:text-zinc-400 mt-1 font-medium">
             Discuss world-building techniques, share feedback, and connect with global readers
           </p>
         </div>
 
         <button
           onClick={() => setIsCreatingPost(!isCreatingPost)}
-          className="px-5 py-3 rounded-2xl bg-gradient-to-r from-rose-600 to-indigo-600 hover:from-rose-500 hover:to-indigo-500 text-white font-bold text-xs shadow-lg shadow-rose-600/20 transition flex items-center gap-2 transform hover:scale-[1.02]"
+          className="px-5 py-2.5 rounded-lg bg-[#D91E18] hover:bg-[#B71813] text-white font-black text-xs uppercase tracking-wider shadow-xs transition flex items-center gap-2 transform hover:scale-[1.02]"
         >
           <Plus className="w-4 h-4" />
-          <span>Start New Discussion</span>
+          <span>New Discussion</span>
         </button>
       </div>
 
       {/* Category Navigation Pills */}
-      <div className="flex items-center gap-2 overflow-x-auto pb-2 border-b border-zinc-200 dark:border-zinc-800 scrollbar-none">
+      <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
         {CATEGORIES.map((cat) => (
           <button
             key={cat}
             onClick={() => setSelectedCategory(cat)}
-            className={`px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition ${
+            className={`px-3.5 py-1.5 rounded-lg text-xs font-black whitespace-nowrap transition ${
               selectedCategory === cat
-                ? "bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 shadow-md"
-                : "bg-zinc-100 dark:bg-zinc-900 text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100"
+                ? "bg-[#D91E18] text-white shadow-xs"
+                : "bg-white dark:bg-zinc-900 border border-[#EAEAE5] dark:border-zinc-800 text-zinc-600 dark:text-zinc-400 hover:text-black dark:hover:text-white hover:border-black"
             }`}
           >
             {cat}

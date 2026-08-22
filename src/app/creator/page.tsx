@@ -326,9 +326,9 @@ export default function CreatorDashboardPage() {
       )}
 
       {/* Dashboard Top Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6 border-b border-zinc-200 dark:border-zinc-800">
-        <div className="flex items-center gap-4">
-          <div className="w-14 h-14 rounded-2xl overflow-hidden ring-2 ring-rose-500/50 bg-gradient-to-br from-rose-600 to-indigo-600 flex items-center justify-center text-white font-black text-xl flex-shrink-0">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-[#EAEAE5] dark:border-zinc-800">
+        <div className="flex items-center gap-3.5">
+          <div className="w-12 h-12 rounded-lg overflow-hidden border border-[#EAEAE5] dark:border-zinc-700 bg-zinc-100 flex items-center justify-center font-black text-lg flex-shrink-0">
             {user?.avatar ? (
               <img
                 src={user.avatar}
@@ -341,46 +341,47 @@ export default function CreatorDashboardPage() {
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h1 className="text-2xl font-black text-zinc-900 dark:text-zinc-100">
+              <span className="w-1.5 h-4 bg-[#D91E18] rounded-2xs" />
+              <h1 className="text-xl sm:text-2xl font-black text-[#111111] dark:text-white">
                 {user?.name || "Creator"}&apos;s Studio
               </h1>
-              <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-indigo-600 text-white uppercase">
+              <span className="px-2 py-0.5 rounded-xs text-[9px] font-black bg-[#D91E18] text-white uppercase">
                 {user?.role || "CREATOR"}
               </span>
             </div>
             <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
-              Creator Studio & Performance Analytics • Verified Storyteller
+              Creator Studio & Performance Analytics • 創作者スタジオ
             </p>
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2.5">
           <Link
             href="/contests"
-            className="px-4 py-2.5 rounded-xl bg-amber-500/10 border border-amber-500/30 hover:bg-amber-500/20 text-amber-500 text-xs font-bold transition flex items-center gap-1.5"
+            className="px-3.5 py-2 rounded-lg border border-[#EAEAE5] dark:border-zinc-700 hover:border-black dark:hover:border-white bg-white dark:bg-zinc-900 text-xs font-bold transition flex items-center gap-1.5"
           >
-            <Award className="w-4 h-4" />
+            <Award className="w-3.5 h-3.5 text-[#D91E18]" />
             <span>Active Contests</span>
           </Link>
 
           <Link
             href="/creator/upload"
-            className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-rose-600 to-indigo-600 hover:from-rose-500 hover:to-indigo-500 text-white text-xs font-bold transition flex items-center gap-1.5 shadow-md shadow-rose-600/20"
+            className="px-4 py-2 rounded-lg bg-[#D91E18] hover:bg-[#B71813] text-white text-xs font-black uppercase tracking-wider transition flex items-center gap-1.5 shadow-xs"
           >
-            <Plus className="w-4 h-4" />
+            <Plus className="w-3.5 h-3.5" />
             <span>New Story</span>
           </Link>
         </div>
       </div>
 
       {/* Main Studio Navigation Tabs */}
-      <div className="flex items-center gap-2 border-b border-zinc-200 dark:border-zinc-800 pb-2">
+      <div className="flex items-center gap-2 pb-1">
         <button
           onClick={() => setActiveTab("works")}
-          className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 ${
+          className={`px-3.5 py-1.5 rounded-lg text-xs font-black transition flex items-center gap-1.5 ${
             activeTab === "works"
-              ? "bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 shadow-md"
-              : "bg-zinc-100 dark:bg-zinc-900 text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100"
+              ? "bg-[#D91E18] text-white shadow-xs"
+              : "bg-white dark:bg-zinc-900 border border-[#EAEAE5] dark:border-zinc-800 text-zinc-600 dark:text-zinc-400 hover:text-black dark:hover:text-white"
           }`}
         >
           <BookOpen className="w-3.5 h-3.5" />
@@ -389,10 +390,10 @@ export default function CreatorDashboardPage() {
 
         <button
           onClick={() => setActiveTab("analytics")}
-          className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 ${
+          className={`px-3.5 py-1.5 rounded-lg text-xs font-black transition flex items-center gap-1.5 ${
             activeTab === "analytics"
-              ? "bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 shadow-md"
-              : "bg-zinc-100 dark:bg-zinc-900 text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100"
+              ? "bg-[#D91E18] text-white shadow-xs"
+              : "bg-white dark:bg-zinc-900 border border-[#EAEAE5] dark:border-zinc-800 text-zinc-600 dark:text-zinc-400 hover:text-black dark:hover:text-white"
           }`}
         >
           <TrendingUp className="w-3.5 h-3.5" />
@@ -401,13 +402,13 @@ export default function CreatorDashboardPage() {
 
         <button
           onClick={() => setActiveTab("earnings")}
-          className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 ${
+          className={`px-3.5 py-1.5 rounded-lg text-xs font-black transition flex items-center gap-1.5 ${
             activeTab === "earnings"
-              ? "bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 shadow-md"
-              : "bg-zinc-100 dark:bg-zinc-900 text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100"
+              ? "bg-[#D91E18] text-white shadow-xs"
+              : "bg-white dark:bg-zinc-900 border border-[#EAEAE5] dark:border-zinc-800 text-zinc-600 dark:text-zinc-400 hover:text-black dark:hover:text-white"
           }`}
         >
-          <Wallet className="w-3.5 h-3.5 text-emerald-400" />
+          <Wallet className="w-3.5 h-3.5 text-emerald-500" />
           <span>Earnings & Payouts</span>
         </button>
       </div>

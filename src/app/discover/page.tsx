@@ -135,37 +135,39 @@ export default function DiscoverPage() {
     activeTab !== "all";
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-[#EAEAE5] dark:border-zinc-800 pb-4">
         <div>
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-rose-50 dark:bg-rose-950/40 text-rose-500 border border-rose-200/50 dark:border-rose-900/40 mb-2">
-            <Compass className="w-3.5 h-3.5" />
-            <span>Discover Universe</span>
+          <div className="flex items-center gap-2 mb-1">
+            <span className="w-1.5 h-5 bg-[#D91E18] rounded-2xs" />
+            <span className="text-[11px] font-black text-[#D91E18] tracking-widest uppercase">
+              DISCOVER UNIVERSE • 発見
+            </span>
           </div>
-          <h1 className="text-3xl sm:text-4xl font-black text-zinc-900 dark:text-zinc-100 tracking-tight">
+          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black text-[#111111] dark:text-white tracking-tight">
             Explore Stories & Creators
           </h1>
-          <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1">
+          <p className="text-xs sm:text-sm text-[#555555] dark:text-zinc-400 mt-1 font-medium">
             Filter by genre, language, length, status, and community acclaim
           </p>
         </div>
 
         {/* Search input bar */}
         <div className="relative w-full md:w-80">
-          <Search className="w-4 h-4 text-zinc-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
           <input
             type="text"
             placeholder="Search keywords, authors..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-10 pr-4 py-2.5 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-zinc-100 text-sm focus:outline-none focus:border-rose-500 transition placeholder-zinc-400"
+            className="w-full pl-9 pr-4 py-2 rounded-lg bg-white dark:bg-zinc-900 border border-[#EAEAE5] dark:border-zinc-700 text-[#111111] dark:text-white text-xs focus:outline-none focus:border-[#D91E18] transition placeholder-zinc-400"
           />
+          <Search className="w-4 h-4 text-zinc-400 absolute left-3 top-1/2 -translate-y-1/2" />
         </div>
       </div>
 
       {/* Curated Discovery Tabs */}
-      <div className="flex items-center gap-2 overflow-x-auto pb-2 border-b border-zinc-200 dark:border-zinc-800 scrollbar-none">
+      <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
         {[
           { id: "all", label: "All Works" },
           { id: "trending", label: "🔥 Trending" },
@@ -176,10 +178,10 @@ export default function DiscoverPage() {
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id as typeof activeTab)}
-            className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-bold whitespace-nowrap transition ${
+            className={`px-3.5 py-1.5 rounded-lg text-xs font-black whitespace-nowrap transition ${
               activeTab === tab.id
-                ? "bg-rose-600 text-white shadow-md shadow-rose-600/20"
-                : "bg-zinc-100 dark:bg-zinc-900 text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100"
+                ? "bg-[#D91E18] text-white shadow-xs"
+                : "bg-white dark:bg-zinc-900 border border-[#EAEAE5] dark:border-zinc-800 text-zinc-600 dark:text-zinc-400 hover:text-black dark:hover:text-white hover:border-black"
             }`}
           >
             {tab.label}
@@ -188,11 +190,11 @@ export default function DiscoverPage() {
       </div>
 
       {/* Filter Bar */}
-      <div className="p-4 rounded-3xl bg-white dark:bg-zinc-900/70 border border-zinc-200 dark:border-zinc-800 shadow-sm space-y-4">
+      <div className="p-4 rounded-xl bg-white dark:bg-zinc-900 border border-[#EAEAE5] dark:border-zinc-800 shadow-2xs space-y-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <SlidersHorizontal className="w-4 h-4 text-rose-500" />
-            <span className="text-xs font-bold uppercase tracking-wider text-zinc-800 dark:text-zinc-200">
+            <SlidersHorizontal className="w-3.5 h-3.5 text-[#D91E18]" />
+            <span className="text-xs font-black uppercase tracking-wider text-[#111111] dark:text-white">
               Filter Options
             </span>
           </div>
@@ -200,7 +202,7 @@ export default function DiscoverPage() {
           {hasActiveFilters && (
             <button
               onClick={resetFilters}
-              className="text-xs text-rose-500 hover:text-rose-400 font-semibold flex items-center gap-1 transition"
+              className="text-xs text-[#D91E18] hover:underline font-bold flex items-center gap-1 transition"
             >
               <RotateCcw className="w-3.5 h-3.5" />
               <span>Reset Filters</span>
@@ -212,11 +214,11 @@ export default function DiscoverPage() {
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
           {/* Genre */}
           <div>
-            <label className="block text-[11px] font-bold text-zinc-400 mb-1">Genre</label>
+            <label className="block text-[10px] font-black uppercase text-zinc-400 mb-1">Genre</label>
             <select
               value={selectedGenre}
               onChange={(e) => setSelectedGenre(e.target.value)}
-              className="w-full px-3 py-2 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 text-xs font-medium text-zinc-800 dark:text-zinc-200 focus:outline-none focus:border-rose-500"
+              className="w-full px-2.5 py-1.5 rounded-lg bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 text-xs font-medium text-zinc-800 dark:text-zinc-200 focus:outline-none focus:border-[#D91E18]"
             >
               {ALL_GENRES.map((g) => (
                 <option key={g} value={g}>
@@ -228,11 +230,11 @@ export default function DiscoverPage() {
 
           {/* Language */}
           <div>
-            <label className="block text-[11px] font-bold text-zinc-400 mb-1">Language</label>
+            <label className="block text-[10px] font-black uppercase text-zinc-400 mb-1">Language</label>
             <select
               value={selectedLanguage}
               onChange={(e) => setSelectedLanguage(e.target.value)}
-              className="w-full px-3 py-2 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 text-xs font-medium text-zinc-800 dark:text-zinc-200 focus:outline-none focus:border-rose-500"
+              className="w-full px-2.5 py-1.5 rounded-lg bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 text-xs font-medium text-zinc-800 dark:text-zinc-200 focus:outline-none focus:border-[#D91E18]"
             >
               {LANGUAGES.map((l) => (
                 <option key={l.code} value={l.code}>
@@ -244,11 +246,11 @@ export default function DiscoverPage() {
 
           {/* Status */}
           <div>
-            <label className="block text-[11px] font-bold text-zinc-400 mb-1">Status</label>
+            <label className="block text-[10px] font-black uppercase text-zinc-400 mb-1">Status</label>
             <select
               value={selectedStatus}
               onChange={(e) => setSelectedStatus(e.target.value)}
-              className="w-full px-3 py-2 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 text-xs font-medium text-zinc-800 dark:text-zinc-200 focus:outline-none focus:border-rose-500"
+              className="w-full px-2.5 py-1.5 rounded-lg bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 text-xs font-medium text-zinc-800 dark:text-zinc-200 focus:outline-none focus:border-[#D91E18]"
             >
               <option value="all">All Statuses</option>
               <option value="ONGOING">Ongoing</option>
@@ -258,11 +260,11 @@ export default function DiscoverPage() {
 
           {/* Content Rating */}
           <div>
-            <label className="block text-[11px] font-bold text-zinc-400 mb-1">Rating</label>
+            <label className="block text-[10px] font-black uppercase text-zinc-400 mb-1">Rating</label>
             <select
               value={selectedRating}
               onChange={(e) => setSelectedRating(e.target.value)}
-              className="w-full px-3 py-2 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 text-xs font-medium text-zinc-800 dark:text-zinc-200 focus:outline-none focus:border-rose-500"
+              className="w-full px-2.5 py-1.5 rounded-lg bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 text-xs font-medium text-zinc-800 dark:text-zinc-200 focus:outline-none focus:border-[#D91E18]"
             >
               <option value="all">All Audiences</option>
               <option value="EVERYONE">Everyone</option>
@@ -273,11 +275,11 @@ export default function DiscoverPage() {
 
           {/* Sort By */}
           <div>
-            <label className="block text-[11px] font-bold text-zinc-400 mb-1">Sort By</label>
+            <label className="block text-[10px] font-black uppercase text-zinc-400 mb-1">Sort By</label>
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value as typeof sortBy)}
-              className="w-full px-3 py-2 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 text-xs font-medium text-zinc-800 dark:text-zinc-200 focus:outline-none focus:border-rose-500"
+              className="w-full px-2.5 py-1.5 rounded-lg bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 text-xs font-medium text-zinc-800 dark:text-zinc-200 focus:outline-none focus:border-[#D91E18]"
             >
               <option value="trending">🔥 Trending</option>
               <option value="reads">📖 Most Read</option>

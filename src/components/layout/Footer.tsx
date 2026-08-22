@@ -4,26 +4,31 @@ import { Sparkles, Heart, BookOpen, Compass, Trophy, Users, Shield, ArrowUpRight
 
 export function Footer() {
   return (
-    <footer className="border-t border-zinc-200 dark:border-zinc-800/80 bg-zinc-50 dark:bg-zinc-950 text-zinc-600 dark:text-zinc-400 py-12 transition-colors">
+    <footer className="border-t border-[#EAEAE5] dark:border-zinc-800 bg-[#FFFFFF] dark:bg-[#121214] text-zinc-600 dark:text-zinc-400 py-12 transition-colors">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8 lg:gap-12 pb-12 border-b border-zinc-200 dark:border-zinc-800/60">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8 lg:gap-12 pb-12 border-b border-[#EAEAE5] dark:border-zinc-800">
           {/* Brand Col */}
           <div className="lg:col-span-2 space-y-4">
             <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-rose-600 to-indigo-600 flex items-center justify-center font-bold text-white shadow-md shadow-rose-500/20">
-                Y
+              <div className="w-8 h-8 rounded-lg bg-[#D91E18] flex items-center justify-center font-black text-white text-base shadow-sm">
+                Y.
               </div>
-              <span className="font-extrabold text-lg tracking-tight text-zinc-900 dark:text-zinc-100">
-                Yomika
-              </span>
+              <div className="flex flex-col">
+                <span className="font-black text-lg tracking-tight text-[#111111] dark:text-white">
+                  YOMIKA
+                </span>
+                <span className="text-[9px] font-medium text-zinc-400 dark:text-zinc-500 -mt-1 tracking-wider">
+                  物語を、世界へ。
+                </span>
+              </div>
             </div>
-            <p className="text-sm text-zinc-500 dark:text-zinc-400 leading-relaxed max-w-sm">
+            <p className="text-xs sm:text-sm text-zinc-500 dark:text-zinc-400 leading-relaxed max-w-sm">
               Yomika is a global storytelling platform where writers, manga artists, comic creators, and readers come together to create, discover, and experience original stories.
             </p>
-            <div className="p-3 rounded-2xl bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-xs flex items-center gap-2">
-              <Sparkles className="w-4 h-4 text-amber-500 flex-shrink-0" />
-              <span className="text-zinc-700 dark:text-zinc-300">
-                Creator Ecosystem: <strong>Novel → Comic → Animation</strong>
+            <div className="p-3 rounded-lg bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-xs flex items-center gap-2">
+              <Sparkles className="w-4 h-4 text-[#D91E18] flex-shrink-0" />
+              <span className="text-zinc-700 dark:text-zinc-300 text-[11px]">
+                Creator Pipeline: <strong>Novel → Manga → Animation</strong>
               </span>
             </div>
           </div>

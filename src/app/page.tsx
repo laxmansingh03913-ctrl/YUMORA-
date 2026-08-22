@@ -3,23 +3,21 @@
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import {
-  Sparkles,
   BookOpen,
   PenTool,
-  TrendingUp,
   Award,
   ArrowRight,
-  Flame,
   Star,
   Users,
   Compass,
   CheckCircle2,
   ChevronRight,
-  Layers,
+  ChevronLeft,
   Zap,
-  UserCheck,
   Bell,
   Clock,
+  Eye,
+  Flame,
 } from "lucide-react";
 import { dataStore } from "@/lib/data/store";
 import { useAuth } from "@/context/AuthContext";
@@ -27,21 +25,80 @@ import { NovelCard } from "@/components/ui/NovelCard";
 import { ComicCard } from "@/components/ui/ComicCard";
 import { formatNumber, formatDate } from "@/lib/utils";
 
+// Curated Showcase items from the editorial reference
+const EDITORIAL_FEATURED = [
+  {
+    id: "feat-1",
+    title: "Bound by Blood",
+    slug: "bound-by-blood",
+    coverUrl: "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=600&auto=format&fit=crop&q=80",
+    genre: "Fantasy",
+    views: "12.4K",
+    rating: "4.8",
+    reads: 12400,
+    rank: 1,
+  },
+  {
+    id: "feat-2",
+    title: "Shadow's Ascent",
+    slug: "shadows-ascent",
+    coverUrl: "https://images.unsplash.com/photo-1563089145-599997674d42?w=600&auto=format&fit=crop&q=80",
+    genre: "Action",
+    views: "9.8K",
+    rating: "4.7",
+    reads: 9800,
+    rank: 2,
+  },
+  {
+    id: "feat-3",
+    title: "Path of the Wind",
+    slug: "path-of-the-wind",
+    coverUrl: "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=600&auto=format&fit=crop&q=80",
+    genre: "Wuxia",
+    views: "8.3K",
+    rating: "4.6",
+    reads: 8300,
+    rank: 3,
+  },
+  {
+    id: "feat-4",
+    title: "Letters Unsent",
+    slug: "letters-unsent",
+    coverUrl: "https://images.unsplash.com/photo-1534447677768-be436bb09401?w=600&auto=format&fit=crop&q=80",
+    genre: "Romance",
+    views: "7.1K",
+    rating: "4.6",
+    reads: 7100,
+    rank: 4,
+  },
+  {
+    id: "feat-5",
+    title: "Re:Awakening",
+    slug: "re-awakening",
+    coverUrl: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=600&auto=format&fit=crop&q=80",
+    genre: "Sci-Fi",
+    views: "6.2K",
+    rating: "4.5",
+    reads: 6200,
+    rank: 5,
+  },
+];
+
 const GENRES = [
-  { name: "Fantasy", icon: "✨", count: "480+ Novels", color: "from-purple-600 to-indigo-600" },
-  { name: "Sci-Fi", icon: "🚀", count: "320+ Novels", color: "from-cyan-600 to-blue-600" },
-  { name: "Cyberpunk", icon: "⚡", count: "190+ Novels", color: "from-rose-600 to-pink-600" },
-  { name: "Romance", icon: "💖", count: "510+ Novels", color: "from-pink-600 to-rose-500" },
-  { name: "Mystery", icon: "🔍", count: "210+ Novels", color: "from-emerald-600 to-teal-600" },
-  { name: "Adventure", icon: "🧭", count: "290+ Novels", color: "from-amber-600 to-orange-600" },
-  { name: "Steampunk", icon: "⚙️", count: "140+ Novels", color: "from-yellow-600 to-amber-700" },
-  { name: "Slice of Life", icon: "☕", count: "180+ Novels", color: "from-teal-600 to-emerald-700" },
+  { name: "Fantasy", kana: "ファンタジー", count: "480+ Stories" },
+  { name: "Action", kana: "アクション", count: "390+ Stories" },
+  { name: "Sci-Fi", kana: "SF / 近未来", count: "320+ Stories" },
+  { name: "Romance", kana: "恋愛 / ドラマ", count: "510+ Stories" },
+  { name: "Wuxia", kana: "武侠 / 修仙", count: "210+ Stories" },
+  { name: "Mystery", kana: "ミステリー", count: "190+ Stories" },
+  { name: "Supernatural", kana: "超自然", count: "260+ Stories" },
+  { name: "Slice of Life", kana: "日常 / 青春", count: "180+ Stories" },
 ];
 
 export default function HomePage() {
   const { requireAuth } = useAuth();
-  const [activeHeroSlide, setActiveHeroSlide] = useState(0);
   const [mounted, setMounted] = useState(false);
+  const [carouselIndex, setCarouselIndex] = useState(0);
 
   useEffect(() => {
     setMounted(true);
@@ -52,214 +109,282 @@ export default function HomePage() {
   const creators = dataStore.getUsers().filter((u) => u.role === "CREATOR");
   const contests = dataStore.getContests();
   const activeContest = contests[0];
-
-  const featuredNovels = novels.filter((n) => n.isFeatured);
-  const trendingNovels = [...novels].sort((a, b) => b.reads - a.reads);
-  const editorsPicks = novels.filter((n) => n.isEditorPick);
-  const newReleases = [...novels].sort(
-    (a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
-  );
-
-  const heroNovel = featuredNovels[activeHeroSlide % featuredNovels.length] || novels[0];
   const followingFeed = mounted ? dataStore.getFollowingFeed() : [];
 
-  return (
-    <div className="flex flex-col space-y-16 lg:space-y-24 pb-20 overflow-hidden">
-      {/* 1. HERO SECTION */}
-      <section className="relative min-h-[580px] lg:min-h-[660px] flex items-center justify-center pt-8 pb-12 px-4 sm:px-6 lg:px-8">
-        {/* Blurred dynamic backdrop image */}
-        <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          {heroNovel ? (
-            <img
-              src={heroNovel.bannerUrl || heroNovel.coverUrl}
-              alt="Hero backdrop"
-              className="w-full h-full object-cover opacity-20 dark:opacity-25 filter blur-3xl scale-110 transform transition-all duration-1000"
-            />
-          ) : (
-            <div className="w-full h-full bg-gradient-to-tr from-rose-950/20 via-zinc-950 to-indigo-950/20" />
-          )}
-          <div className="absolute inset-0 bg-gradient-to-b from-zinc-950/40 via-zinc-950/80 to-zinc-950" />
-        </div>
+  // Combine dynamic novels with editorial showcase
+  const allFeaturedStories = [
+    ...novels.map((n, idx) => ({
+      id: n.id,
+      title: n.title,
+      slug: n.slug,
+      coverUrl: n.coverUrl,
+      genre: n.genre,
+      views: formatNumber(n.reads),
+      rating: String(n.rating),
+      reads: n.reads,
+      rank: idx + 1,
+    })),
+    ...EDITORIAL_FEATURED.slice(novels.length),
+  ].slice(0, 5);
 
-        <div className="relative max-w-7xl mx-auto w-full grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center">
-          {/* Left Hero Content */}
-          <div className="lg:col-span-7 space-y-6 text-center lg:text-left">
-            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-rose-500/10 border border-rose-500/30 text-rose-500 text-xs font-bold tracking-wide uppercase shadow-xs backdrop-blur-md">
-              <Sparkles className="w-3.5 h-3.5" />
-              <span>The Next Generation Storytelling Universe</span>
+  const scrollCarousel = (dir: "left" | "right") => {
+    if (dir === "left") {
+      setCarouselIndex((prev) => (prev > 0 ? prev - 1 : allFeaturedStories.length - 1));
+    } else {
+      setCarouselIndex((prev) => (prev < allFeaturedStories.length - 1 ? prev + 1 : 0));
+    }
+  };
+
+  return (
+    <div className="flex flex-col space-y-12 lg:space-y-16 pb-20 bg-[#FAFAF7] text-[#111111] dark:bg-[#121214] dark:text-zinc-100 min-h-screen">
+      {/* ========================================================================= */}
+      {/* 1. HERO SECTION (Neo-Japan Manga Editorial Design) */}
+      {/* ========================================================================= */}
+      <section className="relative pt-6 sm:pt-10 pb-8 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto w-full overflow-hidden">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center relative">
+          
+          {/* LEFT SIDE: Editorial Typography & Actions */}
+          <div className="lg:col-span-7 space-y-6 z-10">
+            {/* Small uppercase brand badge with red flourish */}
+            <div className="flex items-center gap-3">
+              <span className="text-[#D91E18] font-black text-xs sm:text-[13px] tracking-widest uppercase">
+                THE NEXT GENERATION STORYTELLING UNIVERSE
+              </span>
+              <span className="hidden sm:inline-block w-10 h-[1.5px] bg-[#D91E18]" />
             </div>
 
-            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black tracking-tight text-zinc-900 dark:text-white leading-[1.1]">
-              Stories Worth <br className="hidden sm:inline" />
-              <span className="bg-gradient-to-r from-rose-500 via-rose-400 to-indigo-500 bg-clip-text text-transparent">
-                Getting Lost In.
+            {/* Large Dramatic Headline */}
+            <h1 className="text-4xl sm:text-5xl lg:text-6xl xl:text-[68px] font-black text-[#111111] dark:text-white tracking-tight leading-[1.04]">
+              STORIES WORTH{" "}
+              <span className="inline-flex items-center justify-center w-7 h-9 sm:w-8 sm:h-10 border-2 border-[#D91E18] text-[#D91E18] text-xs font-serif font-black rounded-xs ml-1.5 align-middle select-none">
+                <span className="[writing-mode:vertical-rl] leading-none">物語</span>
               </span>
+              <br />
+              <span className="text-[#D91E18]">GETTING</span> LOST IN.
             </h1>
 
-            <p className="text-base sm:text-lg text-zinc-600 dark:text-zinc-300 max-w-2xl leading-relaxed mx-auto lg:mx-0">
+            {/* Supporting Description */}
+            <p className="text-sm sm:text-base text-[#555555] dark:text-zinc-400 max-w-xl leading-relaxed font-normal">
               Read original novels, discover independent creators, and share stories with readers around the world. From serial web novels to future webtoons and animations.
             </p>
 
-            {/* CTAs */}
-            <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4 pt-2">
+            {/* Buttons */}
+            <div className="flex flex-wrap items-center gap-3.5 pt-2">
               <button
                 onClick={() => requireAuth("/discover")}
-                className="w-full sm:w-auto px-7 py-3.5 rounded-2xl bg-gradient-to-r from-rose-600 to-indigo-600 hover:from-rose-500 hover:to-indigo-500 text-white font-bold text-base shadow-xl shadow-rose-600/25 transition transform hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-2"
+                className="px-6 sm:px-8 py-3 rounded-lg bg-[#D91E18] hover:bg-[#B71813] text-white font-black text-xs sm:text-sm tracking-wider uppercase shadow-xs transition transform hover:scale-[1.02] active:scale-[0.98] flex items-center gap-2"
               >
-                <BookOpen className="w-5 h-5" />
+                <BookOpen className="w-4 h-4" />
                 <span>Start Reading</span>
               </button>
 
               <button
                 onClick={() => requireAuth("/creator/upload")}
-                className="w-full sm:w-auto px-7 py-3.5 rounded-2xl bg-white dark:bg-zinc-900/80 hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-900 dark:text-zinc-100 border border-zinc-200 dark:border-zinc-800 font-bold text-base shadow-sm transition transform hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-2"
+                className="px-6 sm:px-8 py-3 rounded-lg bg-white dark:bg-zinc-900 border-2 border-[#111111] dark:border-zinc-300 text-[#111111] dark:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800 font-black text-xs sm:text-sm tracking-wider uppercase shadow-xs transition transform hover:scale-[1.02] active:scale-[0.98] flex items-center gap-2"
               >
-                <PenTool className="w-5 h-5 text-rose-500" />
+                <PenTool className="w-4 h-4 text-[#111111] dark:text-white" />
                 <span>Publish Your Story</span>
               </button>
             </div>
 
-            {/* Trust and scale metrics */}
-            <div className="pt-6 grid grid-cols-3 gap-4 border-t border-zinc-200/60 dark:border-zinc-800/60 max-w-lg mx-auto lg:mx-0">
-              <div>
-                <p className="text-xl sm:text-2xl font-extrabold text-zinc-900 dark:text-white">
-                  Live
-                </p>
-                <p className="text-xs text-zinc-500 dark:text-zinc-400">Real-time Publishing</p>
+            {/* Editorial Stats Row */}
+            <div className="pt-6 grid grid-cols-3 gap-4 border-t border-[#EAEAE5] dark:border-zinc-800 max-w-md">
+              <div className="space-y-0.5">
+                <div className="flex items-center gap-1.5 text-xs sm:text-sm font-black text-[#111111] dark:text-white">
+                  <span className="w-2 h-2 rounded-full bg-[#D91E18] animate-pulse" />
+                  <span>LIVE</span>
+                </div>
+                <p className="text-[11px] text-[#555555] dark:text-zinc-500">Real-time Publishing</p>
               </div>
-              <div>
-                <p className="text-xl sm:text-2xl font-extrabold text-zinc-900 dark:text-white">
+
+              <div className="space-y-0.5 border-l border-[#EAEAE5] dark:border-zinc-800 pl-4">
+                <p className="text-xs sm:text-sm font-black text-[#111111] dark:text-white">
                   {novels.length}
                 </p>
-                <p className="text-xs text-zinc-500 dark:text-zinc-400">Published Novels</p>
+                <p className="text-[11px] text-[#555555] dark:text-zinc-500">Published Novels</p>
               </div>
-              <div>
-                <p className="text-xl sm:text-2xl font-extrabold text-rose-500">
+
+              <div className="space-y-0.5 border-l border-[#EAEAE5] dark:border-zinc-800 pl-4">
+                <p className="text-xs sm:text-sm font-black text-[#D91E18]">
                   $1,000+
                 </p>
-                <p className="text-xs text-zinc-500 dark:text-zinc-400">Monthly Prizes</p>
+                <p className="text-[11px] text-[#555555] dark:text-zinc-500">Monthly Prizes</p>
               </div>
             </div>
           </div>
 
-          {/* Right Hero Spotlight Card */}
-          <div className="lg:col-span-5 relative">
-            {heroNovel ? (
-              <div className="relative rounded-3xl p-4 sm:p-5 bg-white/70 dark:bg-zinc-900/70 border border-zinc-200/80 dark:border-zinc-800/80 shadow-2xl backdrop-blur-xl">
-                <div className="relative aspect-[16/10] rounded-2xl overflow-hidden mb-4 bg-zinc-950">
-                  <img
-                    src={heroNovel.coverUrl}
-                    alt={heroNovel.title}
-                    className="w-full h-full object-cover"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent" />
-                  <div className="absolute top-3 left-3 flex gap-2">
-                    <span className="px-2.5 py-1 rounded-full text-xs font-extrabold bg-rose-600 text-white shadow-md flex items-center gap-1">
-                      <Flame className="w-3 h-3" /> FEATURED SPOTLIGHT
-                    </span>
-                  </div>
-                  <div className="absolute bottom-3 left-3 right-3 text-white">
-                    <span className="px-2 py-0.5 rounded text-[11px] font-semibold bg-white/20 backdrop-blur-xs">
-                      {heroNovel.genre}
-                    </span>
-                    <h3 className="text-xl font-black mt-1 line-clamp-1">{heroNovel.title}</h3>
-                  </div>
-                </div>
+          {/* RIGHT SIDE: Neo-Japan Graphic Composition + "BE THE FIRST CREATOR" Card */}
+          <div className="lg:col-span-5 relative flex items-center justify-center min-h-[380px] lg:min-h-[460px]">
+            
+            {/* 1. Japanese Red Sun Background Circle */}
+            <div className="w-64 h-64 sm:w-80 sm:h-80 md:w-96 md:h-96 rounded-full bg-[#D91E18] absolute top-2 right-6 sm:right-16 lg:right-20 -z-10 shadow-lg shadow-red-500/10 pointer-events-none" />
 
-                <div className="space-y-3 text-sm">
-                  <div className="flex items-center justify-between text-xs text-zinc-500 dark:text-zinc-400">
-                    <div className="flex items-center gap-2">
-                      <img
-                        src={heroNovel.creator.avatar}
-                        alt={heroNovel.creator.name}
-                        className="w-6 h-6 rounded-full object-cover"
-                      />
-                      <span className="font-semibold text-zinc-800 dark:text-zinc-200">
-                        {heroNovel.creator.name}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-1 text-amber-500 font-bold">
-                      <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
-                      <span>{heroNovel.rating}</span>
-                      <span className="text-zinc-400 text-[11px]">({heroNovel.totalRatings})</span>
-                    </div>
-                  </div>
+            {/* 2. Manga Protagonist Ink Art & Ink Splashes */}
+            <div className="relative w-full h-[380px] sm:h-[420px] rounded-2xl overflow-hidden pointer-events-none select-none">
+              <img
+                src="https://images.unsplash.com/photo-1578632767115-351597cf2477?w=1000&auto=format&fit=crop&q=90"
+                alt="Manga Storyteller Visual"
+                className="w-full h-full object-cover object-top filter grayscale contrast-125 mix-blend-multiply dark:mix-blend-normal opacity-90"
+              />
+              {/* Dynamic Ink Splatters / Gradient overlay */}
+              <div className="absolute inset-0 bg-gradient-to-t from-[#FAFAF7] via-transparent to-transparent dark:from-[#121214] opacity-80" />
+            </div>
 
-                  <p className="text-xs text-zinc-600 dark:text-zinc-300 line-clamp-2 leading-relaxed">
-                    {heroNovel.description}
-                  </p>
+            {/* 3. Vertical Japanese Typography & Stamp along the right */}
+            <div className="absolute right-0 top-6 bottom-6 hidden xl:flex flex-col items-center justify-between text-zinc-400 select-none pointer-events-none">
+              <span className="text-[11px] font-bold [writing-mode:vertical-rl] tracking-widest text-[#111111] dark:text-zinc-300">
+                すべての物語は、ここから始まる。
+              </span>
+              <span className="w-5 h-5 border border-[#D91E18] text-[#D91E18] text-[9px] font-black flex items-center justify-center rounded-2xs">
+                創造
+              </span>
+            </div>
 
-                  <div className="pt-2 flex gap-2">
-                    <button
-                      onClick={() => requireAuth(`/novels/${heroNovel.slug}`)}
-                      className="flex-1 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs text-center shadow-md shadow-rose-600/20 transition flex items-center justify-center gap-1.5"
-                    >
-                      <span>Read Now</span>
-                      <ChevronRight className="w-4 h-4" />
-                    </button>
-
-                    {featuredNovels.length > 1 && (
-                      <button
-                        onClick={() => setActiveHeroSlide((prev) => prev + 1)}
-                        className="px-3 py-2.5 rounded-xl bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-300 text-xs font-semibold transition"
-                        title="Next Featured Story"
-                      >
-                        Next Story →
-                      </button>
-                    )}
-                  </div>
-                </div>
+            {/* 4. Floating "BE THE FIRST CREATOR" Card */}
+            <div className="absolute bottom-2 right-2 sm:right-6 max-w-xs w-full bg-white dark:bg-zinc-900 border border-[#111111] dark:border-zinc-700 rounded-xl p-4 sm:p-5 shadow-xl space-y-3 z-20">
+              <div className="flex items-center justify-between">
+                <h3 className="font-black text-xs sm:text-sm tracking-tight text-[#111111] dark:text-white uppercase">
+                  BE THE FIRST CREATOR
+                </h3>
+                {/* Mini Torii Gate Outline */}
+                <svg className="w-5 h-5 text-[#D91E18]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M2 5h20M4 9h16M7 5v14M17 5v14" />
+                </svg>
               </div>
-            ) : (
-              <div className="relative rounded-3xl p-6 sm:p-8 bg-zinc-900/80 border border-zinc-800 shadow-2xl backdrop-blur-xl text-center space-y-4">
-                <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-rose-600 to-indigo-600 flex items-center justify-center mx-auto shadow-lg shadow-rose-600/30 text-white">
-                  <PenTool className="w-8 h-8" />
-                </div>
-                <div className="space-y-1.5">
-                  <h3 className="text-xl font-black text-white">Be the First Creator</h3>
-                  <p className="text-xs text-zinc-400 leading-relaxed">
-                    Write and serialize your novel or publish a webtoon. Share your story with readers worldwide.
-                  </p>
-                </div>
-                <button
-                  onClick={() => requireAuth("/creator/upload")}
-                  className="w-full py-3 rounded-xl bg-gradient-to-r from-rose-600 to-indigo-600 text-white font-bold text-xs shadow-md transition hover:scale-[1.02]"
-                >
-                  Publish Story Now →
-                </button>
-              </div>
-            )}
+
+              <p className="text-[11px] text-[#555555] dark:text-zinc-400 leading-relaxed font-medium">
+                Write and serialize your novel or publish a webtoon. Share your story with readers worldwide.
+              </p>
+
+              <button
+                onClick={() => requireAuth("/creator/upload")}
+                className="w-full py-2.5 rounded-lg bg-[#D91E18] hover:bg-[#B71813] text-white font-black text-xs tracking-wider uppercase shadow-xs transition flex items-center justify-center gap-1"
+              >
+                <span>PUBLISH STORY NOW →</span>
+              </button>
+            </div>
           </div>
         </div>
       </section>
 
-      {/* 2. FOLLOWING FEED: LATEST RELEASES FROM FOLLOWED CREATORS */}
+      {/* ========================================================================= */}
+      {/* 2. FEATURED TODAY (注目の作品) CAROUSEL */}
+      {/* ========================================================================= */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full space-y-4">
+        {/* Section Header */}
+        <div className="flex items-center justify-between border-b border-[#EAEAE5] dark:border-zinc-800 pb-3">
+          <div className="flex items-center gap-3">
+            <span className="w-1.5 h-6 bg-[#111111] dark:bg-white rounded-2xs" />
+            <h2 className="text-lg sm:text-2xl font-black tracking-tight text-[#111111] dark:text-white uppercase">
+              FEATURED TODAY
+            </h2>
+            <span className="text-xs text-zinc-400 dark:text-zinc-500 font-medium tracking-wide">
+              注目の作品
+            </span>
+          </div>
+
+          <div className="flex items-center gap-4">
+            <Link
+              href="/novels"
+              className="text-xs sm:text-sm font-black text-[#D91E18] hover:underline flex items-center gap-1"
+            >
+              <span>VIEW ALL →</span>
+            </Link>
+
+            {/* Carousel Navigation Buttons */}
+            <div className="hidden sm:flex items-center gap-1.5">
+              <button
+                onClick={() => scrollCarousel("left")}
+                aria-label="Previous story"
+                className="w-7 h-7 rounded-full border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-zinc-700 dark:text-zinc-200 hover:border-[#D91E18] hover:text-[#D91E18] flex items-center justify-center transition"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+              <button
+                onClick={() => scrollCarousel("right")}
+                aria-label="Next story"
+                className="w-7 h-7 rounded-full border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-zinc-700 dark:text-zinc-200 hover:border-[#D91E18] hover:text-[#D91E18] flex items-center justify-center transition"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Featured Story Cards Row */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4">
+          {allFeaturedStories.map((story, idx) => (
+            <div
+              key={story.id}
+              className="group relative flex flex-col rounded-xl bg-white dark:bg-zinc-900 border border-[#EAEAE5] dark:border-zinc-800 hover:border-black dark:hover:border-white transition-all duration-200 overflow-hidden shadow-2xs"
+            >
+              {/* Cover Artwork with Rank Badge */}
+              <Link href={`/novels/${story.slug}`} className="relative aspect-[3/4] overflow-hidden bg-zinc-100 dark:bg-zinc-800">
+                <img
+                  src={story.coverUrl}
+                  alt={story.title}
+                  className="w-full h-full object-cover group-hover:scale-105 transition duration-500 ease-out"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-transparent to-transparent opacity-80 group-hover:opacity-90 transition" />
+
+                {/* Red Rank Badge: 01, 02, 03 */}
+                <span className="absolute top-2 left-2 px-2 py-0.5 rounded-xs text-xs font-black bg-[#D91E18] text-white shadow-xs z-10">
+                  {String(story.rank || idx + 1).padStart(2, "0")}
+                </span>
+
+                {/* Genre Pill at bottom-left */}
+                <div className="absolute bottom-2 left-2 z-10">
+                  <span className="px-2 py-0.5 rounded-md bg-black/60 backdrop-blur-xs text-[10px] font-semibold text-zinc-100 border border-white/20">
+                    {story.genre}
+                  </span>
+                </div>
+              </Link>
+
+              {/* Title & Metrics */}
+              <div className="p-3 flex-1 flex flex-col justify-between space-y-2">
+                <Link href={`/novels/${story.slug}`}>
+                  <h3 className="font-black text-xs sm:text-sm text-[#111111] dark:text-white group-hover:text-[#D91E18] transition line-clamp-1">
+                    {story.title}
+                  </h3>
+                </Link>
+
+                <div className="flex items-center justify-between pt-1.5 border-t border-[#EAEAE5] dark:border-zinc-800 text-[11px] text-zinc-500 dark:text-zinc-400 font-medium">
+                  <span className="flex items-center gap-1">
+                    <Eye className="w-3 h-3 text-zinc-400" />
+                    {story.views}
+                  </span>
+                  <span className="flex items-center gap-1 text-[#D91E18] font-bold">
+                    <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
+                    {story.rating}
+                  </span>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* ========================================================================= */}
+      {/* 3. FOLLOWING FEED (LIVE CHAPTER RELEASES) */}
+      {/* ========================================================================= */}
       {followingFeed.length > 0 && (
         <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full space-y-4">
-          <div className="flex items-center justify-between">
-            <div className="space-y-0.5">
-              <div className="flex items-center gap-2">
-                <span className="p-1 rounded-lg bg-indigo-500/20 text-indigo-400">
-                  <Bell className="w-4 h-4" />
-                </span>
-                <h2 className="text-xl sm:text-2xl font-black text-zinc-900 dark:text-zinc-100">
-                  Following Feed
-                </h2>
-                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-indigo-100 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400">
-                  Live Updates
-                </span>
-              </div>
-              <p className="text-xs text-zinc-500 dark:text-zinc-400">
-                New chapters and webtoon releases from creators you follow
-              </p>
+          <div className="flex items-center justify-between border-b border-[#EAEAE5] dark:border-zinc-800 pb-3">
+            <div className="flex items-center gap-3">
+              <span className="w-1.5 h-6 bg-[#D91E18] rounded-2xs" />
+              <h2 className="text-lg sm:text-xl font-black tracking-tight text-[#111111] dark:text-white uppercase">
+                Following Feed
+              </h2>
+              <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-red-100 dark:bg-red-950/60 text-[#D91E18]">
+                LIVE UPDATES
+              </span>
             </div>
 
             <Link
               href="/library"
-              className="text-xs font-semibold text-indigo-500 hover:text-indigo-400 flex items-center gap-1"
+              className="text-xs font-bold text-[#D91E18] hover:underline flex items-center gap-1"
             >
-              <span>Manage Following</span>
-              <ChevronRight className="w-3.5 h-3.5" />
+              <span>Manage Following →</span>
             </Link>
           </div>
 
@@ -267,12 +392,12 @@ export default function HomePage() {
             {followingFeed.slice(0, 3).map((item) => (
               <div
                 key={item.id}
-                className="p-4 rounded-3xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 flex items-center gap-4 hover:border-indigo-500/40 transition shadow-sm group"
+                className="p-3.5 rounded-xl bg-white dark:bg-zinc-900 border border-[#EAEAE5] dark:border-zinc-800 flex items-center gap-3.5 hover:border-black dark:hover:border-white transition shadow-2xs group"
               >
                 <img
                   src={item.coverUrl}
                   alt={item.contentTitle}
-                  className="w-16 h-20 rounded-2xl object-cover border border-zinc-700 flex-shrink-0"
+                  className="w-14 h-18 rounded-lg object-cover bg-zinc-100 flex-shrink-0"
                 />
 
                 <div className="min-w-0 flex-1 space-y-1">
@@ -282,17 +407,17 @@ export default function HomePage() {
                       alt={item.creatorName}
                       className="w-4 h-4 rounded-full object-cover"
                     />
-                    <span className="truncate font-semibold text-zinc-800 dark:text-zinc-300">
+                    <span className="truncate font-semibold text-zinc-800 dark:text-zinc-300 text-[11px]">
                       {item.creatorName}
                     </span>
-                    {item.isVerified && <CheckCircle2 className="w-3 h-3 text-indigo-400 flex-shrink-0" />}
+                    {item.isVerified && <CheckCircle2 className="w-3 h-3 text-[#D91E18] flex-shrink-0" />}
                   </div>
 
-                  <h4 className="font-extrabold text-xs text-zinc-900 dark:text-zinc-100 truncate">
+                  <h4 className="font-black text-xs text-[#111111] dark:text-white truncate">
                     {item.contentTitle}
                   </h4>
 
-                  <p className="text-[11px] font-bold text-indigo-500 dark:text-indigo-400 truncate">
+                  <p className="text-[11px] font-bold text-[#D91E18] truncate">
                     {item.releaseTitle}
                   </p>
 
@@ -308,7 +433,7 @@ export default function HomePage() {
                           ? `/novels/${item.contentSlug}/chapter/${item.releaseNumber}`
                           : `/comics/${item.contentSlug}`
                       }
-                      className="font-bold text-indigo-400 hover:underline"
+                      className="font-black text-[#D91E18] hover:underline"
                     >
                       Read Now →
                     </Link>
@@ -320,38 +445,39 @@ export default function HomePage() {
         </section>
       )}
 
-      {/* 2. CREATOR PIPELINE BANNER: Writer -> Novel -> Comic -> Animation */}
+      {/* ========================================================================= */}
+      {/* 4. CREATOR EVOLUTION PIPELINE */}
+      {/* ========================================================================= */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
-        <div className="p-6 sm:p-8 rounded-3xl bg-gradient-to-r from-zinc-900 via-zinc-900 to-zinc-950 border border-zinc-800 text-white relative overflow-hidden shadow-2xl">
-          <div className="absolute -right-16 -top-16 w-64 h-64 bg-rose-600/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="p-6 sm:p-8 rounded-2xl bg-white dark:bg-zinc-900 border border-[#111111] dark:border-zinc-700 relative overflow-hidden shadow-sm">
           <div className="relative z-10 flex flex-col lg:flex-row items-center justify-between gap-6">
-            <div className="space-y-2 text-center lg:text-left">
-              <span className="px-3 py-1 rounded-full text-xs font-bold bg-rose-500/20 text-rose-400 border border-rose-500/30 uppercase tracking-wider">
-                The Story Engine
+            <div className="space-y-1.5 text-center lg:text-left">
+              <span className="text-[11px] font-black text-[#D91E18] tracking-widest uppercase">
+                THE CREATOR ENGINE • 創作者パイプライン
               </span>
-              <h3 className="text-xl sm:text-2xl font-black tracking-tight">
-                Where Great Stories Become Legends
+              <h3 className="text-xl sm:text-2xl font-black tracking-tight text-[#111111] dark:text-white">
+                From Serial Novel to Global Manga & Animation
               </h3>
-              <p className="text-xs sm:text-sm text-zinc-400 max-w-xl">
-                We empower creators with a clear evolution path: serialize your novel, grow your fanbase, adapt into visual webtoons, and step into animation.
+              <p className="text-xs text-[#555555] dark:text-zinc-400 max-w-xl">
+                We empower indie storytellers with an end-to-end evolution roadmap: serialize your novel, monetize chapters, convert to webtoon manga, and expand into animation.
               </p>
             </div>
 
-            {/* Pipeline Step Visualizer */}
-            <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-3 text-xs font-bold">
-              <div className="px-3 py-2 rounded-xl bg-zinc-800 border border-zinc-700 text-zinc-200">
+            {/* 4-Step Visualizer */}
+            <div className="flex flex-wrap items-center justify-center gap-2 text-xs font-bold">
+              <div className="px-3 py-2 rounded-lg bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-[#111111] dark:text-white">
                 1. Write Novel
               </div>
-              <ArrowRight className="w-4 h-4 text-rose-500" />
-              <div className="px-3 py-2 rounded-xl bg-zinc-800 border border-zinc-700 text-zinc-200">
+              <ArrowRight className="w-3.5 h-3.5 text-[#D91E18]" />
+              <div className="px-3 py-2 rounded-lg bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-[#111111] dark:text-white">
                 2. Build Fandom
               </div>
-              <ArrowRight className="w-4 h-4 text-rose-500" />
-              <div className="px-3 py-2 rounded-xl bg-indigo-950/80 border border-indigo-700/60 text-indigo-300">
-                3. Webtoon Comic
+              <ArrowRight className="w-3.5 h-3.5 text-[#D91E18]" />
+              <div className="px-3 py-2 rounded-lg bg-red-50 dark:bg-red-950/60 border border-red-200 dark:border-red-900/60 text-[#D91E18]">
+                3. Webtoon Manga
               </div>
-              <ArrowRight className="w-4 h-4 text-rose-500" />
-              <div className="px-3 py-2 rounded-xl bg-rose-950/80 border border-rose-700/60 text-rose-300">
+              <ArrowRight className="w-3.5 h-3.5 text-[#D91E18]" />
+              <div className="px-3 py-2 rounded-lg bg-[#D91E18] text-white">
                 4. Animation
               </div>
             </div>
@@ -359,188 +485,92 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* 3. TRENDING NOW SECTION */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full space-y-6">
-        <div className="flex items-center justify-between">
-          <div className="space-y-1">
-            <h2 className="text-2xl sm:text-3xl font-black tracking-tight text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
-              <TrendingUp className="w-6 h-6 text-rose-500" />
-              <span>Trending Now</span>
+      {/* ========================================================================= */}
+      {/* 5. EXPLORE BY GENRE (Neo-Japan Editorial Categories) */}
+      {/* ========================================================================= */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full space-y-4">
+        <div className="flex items-center justify-between border-b border-[#EAEAE5] dark:border-zinc-800 pb-3">
+          <div className="flex items-center gap-3">
+            <span className="w-1.5 h-6 bg-[#111111] dark:bg-white rounded-2xs" />
+            <h2 className="text-lg sm:text-2xl font-black tracking-tight text-[#111111] dark:text-white uppercase">
+              EXPLORE BY GENRE
             </h2>
-            <p className="text-xs sm:text-sm text-zinc-500 dark:text-zinc-400">
-              Ranked by real-time reader engagement, bookmarks, and completion rate
-            </p>
+            <span className="text-xs text-zinc-400 dark:text-zinc-500 font-medium tracking-wide">
+              ジャンル別
+            </span>
           </div>
-          <Link
-            href="/discover?sort=trending"
-            className="text-xs sm:text-sm font-semibold text-rose-500 hover:text-rose-400 flex items-center gap-1 group"
-          >
-            <span>View All Trending</span>
-            <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition" />
-          </Link>
-        </div>
 
-        {trendingNovels.length > 0 ? (
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
-            {trendingNovels.slice(0, 4).map((novel) => (
-              <NovelCard key={novel.id} novel={novel} />
-            ))}
-          </div>
-        ) : (
-          <div className="p-8 rounded-3xl bg-white dark:bg-zinc-900/60 border border-zinc-200 dark:border-zinc-800 text-center space-y-3">
-            <BookOpen className="w-8 h-8 text-rose-500 mx-auto" />
-            <h3 className="font-bold text-base text-zinc-900 dark:text-zinc-100">No Stories Published Yet</h3>
-            <p className="text-xs text-zinc-500 max-w-sm mx-auto">
-              Be the pioneer storyteller to publish the very first novel or serial on Yomika!
-            </p>
-            <Link
-              href="/creator/upload"
-              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs transition"
-            >
-              <PenTool className="w-3.5 h-3.5" />
-              <span>Publish First Novel</span>
-            </Link>
-          </div>
-        )}
-      </section>
-
-      {/* 4. ACTIVE CONTEST SPOTLIGHT: $500 Monthly Challenge */}
-      {activeContest && (
-        <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
-          <div className="relative rounded-3xl overflow-hidden border border-amber-500/30 bg-gradient-to-br from-amber-950/40 via-zinc-900 to-zinc-950 p-6 sm:p-10 text-white shadow-2xl">
-            <div className="relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
-              <div className="lg:col-span-8 space-y-4">
-                <div className="flex items-center gap-2">
-                  <span className="px-3 py-1 rounded-full text-xs font-black bg-amber-500 text-zinc-950 shadow-md flex items-center gap-1">
-                    <Award className="w-3.5 h-3.5" /> MONTHLY CREATOR CHALLENGE
-                  </span>
-                  <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-white/10 text-amber-300">
-                    {activeContest.prizePool} Prize Pool
-                  </span>
-                </div>
-
-                <h3 className="text-2xl sm:text-4xl font-black tracking-tight text-zinc-100">
-                  {activeContest.title}
-                </h3>
-
-                <p className="text-xs sm:text-sm text-zinc-300 leading-relaxed max-w-2xl">
-                  {activeContest.description}
-                </p>
-
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2">
-                  {activeContest.prizeStructure.map((prize) => (
-                    <div
-                      key={prize.place}
-                      className="p-3 rounded-2xl bg-zinc-900/80 border border-zinc-800 text-center"
-                    >
-                      <p className="text-[11px] font-bold text-amber-400">{prize.place}</p>
-                      <p className="text-base font-black text-white">{prize.reward}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <div className="lg:col-span-4 flex flex-col items-center lg:items-end justify-center gap-4">
-                <div className="p-4 rounded-2xl bg-zinc-900/90 border border-zinc-800 text-center w-full max-w-xs space-y-2">
-                  <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 text-[10px] font-bold uppercase tracking-wider">
-                    <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-ping" />
-                    <span>Submissions Open</span>
-                  </div>
-                  <p className="text-xl font-extrabold text-white">{activeContest?.submissionCount || 0} Submissions</p>
-                  <p className="text-xs text-amber-400 font-semibold">
-                    Deadline: {activeContest ? formatDate(activeContest.endDate) : "Sep 30, 2026"}
-                  </p>
-                </div>
-
-                <Link
-                  href="/contests"
-                  className="w-full max-w-xs py-3.5 rounded-2xl bg-gradient-to-r from-amber-500 to-rose-600 hover:from-amber-400 hover:to-rose-500 text-zinc-950 font-black text-sm text-center shadow-xl shadow-amber-500/20 transition transform hover:scale-[1.02]"
-                >
-                  Enter Contest →
-                </Link>
-              </div>
-            </div>
-          </div>
-        </section>
-      )}
-
-      {/* 5. POPULAR GENRES GRID */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full space-y-6">
-        <div className="flex items-center justify-between">
-          <div className="space-y-1">
-            <h2 className="text-2xl sm:text-3xl font-black tracking-tight text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
-              <Compass className="w-6 h-6 text-indigo-500" />
-              <span>Explore by Genre</span>
-            </h2>
-            <p className="text-xs sm:text-sm text-zinc-500 dark:text-zinc-400">
-              Immerse yourself in curated universes and story genres
-            </p>
-          </div>
           <Link
             href="/discover"
-            className="text-xs sm:text-sm font-semibold text-indigo-500 hover:text-indigo-400 flex items-center gap-1"
+            className="text-xs sm:text-sm font-black text-[#D91E18] hover:underline flex items-center gap-1"
           >
-            <span>All Genres</span>
-            <ArrowRight className="w-4 h-4" />
+            <span>ALL GENRES →</span>
           </Link>
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-4 gap-3 sm:gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
           {GENRES.map((g) => (
             <Link
               key={g.name}
               href={`/discover?genre=${encodeURIComponent(g.name)}`}
-              className="p-4 rounded-2xl bg-white dark:bg-zinc-900/60 border border-zinc-200/80 dark:border-zinc-800/80 hover:border-indigo-500/50 hover:shadow-lg transition group relative overflow-hidden"
+              className="p-4 rounded-xl bg-white dark:bg-zinc-900 border border-[#EAEAE5] dark:border-zinc-800 hover:border-black dark:hover:border-white transition-all duration-200 group relative shadow-2xs"
             >
               <div className="flex items-center justify-between">
-                <span className="text-2xl">{g.icon}</span>
-                <span className="text-[10px] text-zinc-400 font-medium">Explore</span>
+                <span className="text-[10px] text-[#D91E18] font-bold tracking-widest uppercase">
+                  {g.kana}
+                </span>
+                <span className="text-[10px] text-zinc-400 font-medium">→</span>
               </div>
-              <h4 className="font-bold text-sm sm:text-base text-zinc-900 dark:text-zinc-100 group-hover:text-indigo-500 dark:group-hover:text-indigo-400 transition mt-2">
+              <h4 className="font-black text-sm sm:text-base text-[#111111] dark:text-white group-hover:text-[#D91E18] transition mt-1.5">
                 {g.name}
               </h4>
+              <p className="text-[11px] text-zinc-500 dark:text-zinc-400 mt-0.5">
+                {g.count}
+              </p>
             </Link>
           ))}
         </div>
       </section>
 
-      {/* 6. COMICS & WEBTOONS SPOTLIGHT */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full space-y-6">
-        <div className="flex items-center justify-between">
-          <div className="space-y-1">
-            <h2 className="text-2xl sm:text-3xl font-black tracking-tight text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
-              <Zap className="w-6 h-6 text-violet-500" />
-              <span>Original Comics & Webtoons</span>
+      {/* ========================================================================= */}
+      {/* 6. ORIGINAL COMICS & MANGA */}
+      {/* ========================================================================= */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full space-y-4">
+        <div className="flex items-center justify-between border-b border-[#EAEAE5] dark:border-zinc-800 pb-3">
+          <div className="flex items-center gap-3">
+            <span className="w-1.5 h-6 bg-[#D91E18] rounded-2xs" />
+            <h2 className="text-lg sm:text-2xl font-black tracking-tight text-[#111111] dark:text-white uppercase">
+              ORIGINAL COMICS & MANGA
             </h2>
-            <p className="text-xs sm:text-sm text-zinc-500 dark:text-zinc-400">
-              Full-color vertical scroll serialized visual webtoons and manga
-            </p>
+            <span className="text-xs text-zinc-400 dark:text-zinc-500 font-medium tracking-wide">
+              連載マンガ
+            </span>
           </div>
+
           <Link
             href="/comics"
-            className="text-xs sm:text-sm font-semibold text-violet-500 hover:text-violet-400 flex items-center gap-1"
+            className="text-xs sm:text-sm font-black text-[#D91E18] hover:underline flex items-center gap-1"
           >
-            <span>Explore Comics</span>
-            <ArrowRight className="w-4 h-4" />
+            <span>EXPLORE COMICS →</span>
           </Link>
         </div>
 
         {comics.length > 0 ? (
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
-            {comics.map((comic) => (
-              <ComicCard key={comic.id} comic={comic} />
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+            {comics.map((comic, idx) => (
+              <ComicCard key={comic.id} comic={comic} rank={idx + 1} />
             ))}
           </div>
         ) : (
-          <div className="p-8 rounded-3xl bg-white dark:bg-zinc-900/60 border border-zinc-200 dark:border-zinc-800 text-center space-y-3">
-            <Zap className="w-8 h-8 text-violet-500 mx-auto" />
-            <h3 className="font-bold text-base text-zinc-900 dark:text-zinc-100">No Visual Comics or Manga Yet</h3>
+          <div className="p-8 rounded-xl bg-white dark:bg-zinc-900 border border-[#EAEAE5] dark:border-zinc-800 text-center space-y-3">
+            <Zap className="w-8 h-8 text-[#D91E18] mx-auto" />
+            <h3 className="font-bold text-base text-[#111111] dark:text-white">No Visual Comics Uploaded Yet</h3>
             <p className="text-xs text-zinc-500 max-w-sm mx-auto">
-              Upload your webtoon or comic chapters to build your visual audience on Yomika.
+              Upload your webtoon or manga chapters to build your visual audience on Yomika.
             </p>
             <Link
               href="/creator/upload"
-              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-violet-600 hover:bg-violet-500 text-white font-bold text-xs transition"
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-[#D91E18] hover:bg-[#B71813] text-white font-bold text-xs transition"
             >
               <PenTool className="w-3.5 h-3.5" />
               <span>Upload First Comic</span>
@@ -549,98 +579,124 @@ export default function HomePage() {
         )}
       </section>
 
-      {/* 7. EDITOR'S PICKS & NEW RELEASES */}
-      {(editorsPicks.length > 0 || newReleases.length > 0) && (
-        <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* Editor's Picks Column */}
-          {editorsPicks.length > 0 && (
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <h3 className="text-xl font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
-                  <Award className="w-5 h-5 text-rose-500" />
-                  <span>Editor&apos;s Curated Picks</span>
-                </h3>
-              </div>
-              <div className="space-y-3">
-                {editorsPicks.slice(0, 3).map((novel) => (
-                  <NovelCard key={novel.id} novel={novel} variant="horizontal" />
-                ))}
-              </div>
-            </div>
-          )}
+      {/* ========================================================================= */}
+      {/* 7. MONTHLY CONTEST POSTER ($1,000+ Monthly Prizes) */}
+      {/* ========================================================================= */}
+      {activeContest && (
+        <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
+          <div className="relative rounded-2xl overflow-hidden border-2 border-[#111111] dark:border-zinc-700 bg-white dark:bg-zinc-900 p-6 sm:p-8 text-[#111111] dark:text-white shadow-lg">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
+              <div className="lg:col-span-8 space-y-3">
+                <div className="flex items-center gap-2">
+                  <span className="px-2.5 py-0.5 rounded-xs text-[10px] font-black bg-[#D91E18] text-white uppercase tracking-wider">
+                    OFFICIAL YOMIKA CONTEST
+                  </span>
+                  <span className="text-xs font-bold text-[#D91E18]">
+                    {activeContest.prizePool} PRIZE POOL
+                  </span>
+                </div>
 
-          {/* New Releases Column */}
-          {newReleases.length > 0 && (
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <h3 className="text-xl font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
-                  <Sparkles className="w-5 h-5 text-indigo-500" />
-                  <span>Fresh Chapter Updates</span>
+                <h3 className="text-2xl sm:text-3xl font-black tracking-tight">
+                  {activeContest.title}
                 </h3>
+
+                <p className="text-xs sm:text-sm text-[#555555] dark:text-zinc-400 leading-relaxed max-w-2xl">
+                  {activeContest.description}
+                </p>
+
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 pt-2">
+                  {activeContest.prizeStructure.map((prize) => (
+                    <div
+                      key={prize.place}
+                      className="p-2.5 rounded-lg bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-center"
+                    >
+                      <p className="text-[10px] font-bold text-zinc-500 dark:text-zinc-400">{prize.place}</p>
+                      <p className="text-sm font-black text-[#D91E18]">{prize.reward}</p>
+                    </div>
+                  ))}
+                </div>
               </div>
-              <div className="space-y-3">
-                {newReleases.slice(0, 3).map((novel) => (
-                  <NovelCard key={novel.id} novel={novel} variant="horizontal" />
-                ))}
+
+              <div className="lg:col-span-4 flex flex-col items-center lg:items-end justify-center gap-3">
+                <div className="p-4 rounded-xl bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-center w-full max-w-xs space-y-1">
+                  <span className="text-[10px] font-black text-[#D91E18] uppercase tracking-wider">
+                    SUBMISSIONS OPEN
+                  </span>
+                  <p className="text-lg font-black text-[#111111] dark:text-white">
+                    {activeContest.submissionCount || 0} Entries
+                  </p>
+                  <p className="text-[11px] text-zinc-500">
+                    Deadline: {formatDate(activeContest.endDate)}
+                  </p>
+                </div>
+
+                <Link
+                  href="/contests"
+                  className="w-full max-w-xs py-3 rounded-lg bg-[#D91E18] hover:bg-[#B71813] text-white font-black text-xs uppercase tracking-wider text-center shadow-xs transition transform hover:scale-[1.02]"
+                >
+                  ENTER CONTEST NOW →
+                </Link>
               </div>
             </div>
-          )}
+          </div>
         </section>
       )}
 
+      {/* ========================================================================= */}
       {/* 8. RISING CREATORS SHOWCASE */}
+      {/* ========================================================================= */}
       {creators.length > 0 && (
-        <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full space-y-6">
-          <div className="flex items-center justify-between">
-            <div className="space-y-1">
-              <h2 className="text-2xl sm:text-3xl font-black tracking-tight text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
-                <Users className="w-6 h-6 text-rose-500" />
-                <span>Rising Creators</span>
+        <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full space-y-4">
+          <div className="flex items-center justify-between border-b border-[#EAEAE5] dark:border-zinc-800 pb-3">
+            <div className="flex items-center gap-3">
+              <span className="w-1.5 h-6 bg-[#111111] dark:bg-white rounded-2xs" />
+              <h2 className="text-lg sm:text-2xl font-black tracking-tight text-[#111111] dark:text-white uppercase">
+                RISING CREATORS
               </h2>
-              <p className="text-xs sm:text-sm text-zinc-500 dark:text-zinc-400">
-                Independent authors and artists gaining international fandoms
-              </p>
+              <span className="text-xs text-zinc-400 dark:text-zinc-500 font-medium tracking-wide">
+                注目の作家
+              </span>
             </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {creators.map((creator) => (
               <Link
                 key={creator.id}
                 href={`/creator/${creator.username}`}
-                className="p-5 rounded-3xl bg-white dark:bg-zinc-900/60 border border-zinc-200/80 dark:border-zinc-800/80 hover:border-rose-500/50 hover:shadow-xl transition group"
+                className="p-4 rounded-xl bg-white dark:bg-zinc-900 border border-[#EAEAE5] dark:border-zinc-800 hover:border-black dark:hover:border-white transition shadow-2xs group"
               >
-                <div className="flex items-center gap-4">
+                <div className="flex items-center gap-3.5">
                   <img
                     src={creator.avatar}
                     alt={creator.name}
-                    className="w-14 h-14 rounded-2xl object-cover ring-2 ring-rose-500/40 group-hover:scale-105 transition"
+                    className="w-12 h-12 rounded-lg object-cover border border-zinc-200 dark:border-zinc-700 group-hover:scale-105 transition"
                   />
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-1.5">
-                      <h4 className="font-bold text-sm sm:text-base text-zinc-900 dark:text-zinc-100 group-hover:text-rose-500 transition truncate">
+                      <h4 className="font-black text-sm text-[#111111] dark:text-white group-hover:text-[#D91E18] transition truncate">
                         {creator.name}
                       </h4>
                       {creator.isVerified && (
-                        <CheckCircle2 className="w-3.5 h-3.5 text-rose-500 flex-shrink-0" />
+                        <CheckCircle2 className="w-3.5 h-3.5 text-[#D91E18] flex-shrink-0" />
                       )}
                     </div>
                     <p className="text-xs text-zinc-500 dark:text-zinc-400">@{creator.username}</p>
-                    <p className="text-[11px] text-rose-500 font-semibold mt-0.5">
+                    <p className="text-[10px] text-[#D91E18] font-bold mt-0.5">
                       {creator.country || "Global Creator"}
                     </p>
                   </div>
                 </div>
 
-                <p className="text-xs text-zinc-600 dark:text-zinc-400 line-clamp-2 mt-3 leading-relaxed">
+                <p className="text-xs text-[#555555] dark:text-zinc-400 line-clamp-2 mt-2.5 leading-relaxed font-normal">
                   {creator.bio}
                 </p>
 
-                <div className="flex items-center justify-between mt-4 pt-3 border-t border-zinc-100 dark:border-zinc-800/80 text-xs">
-                  <span className="font-semibold text-zinc-900 dark:text-zinc-100">
+                <div className="flex items-center justify-between mt-3 pt-2.5 border-t border-[#EAEAE5] dark:border-zinc-800 text-[11px] text-zinc-500">
+                  <span className="font-bold text-[#111111] dark:text-white">
                     {formatNumber(creator.followersCount)} followers
                   </span>
-                  <span className="text-zinc-500 dark:text-zinc-400">
+                  <span>
                     {formatNumber(creator.totalReads)} reads
                   </span>
                 </div>
