@@ -24,6 +24,7 @@ import { useAuth } from "@/context/AuthContext";
 import { NovelCard } from "@/components/ui/NovelCard";
 import { ComicCard } from "@/components/ui/ComicCard";
 import { formatNumber, formatDate } from "@/lib/utils";
+import { formatContestDeadline, getContestStatus } from "@/lib/utils/contest";
 
 // Curated Showcase items from the editorial reference
 const EDITORIAL_FEATURED = [
@@ -107,8 +108,7 @@ export default function HomePage() {
   const novels = dataStore.getNovels();
   const comics = dataStore.getComics();
   const creators = dataStore.getUsers().filter((u) => u.role === "CREATOR");
-  const contests = dataStore.getContests();
-  const activeContest = contests[0];
+  const activeContest = dataStore.getActiveContest();
   const followingFeed = mounted ? dataStore.getFollowingFeed() : [];
 
   // Combine dynamic novels with editorial showcase
@@ -626,13 +626,17 @@ export default function HomePage() {
               <div className="lg:col-span-4 flex flex-col items-center lg:items-end justify-center gap-3">
                 <div className="p-4 rounded-xl bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-center w-full max-w-xs space-y-1">
                   <span className="text-[10px] font-black text-[#D91E18] uppercase tracking-wider">
-                    SUBMISSIONS OPEN
+                    {getContestStatus(activeContest) === "LIVE"
+                      ? "● LIVE • SUBMISSIONS OPEN"
+                      : getContestStatus(activeContest) === "SCHEDULED"
+                      ? "⏳ COMING SOON"
+                      : "CONTEST ENDED"}
                   </span>
                   <p className="text-lg font-black text-[#111111] dark:text-white">
                     {activeContest.submissionCount || 0} Entries
                   </p>
-                  <p className="text-[11px] text-zinc-500">
-                    Deadline: {formatDate(activeContest.endDate)}
+                  <p className="text-[11px] text-zinc-500 font-bold">
+                    Deadline: {formatContestDeadline(activeContest.endDate, activeContest.timezone)}
                   </p>
                 </div>
 

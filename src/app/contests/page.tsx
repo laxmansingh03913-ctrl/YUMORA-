@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import confetti from "canvas-confetti";
 import {
@@ -20,10 +20,15 @@ import {
   ChevronRight,
   ShieldCheck,
   Zap,
+  AlertTriangle,
+  PenTool,
 } from "lucide-react";
 import { dataStore } from "@/lib/data/store";
 import { useAuth } from "@/context/AuthContext";
 import { formatNumber, formatDate } from "@/lib/utils";
+import { Contest } from "@/lib/types";
+import { useContestCountdown } from "@/hooks/useContestCountdown";
+import { formatContestDeadline, getContestStatus } from "@/lib/utils/contest";
 
 const SEEDED_CONTENDERS = [
   {
@@ -85,43 +90,33 @@ const SEEDED_CONTENDERS = [
 
 export default function ContestsPage() {
   const { user, requireAuth } = useAuth();
-  const contests = dataStore.getContests();
-  const novels = dataStore.getNovels();
+  const [contest, setContest] = useState<Contest>(() => dataStore.getActiveContest());
+  const [novels, setNovels] = useState(() => dataStore.getNovels());
 
-  const contest = contests[0] || {
-    id: "contest-monthly-active",
-    title: "Yomika Monthly Story Challenge — Sci-Fi & Fantasy",
-    slug: "monthly-challenge",
-    description: "Write an original serialized story with captivating characters, adrenaline-fueled pacing, and immersive world-building. Open to all creators worldwide.",
-    prizePool: "$850 USD",
-    prizeStructure: [
-      { place: "Grand Prize", reward: "$500 USD", desc: "Official Feature & Publishing Review" },
-      { place: "Runner Up", reward: "$200 USD", desc: "Verified Badge & Banner Spotlight" },
-      { place: "3rd Place", reward: "$100 USD", desc: "Community Spotlight & Verified Badge" },
-      { place: "Reader Choice", reward: "$50 USD", desc: "Audience Favorite Badge & Promo" },
-    ],
-    rules: [
-      "Minimum 2 published chapters at submission time",
-      "Original work owned 100% by the publishing author",
-      "Submissions evaluated based on reader engagement, originality, and storytelling pace",
-      "No plagiarized content or unauthorized intellectual property",
-    ],
-    judgingCriteria: [
-      { title: "WORLD BUILDING & LORE", weight: "35%", percentage: 35, desc: "Rich universe rules, immersive setting, and distinct creative premise" },
-      { title: "CHARACTER ARCS & VOICE", weight: "30%", percentage: 30, desc: "Compelling protagonist motives, believable dialogue, and emotional resonance" },
-      { title: "PACING & ORIGINALITY", weight: "20%", percentage: 20, desc: "Addictive narrative hooks, unexpected twists, and polished prose flow" },
-      { title: "READER IMPACT & ENGAGEMENT", weight: "15%", percentage: 15, desc: "Audience comments, community votes, and chapter read-through rate" },
-    ],
-    endDate: new Date(Date.now() + 23 * 86400000).toISOString(),
-    submissionCount: 128 + novels.length,
-  };
+  // Real-time live countdown hook (updates every 1000ms automatically)
+  const countdown = useContestCountdown(contest);
 
   const [votes, setVotes] = useState<Record<string, number>>({});
   const [votedIds, setVotedIds] = useState<string[]>([]);
   const [isSubmitModalOpen, setIsSubmitModalOpen] = useState(false);
-  const [selectedNovelId, setSelectedNovelId] = useState(novels[0]?.id || "");
+  const [selectedNovelId, setSelectedNovelId] = useState("");
   const [submissionStep, setSubmissionStep] = useState<1 | 2 | 3>(1);
+  const [submissionError, setSubmissionError] = useState<string | null>(null);
   const [isSubmitted, setIsSubmitted] = useState(false);
+
+  useEffect(() => {
+    const active = dataStore.getActiveContest();
+    setContest(active);
+    const allNovels = dataStore.getNovels();
+    setNovels(allNovels);
+    if (allNovels.length > 0) {
+      setSelectedNovelId(allNovels[0].id);
+    }
+  }, []);
+
+  // Filter user's published stories if logged in, otherwise all novels
+  const userStories = user ? novels.filter((n) => n.creatorId === user.id) : novels;
+  const selectedStory = novels.find((n) => n.id === selectedNovelId) || userStories[0] || novels[0];
 
   // Combine user novels with tournament entries
   const allEntries = [
@@ -134,12 +129,10 @@ export default function ContestsPage() {
       genre: n.genre,
       chaptersCount: n.chaptersCount || 3,
       rating: n.rating || 4.8,
-      votes: (votes[n.id] || 0) + (100 - idx * 15),
+      votes: (votes[n.id] || 0) + (120 - idx * 12),
     })),
     ...SEEDED_CONTENDERS,
   ].sort((a, b) => (votes[b.id] || b.votes) - (votes[a.id] || a.votes));
-
-  const selectedStory = novels.find((n) => n.id === selectedNovelId) || novels[0];
 
   const handleVote = (entryId: string) => {
     if (votedIds.includes(entryId)) return;
@@ -154,9 +147,24 @@ export default function ContestsPage() {
 
   const handleEntrySubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    setSubmissionError(null);
+
+    if (!selectedStory) {
+      setSubmissionError("Please select a story to submit.");
+      return;
+    }
+
+    const creatorId = user?.id || selectedStory.creatorId || "creator-current";
+    const result = dataStore.submitContestEntry(contest.id, selectedStory.id, creatorId);
+
+    if (!result.success) {
+      setSubmissionError(result.error || "Submission failed.");
+      return;
+    }
+
     setIsSubmitted(true);
     try {
-      confetti({ particleCount: 120, spread: 80, origin: { y: 0.5 } });
+      confetti({ particleCount: 140, spread: 80, origin: { y: 0.5 } });
     } catch {
       // ignore
     }
@@ -164,6 +172,7 @@ export default function ContestsPage() {
       setIsSubmitModalOpen(false);
       setIsSubmitted(false);
       setSubmissionStep(1);
+      setContest(dataStore.getActiveContest());
     }, 2500);
   };
 
@@ -171,61 +180,104 @@ export default function ContestsPage() {
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-12 bg-[#FAFAF7] dark:bg-[#121214] min-h-screen text-[#111111] dark:text-zinc-100">
       
       {/* ========================================================================= */}
-      {/* 1. HERO: MANGA TOURNAMENT POSTER */}
+      {/* 1. HERO: DYNAMIC MANGA TOURNAMENT POSTER */}
       {/* ========================================================================= */}
       <div className="relative rounded-2xl overflow-hidden bg-white dark:bg-zinc-900 border-2 border-[#111111] dark:border-zinc-700 p-6 sm:p-10 lg:p-12 shadow-xl">
         <div className="relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
           
-          {/* Left Column: Tournament Details & Headlines */}
+          {/* Left Column: Tournament Details & Live Countdown */}
           <div className="lg:col-span-7 space-y-5">
             <div className="flex flex-wrap items-center gap-2.5">
               <span className="px-3 py-1 rounded-xs text-[11px] font-black bg-[#D91E18] text-white uppercase tracking-widest shadow-xs">
-                CONTEST #08 • 月例物語大賞
+                CONTEST #{contest.contestNumber || "08"} • 月例物語大賞
               </span>
-              <span className="px-2.5 py-1 rounded-xs text-[11px] font-black bg-[#111111] text-white uppercase tracking-wider flex items-center gap-1">
-                <Clock className="w-3.5 h-3.5 text-[#D91E18]" />
-                <span>23 DAYS REMAINING</span>
+              
+              {/* Dynamic Live Countdown Pill */}
+              <span
+                className={`px-2.5 py-1 rounded-xs text-[11px] font-black uppercase tracking-wider flex items-center gap-1.5 ${
+                  countdown.status === "LIVE"
+                    ? "bg-[#111111] text-white"
+                    : countdown.status === "SCHEDULED"
+                    ? "bg-indigo-900 text-indigo-100"
+                    : countdown.status === "DRAFT"
+                    ? "bg-amber-800 text-amber-100"
+                    : "bg-zinc-800 text-zinc-300"
+                }`}
+              >
+                <Clock className={`w-3.5 h-3.5 ${countdown.status === "LIVE" ? "text-[#D91E18] animate-pulse" : ""}`} />
+                <span>{countdown.formattedRemaining}</span>
               </span>
             </div>
 
             <h1 className="text-3xl sm:text-4xl lg:text-5xl xl:text-6xl font-black tracking-tight leading-[1.05] text-[#111111] dark:text-white">
-              STORY BATTLE{" "}
-              <span className="text-[#D91E18]">TOURNAMENT</span>
-              <br />
-              <span className="text-xl sm:text-2xl lg:text-3xl font-extrabold text-[#555555] dark:text-zinc-400 block mt-1">
-                Sci-Fi & Fantasy Edition
-              </span>
+              {contest.title}
+              {contest.subtitle && (
+                <span className="text-xl sm:text-2xl lg:text-3xl font-extrabold text-[#555555] dark:text-zinc-400 block mt-1">
+                  {contest.subtitle}
+                </span>
+              )}
             </h1>
 
             <p className="text-xs sm:text-sm text-[#555555] dark:text-zinc-400 leading-relaxed max-w-xl font-medium">
-              Step into the arena. Submit your original serialized novel, battle for community reader votes, and win from the official prize pool with guaranteed publishing exposure.
+              {contest.description}
             </p>
 
-            {/* Giant Prize Callout Badge */}
-            <div className="flex flex-wrap items-baseline gap-3 pt-2">
-              <div className="px-4 py-2 rounded-lg bg-[#D91E18] text-white shadow-md inline-flex items-center gap-2">
-                <Trophy className="w-5 h-5" />
-                <span className="text-xl sm:text-2xl font-black tracking-tight">$850 USD</span>
-                <span className="text-[10px] font-bold uppercase tracking-widest text-red-100">TOTAL PRIZE POOL</span>
+            {/* Giant Prize Callout & Live Deadline */}
+            <div className="space-y-2 pt-2">
+              <div className="flex flex-wrap items-baseline gap-3">
+                <div className="px-4 py-2 rounded-lg bg-[#D91E18] text-white shadow-md inline-flex items-center gap-2">
+                  <Trophy className="w-5 h-5" />
+                  <span className="text-xl sm:text-2xl font-black tracking-tight">{contest.prizePool}</span>
+                  <span className="text-[10px] font-bold uppercase tracking-widest text-red-100">TOTAL PRIZE POOL</span>
+                </div>
+                <span className="text-xs font-bold text-[#555555] dark:text-zinc-400">
+                  ● {contest.submissionCount || allEntries.length} Authors Entered
+                </span>
               </div>
-              <span className="text-xs font-bold text-[#555555] dark:text-zinc-400">
-                ● 128 Authors Already Entered
-              </span>
+
+              {/* Dynamic Deadline formatted according to Admin configured timezone */}
+              <p className="text-xs text-zinc-500 font-bold">
+                📅 Deadline: <span className="text-[#111111] dark:text-white">{formatContestDeadline(contest.endDate, contest.timezone)}</span>
+              </p>
             </div>
 
-            {/* CTA Button */}
+            {/* Dynamic Submission CTA Button */}
             <div className="pt-2">
-              <button
-                onClick={() => {
-                  if (requireAuth("/contests")) {
-                    setIsSubmitModalOpen(true);
-                  }
-                }}
-                className="px-8 py-3.5 rounded-lg bg-[#D91E18] hover:bg-[#B71813] text-white font-black text-xs sm:text-sm uppercase tracking-wider shadow-lg transition transform hover:scale-[1.02] active:scale-[0.98] flex items-center gap-2"
-              >
-                <Sparkles className="w-4 h-4" />
-                <span>ENTER TOURNAMENT NOW →</span>
-              </button>
+              {countdown.status === "LIVE" ? (
+                <button
+                  onClick={() => {
+                    if (requireAuth("/contests")) {
+                      setIsSubmitModalOpen(true);
+                    }
+                  }}
+                  className="px-8 py-3.5 rounded-lg bg-[#D91E18] hover:bg-[#B71813] text-white font-black text-xs sm:text-sm uppercase tracking-wider shadow-lg transition transform hover:scale-[1.02] active:scale-[0.98] flex items-center gap-2"
+                >
+                  <Sparkles className="w-4 h-4" />
+                  <span>ENTER TOURNAMENT NOW →</span>
+                </button>
+              ) : countdown.status === "SCHEDULED" ? (
+                <button
+                  disabled
+                  className="px-8 py-3.5 rounded-lg bg-indigo-900/60 border border-indigo-700 text-indigo-200 font-black text-xs sm:text-sm uppercase tracking-wider cursor-not-allowed flex items-center gap-2 opacity-80"
+                >
+                  <Clock className="w-4 h-4" />
+                  <span>SUBMISSIONS NOT OPEN (STARTS SOON)</span>
+                </button>
+              ) : countdown.status === "DRAFT" ? (
+                <button
+                  disabled
+                  className="px-8 py-3.5 rounded-lg bg-amber-100 dark:bg-amber-950/60 border border-amber-300 text-amber-800 dark:text-amber-300 font-black text-xs sm:text-sm uppercase tracking-wider cursor-not-allowed flex items-center gap-2 opacity-80"
+                >
+                  <span>DRAFT MODE (UNPUBLISHED)</span>
+                </button>
+              ) : (
+                <button
+                  disabled
+                  className="px-8 py-3.5 rounded-lg bg-zinc-300 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400 font-black text-xs sm:text-sm uppercase tracking-wider cursor-not-allowed flex items-center gap-2 opacity-80"
+                >
+                  <span>SUBMISSIONS CLOSED (CONTEST ENDED)</span>
+                </button>
+              )}
             </div>
           </div>
 
@@ -240,7 +292,7 @@ export default function ContestsPage() {
             {/* Character Artwork */}
             <div className="relative w-full h-[320px] sm:h-[380px] flex items-end justify-center select-none pointer-events-none">
               <img
-                src="/hero-character.png"
+                src={contest.heroCoverUrl || "/hero-character.png"}
                 alt="Tournament Battle Hero"
                 className="w-full h-full object-contain object-bottom drop-shadow-[0_20px_30px_rgba(0,0,0,0.35)]"
                 onError={(e) => {
@@ -275,65 +327,35 @@ export default function ContestsPage() {
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {/* 1st Place - Grand Prize */}
-          <div className="p-5 rounded-xl bg-white dark:bg-zinc-900 border-2 border-[#D91E18] relative shadow-md space-y-2 group hover:translate-y-[-2px] transition">
-            <div className="flex items-center justify-between">
-              <span className="px-2 py-0.5 rounded-xs text-[10px] font-black bg-[#D91E18] text-white uppercase">
-                大賞 • 1ST PLACE
-              </span>
-              <Trophy className="w-5 h-5 text-[#D91E18]" />
-            </div>
-            <p className="text-3xl font-black text-[#D91E18] pt-1">$500 USD</p>
-            <h3 className="font-black text-sm text-[#111111] dark:text-white">GRAND CHAMPION</h3>
-            <p className="text-xs text-[#555555] dark:text-zinc-400 font-medium leading-relaxed">
-              Official Homepage Hero Feature + Verified Creator Gold Badge + Yomika Publishing Contract Review.
-            </p>
-          </div>
-
-          {/* 2nd Place - Runner Up */}
-          <div className="p-5 rounded-xl bg-white dark:bg-zinc-900 border border-[#EAEAE5] dark:border-zinc-800 relative shadow-2xs space-y-2 hover:border-[#111111] dark:hover:border-white transition">
-            <div className="flex items-center justify-between">
-              <span className="px-2 py-0.5 rounded-xs text-[10px] font-black bg-zinc-800 text-white uppercase">
-                優秀賞 • 2ND PLACE
-              </span>
-              <Award className="w-5 h-5 text-zinc-400" />
-            </div>
-            <p className="text-3xl font-black text-[#111111] dark:text-white pt-1">$200 USD</p>
-            <h3 className="font-black text-sm text-[#111111] dark:text-white">RUNNER UP</h3>
-            <p className="text-xs text-[#555555] dark:text-zinc-400 font-medium leading-relaxed">
-              Official Category Banner Spotlight + Verified Author Badge + Community Newsletter Feature.
-            </p>
-          </div>
-
-          {/* 3rd Place */}
-          <div className="p-5 rounded-xl bg-white dark:bg-zinc-900 border border-[#EAEAE5] dark:border-zinc-800 relative shadow-2xs space-y-2 hover:border-[#111111] dark:hover:border-white transition">
-            <div className="flex items-center justify-between">
-              <span className="px-2 py-0.5 rounded-xs text-[10px] font-black bg-amber-700 text-white uppercase">
-                特別賞 • 3RD PLACE
-              </span>
-              <Award className="w-5 h-5 text-amber-600" />
-            </div>
-            <p className="text-3xl font-black text-[#111111] dark:text-white pt-1">$100 USD</p>
-            <h3 className="font-black text-sm text-[#111111] dark:text-white">THIRD PLACE</h3>
-            <p className="text-xs text-[#555555] dark:text-zinc-400 font-medium leading-relaxed">
-              Community Spotlight Placement + Tournament Finalist Badge + Yomika Discover Boost.
-            </p>
-          </div>
-
-          {/* Reader's Choice */}
-          <div className="p-5 rounded-xl bg-white dark:bg-zinc-900 border border-[#EAEAE5] dark:border-zinc-800 relative shadow-2xs space-y-2 hover:border-[#111111] dark:hover:border-white transition">
-            <div className="flex items-center justify-between">
-              <span className="px-2 py-0.5 rounded-xs text-[10px] font-black bg-[#D91E18] text-white uppercase">
-                読者人気賞 • READER CHOICE
-              </span>
-              <Flame className="w-5 h-5 text-[#D91E18]" />
-            </div>
-            <p className="text-3xl font-black text-[#D91E18] pt-1">$50 USD</p>
-            <h3 className="font-black text-sm text-[#111111] dark:text-white">AUDIENCE FAVORITE</h3>
-            <p className="text-xs text-[#555555] dark:text-zinc-400 font-medium leading-relaxed">
-              Awarded to the story with the highest community vote count + Audience Favorite Ribbon.
-            </p>
-          </div>
+          {contest.prizeStructure.map((prize, idx) => {
+            const isGrand = idx === 0;
+            return (
+              <div
+                key={prize.place}
+                className={`p-5 rounded-xl bg-white dark:bg-zinc-900 border-2 ${
+                  isGrand ? "border-[#D91E18] shadow-md" : "border-[#EAEAE5] dark:border-zinc-800"
+                } relative shadow-2xs space-y-2 hover:translate-y-[-2px] transition`}
+              >
+                <div className="flex items-center justify-between">
+                  <span
+                    className={`px-2 py-0.5 rounded-xs text-[10px] font-black uppercase text-white ${
+                      isGrand ? "bg-[#D91E18]" : idx === 1 ? "bg-zinc-800" : "bg-amber-700"
+                    }`}
+                  >
+                    {prize.place}
+                  </span>
+                  <Trophy className={`w-5 h-5 ${isGrand ? "text-[#D91E18]" : "text-zinc-400"}`} />
+                </div>
+                <p className={`text-3xl font-black ${isGrand ? "text-[#D91E18]" : "text-[#111111] dark:text-white"} pt-1`}>
+                  {prize.reward}
+                </p>
+                <h3 className="font-black text-sm text-[#111111] dark:text-white uppercase">{prize.place}</h3>
+                <p className="text-xs text-[#555555] dark:text-zinc-400 font-medium leading-relaxed">
+                  {prize.desc}
+                </p>
+              </div>
+            );
+          })}
         </div>
       </div>
 
@@ -593,7 +615,7 @@ export default function ContestsPage() {
                   ✦
                 </span>
                 <h3 className="font-black text-base uppercase text-[#111111] dark:text-white">
-                  ENTER THE STORY TOURNAMENT
+                  ENTER {contest.title}
                 </h3>
               </div>
               <button
@@ -617,6 +639,13 @@ export default function ContestsPage() {
               </div>
             </div>
 
+            {submissionError && (
+              <div className="p-3 rounded-lg bg-red-50 border border-red-200 text-[#D91E18] text-xs font-bold flex items-center gap-2">
+                <AlertTriangle className="w-4 h-4 flex-shrink-0" />
+                <span>{submissionError}</span>
+              </div>
+            )}
+
             {isSubmitted ? (
               <div className="py-8 text-center space-y-3 animate-in zoom-in-95">
                 <div className="w-14 h-14 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto">
@@ -626,7 +655,7 @@ export default function ContestsPage() {
                   Tournament Entry Confirmed!
                 </h4>
                 <p className="text-xs text-[#555555] dark:text-zinc-400 max-w-sm mx-auto">
-                  Your story has been officially entered into Contest #08. Reader voting is now active!
+                  Your story has been officially entered into Contest #{contest.contestNumber || "08"}. Reader voting is now active!
                 </p>
               </div>
             ) : (
@@ -638,14 +667,14 @@ export default function ContestsPage() {
                       Select Your Published Story
                     </label>
 
-                    {novels.length > 0 ? (
+                    {userStories.length > 0 ? (
                       <>
                         <select
                           value={selectedNovelId}
                           onChange={(e) => setSelectedNovelId(e.target.value)}
                           className="w-full px-3.5 py-2.5 rounded-lg bg-zinc-50 dark:bg-zinc-950 border border-[#EAEAE5] dark:border-zinc-800 text-xs font-bold focus:outline-none focus:border-[#D91E18]"
                         >
-                          {novels.map((n) => (
+                          {userStories.map((n) => (
                             <option key={n.id} value={n.id}>
                               {n.title} ({n.chaptersCount || 3} Chapters) — {n.genre}
                             </option>
@@ -704,6 +733,7 @@ export default function ContestsPage() {
                           href="/creator/upload"
                           className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-lg bg-[#D91E18] hover:bg-[#B71813] text-white text-xs font-black uppercase tracking-wider shadow-xs transition"
                         >
+                          <PenTool className="w-3.5 h-3.5" />
                           <span>CREATE STORY FIRST →</span>
                         </Link>
                       </div>
@@ -721,7 +751,7 @@ export default function ContestsPage() {
                     <div className="space-y-2 p-3.5 rounded-lg bg-zinc-50 dark:bg-zinc-950 border border-[#EAEAE5] text-xs text-[#555555] dark:text-zinc-300">
                       <div className="flex items-center gap-2 text-emerald-600 font-bold">
                         <Check className="w-4 h-4" />
-                        <span>Meets 2+ published chapter requirement</span>
+                        <span>Meets {contest.minChapters || 2}+ published chapter requirement</span>
                       </div>
                       <div className="flex items-center gap-2 text-emerald-600 font-bold">
                         <Check className="w-4 h-4" />
@@ -729,7 +759,7 @@ export default function ContestsPage() {
                       </div>
                       <div className="flex items-center gap-2 text-emerald-600 font-bold">
                         <Check className="w-4 h-4" />
-                        <span>Eligible for $850 Tournament prize pool</span>
+                        <span>Eligible for {contest.prizePool} Tournament prize pool</span>
                       </div>
                     </div>
 

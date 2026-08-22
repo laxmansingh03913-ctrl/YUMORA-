@@ -212,11 +212,14 @@ export interface ReadingProgress {
 
 export interface Contest {
   id: string;
+  contestNumber?: string | number;
   title: string;
   slug: string;
   subtitle: string;
   description: string;
   bannerUrl: string;
+  heroCoverUrl?: string;
+  category?: string;
   prizePool: string;
   prizeStructure: {
     place: string;
@@ -225,16 +228,23 @@ export interface Contest {
   }[];
   startDate: string;
   endDate: string;
-  status: 'ACTIVE' | 'UPCOMING' | 'JUDGING' | 'COMPLETED';
+  startTime?: string;
+  endTime?: string;
+  timezone?: string;
+  status: 'DRAFT' | 'SCHEDULED' | 'LIVE' | 'ENDED' | 'ACTIVE' | 'UPCOMING' | 'JUDGING' | 'COMPLETED';
+  isPublished?: boolean;
   rules: string[];
   judgingCriteria: {
     title: string;
     weight: string;
+    percentage?: number;
     desc: string;
   }[];
   eligibleGenres: string[];
   minChapters: number;
   submissionCount: number;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface ContestSubmission {

@@ -3,6 +3,7 @@ import {
   Comic,
   ComicEpisode,
   Contest,
+  ContestSubmission,
   CommunityPost,
   ReportItem,
   UserProfile,
@@ -27,6 +28,7 @@ import {
 
 import { idbGet, idbSet } from "./idb";
 import { dbService } from "../supabase/db";
+import { getContestStatus } from "../utils/contest";
 
 const STORAGE_KEYS = {
   NOVELS: "yumora_novels",
@@ -38,6 +40,8 @@ const STORAGE_KEYS = {
   NOTIFICATIONS: "yumora_notifications",
   READING_PROGRESS: "yumora_reading_progress",
   COMMUNITY_POSTS: "yumora_community_posts",
+  CONTESTS: "yomika_contests",
+  CONTEST_SUBMISSIONS: "yomika_contest_submissions",
   REPORTS: "yumora_reports",
   COMMENTS: "yumora_comments",
   USERS: "yumora_users",
@@ -656,12 +660,242 @@ class DataStore {
   }
 
   // Contests
+  private getDefaultContests(): Contest[] {
+    const now = Date.now();
+    return [
+      {
+        id: "contest-08",
+        contestNumber: "08",
+        title: "Yomika Monthly Story Challenge — Sci-Fi & Fantasy",
+        slug: "monthly-challenge",
+        subtitle: "Story Battle Tournament #08",
+        description: "Write an original serialized story with captivating characters, adrenaline-fueled pacing, and immersive world-building. Open to all creators worldwide.",
+        bannerUrl: "/hero-character.png",
+        heroCoverUrl: "/hero-character.png",
+        category: "Sci-Fi & Fantasy",
+        prizePool: "$850 USD",
+        prizeStructure: [
+          { place: "Grand Prize", reward: "$500 USD", desc: "Official Feature & Publishing Review" },
+          { place: "Runner Up", reward: "$200 USD", desc: "Verified Badge & Banner Spotlight" },
+          { place: "3rd Place", reward: "$100 USD", desc: "Community Spotlight & Verified Badge" },
+          { place: "Reader Choice", reward: "$50 USD", desc: "Audience Favorite Badge & Promo" },
+        ],
+        startDate: new Date(now - 2 * 86400000).toISOString(),
+        endDate: new Date(now + 23 * 86400000).toISOString(),
+        timezone: "Asia/Kolkata",
+        status: "LIVE",
+        isPublished: true,
+        rules: [
+          "Minimum 2 published chapters at submission time",
+          "Original work owned 100% by the publishing author",
+          "Submissions evaluated based on reader engagement, originality, and storytelling pace",
+          "No plagiarized content or unauthorized intellectual property",
+        ],
+        judgingCriteria: [
+          { title: "WORLD BUILDING & LORE", weight: "35%", percentage: 35, desc: "Rich universe rules, immersive setting, and distinct creative premise" },
+          { title: "CHARACTER ARCS & VOICE", weight: "30%", percentage: 30, desc: "Compelling protagonist motives, believable dialogue, and emotional resonance" },
+          { title: "PACING & ORIGINALITY", weight: "20%", percentage: 20, desc: "Addictive narrative hooks, unexpected twists, and polished prose flow" },
+          { title: "READER IMPACT & ENGAGEMENT", weight: "15%", percentage: 15, desc: "Audience comments, community votes, and chapter read-through rate" },
+        ],
+        eligibleGenres: ["Sci-Fi", "Fantasy", "Action", "Cyberpunk", "Wuxia"],
+        minChapters: 2,
+        submissionCount: 128,
+        createdAt: new Date(now - 3 * 86400000).toISOString(),
+        updatedAt: new Date(now - 2 * 86400000).toISOString(),
+      },
+    ];
+  }
+
   getContests(): Contest[] {
-    return SEED_CONTESTS;
+    const stored = this.getItem<Contest[]>(STORAGE_KEYS.CONTESTS, []);
+    if (!stored || stored.length === 0) {
+      const defaults = this.getDefaultContests();
+      this.setItem(STORAGE_KEYS.CONTESTS, defaults);
+      return defaults;
+    }
+    return stored;
+  }
+
+  getContestById(id: string): Contest | undefined {
+    return this.getContests().find((c) => c.id === id);
   }
 
   getContestBySlug(slug: string): Contest | undefined {
     return this.getContests().find((c) => c.slug === slug || c.id === slug);
+  }
+
+  getActiveContest(): Contest {
+    const all = this.getContests();
+    const live = all.find((c) => getContestStatus(c) === "LIVE");
+    if (live) return live;
+    const scheduled = all.find((c) => getContestStatus(c) === "SCHEDULED");
+    if (scheduled) return scheduled;
+    return all[0] || this.getDefaultContests()[0];
+  }
+
+  saveContest(contest: Contest): void {
+    const contests = this.getContests();
+    const idx = contests.findIndex((c) => c.id === contest.id);
+    const updated = {
+      ...contest,
+      updatedAt: new Date().toISOString(),
+    };
+
+    if (idx >= 0) {
+      contests[idx] = updated;
+    } else {
+      contests.unshift(updated);
+    }
+    this.setItem(STORAGE_KEYS.CONTESTS, contests);
+  }
+
+  createContest(data: Partial<Contest>): Contest {
+    const contests = this.getContests();
+    const num = contests.length + 1;
+    const padNum = String(num).padStart(2, "0");
+    const newContest: Contest = {
+      id: `contest-${Date.now()}`,
+      contestNumber: data.contestNumber || padNum,
+      title: data.title || `Story Battle Tournament #${padNum}`,
+      slug: data.slug || `tournament-${padNum}-${Date.now().toString().slice(-4)}`,
+      subtitle: data.subtitle || `Tournament Edition #${padNum}`,
+      description: data.description || "Write and submit your original story to battle for reader votes and prizes.",
+      bannerUrl: data.bannerUrl || "/hero-character.png",
+      heroCoverUrl: data.heroCoverUrl || "/hero-character.png",
+      category: data.category || "All Categories",
+      prizePool: data.prizePool || "$500 USD",
+      prizeStructure: data.prizeStructure || [
+        { place: "Grand Prize", reward: "$300 USD", desc: "Homepage Feature & Verified Badge" },
+        { place: "Runner Up", reward: "$150 USD", desc: "Category Feature" },
+        { place: "3rd Place", reward: "$50 USD", desc: "Community Spotlight" },
+      ],
+      startDate: data.startDate || new Date().toISOString(),
+      endDate: data.endDate || new Date(Date.now() + 30 * 86400000).toISOString(),
+      timezone: data.timezone || "Asia/Kolkata",
+      status: data.status || "LIVE",
+      isPublished: data.isPublished ?? true,
+      rules: data.rules || [
+        "Minimum 2 published chapters at submission time",
+        "Original work owned 100% by the publishing author",
+      ],
+      judgingCriteria: data.judgingCriteria || [
+        { title: "WORLD BUILDING", weight: "40%", percentage: 40, desc: "Universe rules & premise" },
+        { title: "CHARACTER ARCS", weight: "35%", percentage: 35, desc: "Protagonist depth & motives" },
+        { title: "ORIGINALITY", weight: "25%", percentage: 25, desc: "Addictive pacing & twists" },
+      ],
+      eligibleGenres: data.eligibleGenres || ["All"],
+      minChapters: data.minChapters || 2,
+      submissionCount: 0,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+
+    contests.unshift(newContest);
+    this.setItem(STORAGE_KEYS.CONTESTS, contests);
+    return newContest;
+  }
+
+  deleteContest(id: string): void {
+    const contests = this.getContests().filter((c) => c.id !== id);
+    this.setItem(STORAGE_KEYS.CONTESTS, contests);
+  }
+
+  duplicateContest(id: string): Contest {
+    const target = this.getContestById(id) || this.getDefaultContests()[0];
+    const contests = this.getContests();
+    const nextNum = String(contests.length + 1).padStart(2, "0");
+    const duplicated = this.createContest({
+      ...target,
+      id: `contest-${Date.now()}`,
+      contestNumber: nextNum,
+      title: `${target.title} (Copy)`,
+      slug: `${target.slug}-copy-${Date.now().toString().slice(-4)}`,
+      status: "DRAFT",
+      isPublished: false,
+      submissionCount: 0,
+    });
+    return duplicated;
+  }
+
+  // Contest Submissions
+  getContestSubmissions(contestId?: string): ContestSubmission[] {
+    const stored = this.getItem<ContestSubmission[]>(STORAGE_KEYS.CONTEST_SUBMISSIONS, []);
+    if (!contestId) return stored;
+    return stored.filter((s) => s.contestId === contestId);
+  }
+
+  submitContestEntry(
+    contestId: string,
+    novelId: string,
+    creatorId: string
+  ): { success: boolean; error?: string; submission?: ContestSubmission } {
+    const contest = this.getContestById(contestId) || this.getActiveContest();
+    if (!contest) {
+      return { success: false, error: "Contest not found." };
+    }
+
+    // Server/Centralized Status Verification
+    const currentStatus = getContestStatus(contest);
+    if (currentStatus === "ENDED") {
+      return { success: false, error: "Submissions are closed. This contest has ended." };
+    }
+    if (currentStatus === "SCHEDULED") {
+      return { success: false, error: "Submissions have not opened yet for this contest." };
+    }
+    if (currentStatus === "DRAFT") {
+      return { success: false, error: "This contest is currently an unpublished draft." };
+    }
+
+    const novel = this.getNovelById(novelId);
+    if (!novel) {
+      return { success: false, error: "Selected story was not found." };
+    }
+
+    const minChapters = contest.minChapters || 2;
+    const chaptersCount = novel.chaptersCount || novel.chapters?.length || 0;
+    if (chaptersCount < minChapters) {
+      return {
+        success: false,
+        error: `Story must have at least ${minChapters} published chapters (current: ${chaptersCount}).`,
+      };
+    }
+
+    // Check duplicate submission
+    const existing = this.getContestSubmissions(contest.id);
+    const isDuplicate = existing.some((s) => s.contentId === novelId);
+    if (isDuplicate) {
+      return { success: false, error: "This story has already been entered into this tournament." };
+    }
+
+    const creator = this.getUserById(creatorId) || {
+      id: creatorId,
+      name: novel.creator.name,
+      username: novel.creator.username,
+      avatar: novel.creator.avatar,
+    };
+
+    const newSubmission: ContestSubmission = {
+      id: `sub-${Date.now()}`,
+      contestId: contest.id,
+      contentId: novel.id,
+      contentType: "NOVEL",
+      novel,
+      creator: creator as UserProfile,
+      score: 100,
+      votes: 1,
+      status: "APPROVED",
+      submittedAt: new Date().toISOString(),
+    };
+
+    const allSubs = this.getItem<ContestSubmission[]>(STORAGE_KEYS.CONTEST_SUBMISSIONS, []);
+    allSubs.unshift(newSubmission);
+    this.setItem(STORAGE_KEYS.CONTEST_SUBMISSIONS, allSubs);
+
+    // Update contest entry count
+    contest.submissionCount = (contest.submissionCount || 0) + 1;
+    this.saveContest(contest);
+
+    return { success: true, submission: newSubmission };
   }
 
   // Reports
