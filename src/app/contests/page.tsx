@@ -30,10 +30,10 @@ export default function ContestsPage() {
     description: "Write an original serialized story with captivating characters and immersive world-building. Open to all creators worldwide.",
     prizePool: "$850 USD",
     prizeStructure: [
-      { place: "1st Place", reward: "$500 USD", perks: "Official Feature & Promotion" },
-      { place: "2nd Place", reward: "$200 USD", perks: "Verified Creator Badge" },
-      { place: "3rd Place", reward: "$100 USD", perks: "Community Spotlight" },
-      { place: "Reader Choice", reward: "$50 USD", perks: "Audience Favorite Badge" },
+      { place: "1st Place", reward: "$500 USD", desc: "Official Feature & Promotion" },
+      { place: "2nd Place", reward: "$200 USD", desc: "Verified Creator Badge" },
+      { place: "3rd Place", reward: "$100 USD", desc: "Community Spotlight" },
+      { place: "Reader Choice", reward: "$50 USD", desc: "Audience Favorite Badge" },
     ],
     rules: [
       "Minimum 2 published chapters at submission time",
@@ -113,7 +113,7 @@ export default function ContestsPage() {
                 >
                   <p className="text-[10px] font-bold uppercase text-zinc-500 dark:text-zinc-400">{prize.place}</p>
                   <p className="text-base font-black text-[#D91E18]">{prize.reward}</p>
-                  <p className="text-[9px] text-zinc-400 truncate">{prize.perks}</p>
+                  <p className="text-[9px] text-zinc-400 truncate">{prize.desc}</p>
                 </div>
               ))}
             </div>
