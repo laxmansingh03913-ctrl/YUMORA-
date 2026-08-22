@@ -140,7 +140,7 @@ export default function HomePage() {
       {/* ========================================================================= */}
       {/* 1. HERO SECTION (Neo-Japan Manga Editorial Design) */}
       {/* ========================================================================= */}
-      <section className="relative pt-6 sm:pt-10 pb-8 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto w-full overflow-hidden">
+      <section className="relative pt-6 sm:pt-10 pb-12 sm:pb-16 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto w-full">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center relative">
           
           {/* LEFT SIDE: Editorial Typography & Actions */}
@@ -214,34 +214,30 @@ export default function HomePage() {
           </div>
 
           {/* RIGHT SIDE: Neo-Japan Character Graphic Composition + "BE THE FIRST CREATOR" Card */}
-          <div className="lg:col-span-5 relative flex items-center justify-center min-h-[420px] sm:min-h-[500px] lg:min-h-[560px] pt-4 lg:pt-0">
+          <div className="lg:col-span-5 relative flex items-center justify-center min-h-[460px] sm:min-h-[520px] lg:min-h-[580px] pt-4 lg:pt-0">
             
             {/* 1. Japanese Red Sun Background Circle */}
-            <div className="w-72 h-72 sm:w-96 sm:h-96 lg:w-[420px] lg:h-[420px] rounded-full bg-[#D91E18] absolute top-1/2 -translate-y-1/2 right-1/2 translate-x-1/2 lg:right-4 lg:translate-x-0 -z-10 shadow-2xl shadow-red-600/15 pointer-events-none" />
+            <div className="w-72 h-72 sm:w-88 sm:h-88 lg:w-[400px] lg:h-[400px] rounded-full bg-[#D91E18] absolute top-1/2 -translate-y-1/2 left-1/2 -translate-x-1/2 lg:left-auto lg:right-6 lg:translate-x-0 -z-10 shadow-2xl shadow-red-600/20 pointer-events-none" />
 
             {/* 2. Ink Brush Accent Ring */}
-            <div className="absolute inset-0 flex items-center justify-center pointer-events-none -z-10 opacity-25 dark:opacity-20">
-              <div className="w-80 h-80 sm:w-[440px] sm:h-[440px] rounded-full border-2 border-dashed border-[#111111] dark:border-zinc-400" />
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none -z-10 opacity-20 dark:opacity-25">
+              <div className="w-80 h-80 sm:w-[420px] sm:h-[420px] rounded-full border-2 border-dashed border-[#111111] dark:border-zinc-400" />
             </div>
 
             {/* 3. Hero Character Artwork (Large, visually dominant, uncropped head/body, transparent integration) */}
-            <div className="relative w-full max-w-md sm:max-w-lg lg:max-w-none h-[420px] sm:h-[500px] lg:h-[560px] flex items-end justify-center select-none pointer-events-none">
+            <div className="relative w-full max-w-md sm:max-w-lg lg:max-w-none h-[460px] sm:h-[520px] lg:h-[580px] flex items-end justify-center select-none pointer-events-none">
               <img
                 src="/hero-character.png"
                 alt="YOMIKA Hero Character"
-                className="w-full h-full object-contain object-bottom drop-shadow-[0_20px_35px_rgba(0,0,0,0.25)] transition-transform duration-700 hover:scale-105"
-                onError={(e) => {
-                  // Fallback gracefully if custom file is not placed yet
-                  (e.target as HTMLImageElement).src = "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=1000&auto=format&fit=crop&q=90";
-                }}
+                className="w-full h-full object-contain object-bottom drop-shadow-[0_20px_35px_rgba(0,0,0,0.3)] transition-transform duration-700 hover:scale-105"
               />
 
               {/* Subtle bottom fade into the page background */}
-              <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-[#FAFAF7] dark:from-[#121214] to-transparent pointer-events-none" />
+              <div className="absolute bottom-0 left-0 right-0 h-12 bg-gradient-to-t from-[#FAFAF7] dark:from-[#121214] to-transparent pointer-events-none" />
             </div>
 
             {/* 4. Vertical Japanese Calligraphy & Seal Stamp */}
-            <div className="absolute right-0 top-4 bottom-12 hidden xl:flex flex-col items-center justify-between text-zinc-400 select-none pointer-events-none z-10">
+            <div className="absolute right-0 top-4 bottom-16 hidden xl:flex flex-col items-center justify-between text-zinc-400 select-none pointer-events-none z-10">
               <span className="text-[11px] font-bold [writing-mode:vertical-rl] tracking-widest text-[#111111] dark:text-zinc-300 drop-shadow-xs">
                 すべての物語は、ここから始まる。
               </span>
@@ -251,7 +247,7 @@ export default function HomePage() {
             </div>
 
             {/* 5. Floating "BE THE FIRST CREATOR" Card */}
-            <div className="absolute -bottom-4 right-0 sm:right-2 md:right-4 max-w-[280px] sm:max-w-xs w-full bg-white dark:bg-zinc-900 border border-[#111111] dark:border-zinc-700 rounded-xl p-4 sm:p-5 shadow-2xl space-y-3 z-20">
+            <div className="absolute bottom-0 right-0 sm:right-2 md:right-4 max-w-[280px] sm:max-w-xs w-full bg-white dark:bg-zinc-900 border border-[#111111] dark:border-zinc-700 rounded-xl p-4 sm:p-5 shadow-2xl space-y-3 z-20">
               <div className="flex items-center justify-between">
                 <h3 className="font-black text-xs sm:text-sm tracking-tight text-[#111111] dark:text-white uppercase">
                   BE THE FIRST CREATOR
