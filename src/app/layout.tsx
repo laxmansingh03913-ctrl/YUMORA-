@@ -131,7 +131,7 @@ export default function RootLayout({
                 <RealtimeSyncProvider>
                   <div className="flex flex-col min-h-screen">
                     <Navbar />
-                    <div className="flex-1 min-h-[calc(100vh-64px)] w-full">
+                    <div className="flex flex-1 min-h-[calc(100vh-64px)] w-full">
                       <Sidebar />
                       <div className="flex-1 min-w-0 flex flex-col">
                         <main className="flex-1 pb-16 md:pb-0">{children}</main>
