@@ -18,7 +18,7 @@ export interface EmailNotificationPayload {
     senderName?: string;
     coinsAmount?: number;
     fanMessage?: string;
-    payoutMethod?: "UPI" | "BANK_TRANSFER" | "PAYPAL";
+    payoutMethod?: "UPI" | "BANK" | "BANK_TRANSFER" | "PAYPAL" | "STRIPE";
     accountDetails?: string;
     transactionId?: string;
     coverUrl?: string;
