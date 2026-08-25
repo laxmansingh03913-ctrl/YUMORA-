@@ -9,6 +9,7 @@ import { Navbar } from "@/components/layout/Navbar";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { Footer } from "@/components/layout/Footer";
 import { MobileNav } from "@/components/layout/MobileNav";
+import { RealtimeSyncProvider } from "@/lib/supabase/realtime";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -127,17 +128,19 @@ export default function RootLayout({
           <AuthProvider>
             <ReaderProvider>
               <SidebarProvider>
-                <div className="flex flex-col min-h-screen">
-                  <Navbar />
-                  <div className="flex flex-1 min-h-[calc(100vh-64px)] w-full">
-                    <Sidebar />
-                    <div className="flex-1 min-w-0 flex flex-col">
-                      <main className="flex-1 pb-16 md:pb-0">{children}</main>
-                      <Footer />
+                <RealtimeSyncProvider>
+                  <div className="flex flex-col min-h-screen">
+                    <Navbar />
+                    <div className="flex-1 min-h-[calc(100vh-64px)] w-full">
+                      <Sidebar />
+                      <div className="flex-1 min-w-0 flex flex-col">
+                        <main className="flex-1 pb-16 md:pb-0">{children}</main>
+                        <Footer />
+                      </div>
                     </div>
+                    <MobileNav />
                   </div>
-                  <MobileNav />
-                </div>
+                </RealtimeSyncProvider>
               </SidebarProvider>
             </ReaderProvider>
           </AuthProvider>

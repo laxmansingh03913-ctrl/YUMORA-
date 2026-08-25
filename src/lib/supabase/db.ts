@@ -322,12 +322,41 @@ export const dbService = {
         .from("profiles")
         .select("*")
         .eq("id", userId)
-        .single();
+        .maybeSingle();
 
       if (error) return null;
       return data as unknown as UserProfile;
     } catch {
       return null;
+    }
+  },
+
+  async getProfileByUsername(username: string): Promise<UserProfile | null> {
+    try {
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("*")
+        .ilike("username", username.trim())
+        .maybeSingle();
+
+      if (error || !data) return null;
+      return data as unknown as UserProfile;
+    } catch {
+      return null;
+    }
+  },
+
+  async getAllProfiles(): Promise<UserProfile[]> {
+    try {
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("*")
+        .order("created_at", { ascending: false });
+
+      if (error || !data) return [];
+      return data as unknown as UserProfile[];
+    } catch {
+      return [];
     }
   },
 
@@ -337,6 +366,41 @@ export const dbService = {
         .from("profiles")
         .update(updates)
         .eq("id", userId);
+
+      return !error;
+    } catch {
+      return false;
+    }
+  },
+
+  async upsertProfile(profile: Partial<UserProfile>): Promise<boolean> {
+    try {
+      if (!profile.id) return false;
+      const { error } = await supabase
+        .from("profiles")
+        .upsert(
+          [
+            {
+              id: profile.id,
+              username: profile.username || `user_${profile.id.slice(0, 6)}`,
+              name: profile.name || "Creator",
+              email: profile.email || "",
+              role: profile.role || "CREATOR",
+              avatar: profile.avatar,
+              banner: profile.banner,
+              bio: profile.bio || "Storyteller on Yomika.",
+              country: profile.country || "Global",
+              is_verified: profile.isVerified || false,
+              is_creator_profile_complete: profile.isCreatorProfileComplete || false,
+              monetization_tier: profile.monetizationTier || "NONE",
+              monetization_status: profile.monetizationStatus || "NOT_APPLIED",
+              followers_count: profile.followersCount || 0,
+              following_count: profile.followingCount || 0,
+              total_reads: profile.totalReads || 0,
+            },
+          ],
+          { onConflict: "id" }
+        );
 
       return !error;
     } catch {

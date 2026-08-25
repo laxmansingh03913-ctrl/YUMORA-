@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { UserProfile, Role } from "../lib/types";
 import { dataStore } from "../lib/data/store";
 import { supabase } from "../lib/supabase/client";
+import { dbService } from "../lib/supabase/db";
 import { getAuthCallbackUrl } from "../lib/auth-config";
 
 interface AuthContextType {
@@ -93,6 +94,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         createdAt: new Date().toISOString(),
       };
       dataStore.updateUserProfile(profile.id, profile);
+      dbService.upsertProfile(profile).catch(() => {});
     }
     return profile;
   }, []);
@@ -438,6 +440,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (!user) return;
     const newProfile = dataStore.updateUserProfile(user.id, updated);
     saveUser(newProfile);
+    dbService.upsertProfile(newProfile).catch(() => {});
   };
 
   return (

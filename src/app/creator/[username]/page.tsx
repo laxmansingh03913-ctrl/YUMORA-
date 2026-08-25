@@ -49,6 +49,7 @@ import { NotificationPreferences, UserProfile, Novel, Comic, Comment } from "@/l
 import { compressImageToWebP, validateImageFile } from "@/lib/image-processing";
 import { TipCreatorModal } from "@/components/ui/TipCreatorModal";
 import { CoinShopModal } from "@/components/ui/CoinShopModal";
+import { dbService } from "@/lib/supabase/db";
 
 const ALL_GENRES = [
   "Fantasy",
@@ -70,8 +71,8 @@ export default function CreatorProfilePage({ params }: CreatorProfileProps) {
   const username = resolvedParams.username;
   const { user, isAuthenticated, openAuthModal, updateProfile } = useAuth();
 
-  // Find creator from dataStore or fallback to authenticated user if browsing own profile
-  const creator = useMemo(() => {
+  // Find creator from dataStore or fallback to authenticated user
+  const [asyncCreator, setAsyncCreator] = useState<UserProfile | null>(() => {
     const fromStore = dataStore.getUserByUsername(username) || dataStore.getUserById(username);
     if (fromStore) return fromStore;
     if (
@@ -82,7 +83,61 @@ export default function CreatorProfilePage({ params }: CreatorProfileProps) {
       return user;
     }
     return null;
+  });
+
+  const [isLoadingProfile, setIsLoadingProfile] = useState<boolean>(!asyncCreator);
+
+  // Sync / Fetch profile from Supabase Database if not found locally
+  useEffect(() => {
+    let isMounted = true;
+
+    const fetchCreatorProfile = async () => {
+      // 1. Check if already in local store
+      const local = dataStore.getUserByUsername(username) || dataStore.getUserById(username);
+      if (local) {
+        if (isMounted) {
+          setAsyncCreator(local);
+          setIsLoadingProfile(false);
+        }
+        return;
+      }
+
+      // 2. Check current authenticated user
+      if (
+        user &&
+        (user.username.toLowerCase() === username.toLowerCase() ||
+          user.id === username)
+      ) {
+        if (isMounted) {
+          setAsyncCreator(user);
+          setIsLoadingProfile(false);
+        }
+        return;
+      }
+
+      // 3. Query Supabase profiles table directly across all accounts / browsers
+      try {
+        const cloud = await dbService.getProfileByUsername(username);
+        if (cloud && isMounted) {
+          dataStore.updateUserProfile(cloud.id, cloud);
+          setAsyncCreator(cloud);
+        }
+      } catch (e) {
+        console.warn("Supabase fetch profile error:", e);
+      } finally {
+        if (isMounted) {
+          setIsLoadingProfile(false);
+        }
+      }
+    };
+
+    fetchCreatorProfile();
+    return () => {
+      isMounted = false;
+    };
   }, [username, user]);
+
+  const creator = asyncCreator;
 
   // Self check
   const isSelf = Boolean(user && creator && (user.id === creator.id || user.username.toLowerCase() === creator.username.toLowerCase()));
@@ -166,6 +221,20 @@ export default function CreatorProfilePage({ params }: CreatorProfileProps) {
     return displayName.slice(0, 2).toUpperCase() || "CR";
   }, [creator?.name]);
 
+  if (isLoadingProfile && !creator) {
+    return (
+      <div className="min-h-[70vh] flex flex-col items-center justify-center p-6 text-center space-y-4 max-w-md mx-auto animate-pulse">
+        <div className="w-16 h-16 rounded-3xl bg-zinc-200 dark:bg-zinc-800 flex items-center justify-center">
+          <Loader2 className="w-8 h-8 text-[#D91E18] animate-spin" />
+        </div>
+        <div className="space-y-1">
+          <p className="text-sm font-bold text-zinc-600 dark:text-zinc-400">Loading creator profile...</p>
+          <p className="text-xs text-zinc-400 font-mono">@{username}</p>
+        </div>
+      </div>
+    );
+  }
+
   if (!creator) {
     return (
       <div className="min-h-[70vh] flex flex-col items-center justify-center p-6 text-center space-y-4 max-w-md mx-auto">
@@ -177,21 +246,21 @@ export default function CreatorProfilePage({ params }: CreatorProfileProps) {
             Creator Profile Not Found
           </h2>
           <p className="text-xs text-zinc-500">
-            The profile for <span className="font-mono text-rose-500">@{username}</span> does not exist or has been renamed.
+            The profile for <span className="font-mono text-rose-500">@{username}</span> does not exist or has not been published yet.
           </p>
         </div>
-        <div className="pt-2 flex gap-3">
+        <div className="pt-2 flex flex-wrap justify-center gap-3">
+          <button
+            onClick={() => openAuthModal("signup", `/creator/${username}`)}
+            className="px-5 py-2.5 rounded-xl bg-[#D91E18] hover:bg-[#B71813] text-white font-bold text-xs shadow-md transition cursor-pointer"
+          >
+            Claim @{username} or Sign In
+          </button>
           <Link
             href="/discover"
-            className="px-5 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs shadow-md transition"
-          >
-            Discover Stories
-          </Link>
-          <Link
-            href="/"
             className="px-5 py-2.5 rounded-xl bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 font-bold text-xs transition"
           >
-            Go Home
+            Discover Stories
           </Link>
         </div>
       </div>
