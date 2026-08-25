@@ -36,14 +36,19 @@ import {
   Camera,
   Upload,
   Loader2,
+  MessageSquare,
+  Send,
+  Coins,
 } from "lucide-react";
 import { dataStore } from "@/lib/data/store";
 import { useAuth } from "@/context/AuthContext";
 import { NovelCard } from "@/components/ui/NovelCard";
 import { ComicCard } from "@/components/ui/ComicCard";
 import { formatNumber, formatDate } from "@/lib/utils";
-import { NotificationPreferences, UserProfile, Novel, Comic } from "@/lib/types";
+import { NotificationPreferences, UserProfile, Novel, Comic, Comment } from "@/lib/types";
 import { compressImageToWebP, validateImageFile } from "@/lib/image-processing";
+import { TipCreatorModal } from "@/components/ui/TipCreatorModal";
+import { CoinShopModal } from "@/components/ui/CoinShopModal";
 
 const ALL_GENRES = [
   "Fantasy",
@@ -67,7 +72,7 @@ export default function CreatorProfilePage({ params }: CreatorProfileProps) {
 
   // Find creator from dataStore or fallback to authenticated user if browsing own profile
   const creator = useMemo(() => {
-    const fromStore = dataStore.getUserByUsername(username);
+    const fromStore = dataStore.getUserByUsername(username) || dataStore.getUserById(username);
     if (fromStore) return fromStore;
     if (
       user &&
@@ -101,8 +106,12 @@ export default function CreatorProfilePage({ params }: CreatorProfileProps) {
   const [editTwitter, setEditTwitter] = useState(creator?.twitter || "");
   const [editGenres, setEditGenres] = useState<string[]>(creator?.primaryGenres || ["Fantasy", "Sci-Fi"]);
 
-  // Tabs: all, novels, webtoons, comics, about
-  const [activeTab, setActiveTab] = useState<"all" | "novels" | "webtoons" | "comics" | "about">("all");
+  // Tabs: all, novels, webtoons, comics, about, feedback
+  const [activeTab, setActiveTab] = useState<"all" | "novels" | "webtoons" | "comics" | "about" | "feedback">("all");
+  const [creatorFeedback, setCreatorFeedback] = useState<Comment[]>(() => (creator ? dataStore.getComments(creator.id) : []));
+  const [newFeedbackText, setNewFeedbackText] = useState("");
+  const [isTipModalOpen, setIsTipModalOpen] = useState(false);
+  const [isCoinShopOpen, setIsCoinShopOpen] = useState(false);
 
   // Followers & Following Modal
   const [listModalType, setListModalType] = useState<"followers" | "following" | null>(null);
@@ -374,6 +383,37 @@ export default function CreatorProfilePage({ params }: CreatorProfileProps) {
     showToast("✓ Public profile updated successfully!");
   };
 
+  const handleAddCreatorFeedback = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newFeedbackText.trim()) return;
+    if (!user) {
+      openAuthModal("signup", `/creator/${username}`);
+      return;
+    }
+    if (!creator) return;
+
+    const newComment: Comment = {
+      id: `feedb-${Date.now()}`,
+      userId: user.id,
+      user: {
+        name: user.name,
+        username: user.username,
+        avatar: user.avatar,
+        isVerified: user.isVerified,
+      },
+      contentId: creator.id,
+      contentType: "COMMUNITY_POST",
+      text: newFeedbackText.trim(),
+      likes: 0,
+      createdAt: new Date().toISOString(),
+    };
+
+    dataStore.addComment(newComment);
+    setCreatorFeedback((prev) => [newComment, ...prev]);
+    setNewFeedbackText("");
+    showToast("✓ Message posted to creator's guestbook!");
+  };
+
   // Filtered List for Modal Search
   const activeList = listModalType === "followers" ? followersList : followingList;
   const filteredList = activeList.filter((u) => {
@@ -395,7 +435,7 @@ export default function CreatorProfilePage({ params }: CreatorProfileProps) {
 
       {/* 1. CREATOR HERO BANNER */}
       <div className="relative">
-        <div className="h-48 sm:h-64 md:h-80 w-full bg-gradient-to-r from-rose-950 via-zinc-900 to-indigo-950 overflow-hidden relative">
+        <div className="h-44 sm:h-56 md:h-64 w-full bg-gradient-to-r from-rose-950 via-zinc-900 to-indigo-950 overflow-hidden relative">
           <img
             src={
               creator.banner ||
@@ -404,16 +444,16 @@ export default function CreatorProfilePage({ params }: CreatorProfileProps) {
             alt={creator.name}
             className="w-full h-full object-cover opacity-60 mix-blend-overlay"
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/40 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-t from-zinc-950/80 via-zinc-950/20 to-transparent" />
         </div>
 
-        {/* Profile Info Overlay Container */}
+        {/* Profile Info Container */}
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="relative -mt-16 sm:-mt-20 md:-mt-24 flex flex-col sm:flex-row items-start sm:items-end justify-between gap-6 pb-6 border-b border-zinc-200 dark:border-zinc-800">
-            {/* Avatar & Identifiers */}
-            <div className="flex flex-col sm:flex-row items-start sm:items-end gap-4 sm:gap-5">
-              <div className="relative group">
-                <div className="w-24 h-24 sm:w-32 sm:h-32 md:w-36 md:h-36 rounded-3xl overflow-hidden ring-4 ring-white dark:ring-zinc-950 shadow-2xl bg-gradient-to-br from-rose-600 via-rose-500 to-indigo-600 flex items-center justify-center text-white font-black text-3xl sm:text-4xl flex-shrink-0 relative">
+          <div className="relative flex flex-col md:flex-row md:items-end justify-between gap-6 pb-6 border-b border-[#EAEAE5] dark:border-zinc-800">
+            {/* Left: Floating Avatar + Name & Details (Safely on body canvas) */}
+            <div className="flex flex-col sm:flex-row items-start sm:items-end gap-4 sm:gap-6">
+              <div className="-mt-14 sm:-mt-18 md:-mt-20 relative group flex-shrink-0 z-10">
+                <div className="w-28 h-28 sm:w-32 sm:h-32 md:w-36 md:h-36 rounded-3xl overflow-hidden ring-4 ring-white dark:ring-[#121214] shadow-2xl bg-gradient-to-br from-rose-600 via-rose-500 to-indigo-600 flex items-center justify-center text-white font-black text-3xl sm:text-4xl flex-shrink-0 relative">
                   {creator.avatar && !avatarError ? (
                     <img
                       src={creator.avatar}
@@ -459,38 +499,39 @@ export default function CreatorProfilePage({ params }: CreatorProfileProps) {
 
                 {creator.isVerified && (
                   <div
-                    className="absolute -bottom-1.5 -right-1.5 p-1.5 rounded-full bg-zinc-950 ring-2 ring-zinc-900 shadow-md z-10"
+                    className="absolute -bottom-1 -right-1 p-1.5 rounded-full bg-zinc-950 ring-2 ring-white dark:ring-zinc-900 shadow-md z-10"
                     title="Verified Creator"
                   >
-                    <CheckCircle2 className="w-5 h-5 text-rose-500 fill-rose-500/20" />
+                    <CheckCircle2 className="w-4 h-4 text-rose-500 fill-rose-500/20" />
                   </div>
                 )}
               </div>
 
-              <div className="space-y-1.5 min-w-0">
-                <div className="flex flex-wrap items-center gap-2">
-                  <h1 className="text-2xl sm:text-3xl md:text-4xl font-black text-zinc-900 dark:text-zinc-100 tracking-tight">
+              {/* Text Information */}
+              <div className="space-y-1.5 min-w-0 pt-1 sm:pt-2">
+                <div className="flex flex-wrap items-center gap-2.5">
+                  <h1 className="text-2xl sm:text-3xl md:text-4xl font-black text-[#111111] dark:text-white tracking-tight">
                     {creator.name}
                   </h1>
                   <span
                     className={`px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wide ${
                       creator.role === "ADMIN"
                         ? "bg-amber-500/10 text-amber-500 border border-amber-500/30"
-                        : "bg-rose-500/10 text-rose-500 border border-rose-500/30"
+                        : "bg-[#D91E18]/10 text-[#D91E18] border border-[#D91E18]/30"
                     }`}
                   >
                     {creator.role === "ADMIN" ? "Official Team" : "Verified Creator"}
                   </span>
                 </div>
 
-                <div className="flex flex-wrap items-center gap-3 text-xs text-zinc-500 dark:text-zinc-400 font-medium">
-                  <span className="font-semibold text-zinc-700 dark:text-zinc-300">
+                <div className="flex flex-wrap items-center gap-3 text-xs text-[#555555] dark:text-zinc-400 font-medium">
+                  <span className="font-bold text-[#111111] dark:text-zinc-200">
                     @{creator.username}
                   </span>
 
                   {creator.country && (
                     <span className="flex items-center gap-1">
-                      <MapPin className="w-3.5 h-3.5 text-rose-500" />
+                      <MapPin className="w-3.5 h-3.5 text-[#D91E18]" />
                       <span>{creator.country}</span>
                     </span>
                   )}
@@ -504,20 +545,20 @@ export default function CreatorProfilePage({ params }: CreatorProfileProps) {
             </div>
 
             {/* Action Buttons: Follow / Edit / Share */}
-            <div className="flex flex-wrap items-center gap-2.5 w-full sm:w-auto relative">
+            <div className="flex flex-wrap items-center gap-2.5 pt-2 md:pt-0">
               {isSelf ? (
                 <>
                   <button
                     onClick={() => setIsEditModalOpen(true)}
-                    className="px-4 py-2.5 rounded-xl bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-900 dark:text-zinc-100 font-bold text-xs transition flex items-center gap-1.5 shadow-xs"
+                    className="px-4 py-2.5 rounded-xl bg-white dark:bg-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-700 border border-[#EAEAE5] dark:border-zinc-700 text-zinc-900 dark:text-zinc-100 font-bold text-xs transition flex items-center gap-1.5 shadow-2xs"
                   >
-                    <Edit3 className="w-3.5 h-3.5 text-rose-500" />
+                    <Edit3 className="w-3.5 h-3.5 text-[#D91E18]" />
                     <span>Edit Profile</span>
                   </button>
 
                   <Link
                     href="/creator"
-                    className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-rose-600 to-indigo-600 hover:from-rose-500 hover:to-indigo-500 text-white font-bold text-xs shadow-md shadow-rose-600/20 transition flex items-center gap-1.5"
+                    className="px-4 py-2.5 rounded-xl bg-[#D91E18] hover:bg-[#B71813] text-white font-bold text-xs shadow-md transition flex items-center gap-1.5"
                   >
                     <PenTool className="w-3.5 h-3.5" />
                     <span>Studio Dashboard</span>
@@ -532,7 +573,7 @@ export default function CreatorProfilePage({ params }: CreatorProfileProps) {
                     className={`flex-1 sm:flex-none px-6 py-2.5 rounded-xl font-bold text-xs shadow-md transition flex items-center justify-center gap-1.5 ${
                       isFollowing
                         ? "bg-zinc-800 text-zinc-200 border border-zinc-700 hover:bg-zinc-700"
-                        : "bg-gradient-to-r from-rose-600 to-indigo-600 hover:from-rose-500 hover:to-indigo-500 text-white shadow-rose-600/20 transform hover:scale-[1.02] active:scale-[0.98]"
+                        : "bg-[#D91E18] hover:bg-[#B71813] text-white shadow-rose-600/20 transform hover:scale-[1.02] active:scale-[0.98]"
                     }`}
                   >
                     {isFollowing ? (
@@ -591,13 +632,24 @@ export default function CreatorProfilePage({ params }: CreatorProfileProps) {
                       )}
                     </div>
                   )}
+                  {/* Tip Creator Button */}
+                  {!isSelf && (
+                    <button
+                      onClick={() => setIsTipModalOpen(true)}
+                      className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 via-amber-600 to-rose-600 hover:opacity-95 text-white font-black text-xs shadow-md shadow-amber-500/20 transition transform hover:scale-[1.02] active:scale-[0.98] flex items-center gap-1.5 cursor-pointer"
+                      title={`Send Coins Tip to ${creator.name}`}
+                    >
+                      <Coins className="w-3.5 h-3.5" />
+                      <span>Tip Creator</span>
+                    </button>
+                  )}
                 </div>
               )}
 
               {/* Share Profile Button */}
               <button
                 onClick={handleShareProfile}
-                className="p-2.5 rounded-xl bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-300 hover:text-rose-500 hover:border-zinc-300 dark:hover:border-zinc-700 transition shadow-xs"
+                className="p-2.5 rounded-xl bg-white dark:bg-zinc-900 border border-[#EAEAE5] dark:border-zinc-800 text-zinc-600 dark:text-zinc-300 hover:text-[#D91E18] hover:border-zinc-300 dark:hover:border-zinc-700 transition shadow-2xs"
                 title="Share Profile Link"
               >
                 <Share2 className="w-4 h-4" />
@@ -609,7 +661,7 @@ export default function CreatorProfilePage({ params }: CreatorProfileProps) {
                   href={creator.website.startsWith("http") ? creator.website : `https://${creator.website}`}
                   target="_blank"
                   rel="noreferrer"
-                  className="p-2.5 rounded-xl bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-300 hover:text-rose-500 transition shadow-xs"
+                  className="p-2.5 rounded-xl bg-white dark:bg-zinc-900 border border-[#EAEAE5] dark:border-zinc-800 text-zinc-600 dark:text-zinc-300 hover:text-[#D91E18] transition shadow-2xs"
                   title="Official Website"
                 >
                   <Globe className="w-4 h-4" />
@@ -621,7 +673,7 @@ export default function CreatorProfilePage({ params }: CreatorProfileProps) {
                   href={`https://twitter.com/${creator.twitter.replace("@", "")}`}
                   target="_blank"
                   rel="noreferrer"
-                  className="p-2.5 rounded-xl bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-300 hover:text-rose-500 transition shadow-xs flex items-center justify-center"
+                  className="p-2.5 rounded-xl bg-white dark:bg-zinc-900 border border-[#EAEAE5] dark:border-zinc-800 text-zinc-600 dark:text-zinc-300 hover:text-[#D91E18] transition shadow-2xs flex items-center justify-center"
                   title="Twitter / X"
                 >
                   <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24">
@@ -635,19 +687,19 @@ export default function CreatorProfilePage({ params }: CreatorProfileProps) {
           {/* Creator Bio Snippet */}
           {creator.bio && (
             <div className="pt-4 max-w-3xl">
-              <p className="text-xs sm:text-sm text-zinc-600 dark:text-zinc-300 leading-relaxed whitespace-pre-line">
+              <p className="text-xs sm:text-sm text-[#444444] dark:text-zinc-300 leading-relaxed whitespace-pre-line font-medium">
                 {creator.bio}
               </p>
             </div>
           )}
 
           {/* 2. CREATOR PUBLIC STATISTICS STRIP */}
-          <div className="mt-6 p-4 rounded-2xl bg-white dark:bg-zinc-900/70 border border-zinc-200 dark:border-zinc-800 grid grid-cols-2 sm:grid-cols-4 gap-4 text-center shadow-xs">
+          <div className="mt-6 p-4 rounded-2xl bg-white dark:bg-zinc-900 border border-[#EAEAE5] dark:border-zinc-800 grid grid-cols-2 sm:grid-cols-4 gap-4 text-center shadow-2xs">
             <div className="space-y-0.5">
-              <p className="text-lg sm:text-xl font-black text-zinc-900 dark:text-zinc-100">
+              <p className="text-xl sm:text-2xl font-black text-[#111111] dark:text-white">
                 {formatNumber(totalPublicReads)}
               </p>
-              <p className="text-[11px] font-semibold text-zinc-400 uppercase tracking-wide">
+              <p className="text-[11px] font-bold text-zinc-400 uppercase tracking-wide">
                 Total Reads
               </p>
             </div>
@@ -657,31 +709,31 @@ export default function CreatorProfilePage({ params }: CreatorProfileProps) {
                 setListModalType("followers");
                 setListSearchQuery("");
               }}
-              className="space-y-0.5 p-1 rounded-xl hover:bg-zinc-100 dark:hover:bg-zinc-800 transition cursor-pointer"
+              className="space-y-0.5 p-1 rounded-xl hover:bg-zinc-50 dark:hover:bg-zinc-800 transition cursor-pointer"
             >
-              <p className="text-lg sm:text-xl font-black text-indigo-500 dark:text-indigo-400">
+              <p className="text-xl sm:text-2xl font-black text-indigo-600 dark:text-indigo-400">
                 {formatNumber(followersCount)}
               </p>
-              <p className="text-[11px] font-semibold text-zinc-400 uppercase tracking-wide flex items-center justify-center gap-1">
+              <p className="text-[11px] font-bold text-zinc-400 uppercase tracking-wide flex items-center justify-center gap-1">
                 <span>Followers</span>
                 <span className="text-[9px] text-zinc-500">↗</span>
               </p>
             </button>
 
             <div className="space-y-0.5">
-              <p className="text-lg sm:text-xl font-black text-zinc-900 dark:text-zinc-100">
+              <p className="text-xl sm:text-2xl font-black text-[#111111] dark:text-white">
                 {totalWorks}
               </p>
-              <p className="text-[11px] font-semibold text-zinc-400 uppercase tracking-wide">
+              <p className="text-[11px] font-bold text-zinc-400 uppercase tracking-wide">
                 Published Works
               </p>
             </div>
 
             <div className="space-y-0.5">
-              <p className="text-lg sm:text-xl font-black text-rose-500">
+              <p className="text-xl sm:text-2xl font-black text-[#D91E18]">
                 {formatNumber(totalPublicLikes)}
               </p>
-              <p className="text-[11px] font-semibold text-zinc-400 uppercase tracking-wide">
+              <p className="text-[11px] font-bold text-zinc-400 uppercase tracking-wide">
                 Story Likes
               </p>
             </div>
@@ -699,6 +751,7 @@ export default function CreatorProfilePage({ params }: CreatorProfileProps) {
             { id: "webtoons", label: `Webtoons (${webtoonsList.length})`, icon: Sparkles },
             { id: "comics", label: `Comics (${westernComicsList.length})`, icon: ImageIcon },
             { id: "about", label: "About Storyteller", icon: Info },
+            { id: "feedback", label: `Guestbook & Feedback (${creatorFeedback.length})`, icon: MessageSquare },
           ].map((tab) => {
             const Icon = tab.icon;
             return (
@@ -896,6 +949,90 @@ export default function CreatorProfilePage({ params }: CreatorProfileProps) {
                     ))}
                   </div>
                 </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* TAB 6: GUESTBOOK & READER FEEDBACK */}
+        {activeTab === "feedback" && (
+          <div className="space-y-6">
+            {/* Post message to creator */}
+            <form
+              onSubmit={handleAddCreatorFeedback}
+              className="p-5 rounded-3xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 space-y-3 shadow-xs"
+            >
+              <h4 className="font-bold text-xs sm:text-sm text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
+                <MessageSquare className="w-4 h-4 text-rose-500" />
+                <span>Leave a Message or Review for {creator.name}</span>
+              </h4>
+              <p className="text-xs text-zinc-500">
+                Share your appreciation, review their stories, or ask questions about upcoming releases.
+              </p>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  required
+                  value={newFeedbackText}
+                  onChange={(e) => setNewFeedbackText(e.target.value)}
+                  placeholder={`Write a public message to @${creator.username}...`}
+                  className="flex-1 px-4 py-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 text-xs sm:text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:border-rose-500"
+                />
+                <button
+                  type="submit"
+                  className="px-5 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs shadow-md transition flex items-center gap-1.5 cursor-pointer"
+                >
+                  <Send className="w-3.5 h-3.5" />
+                  <span>Send</span>
+                </button>
+              </div>
+            </form>
+
+            {/* Feedback List */}
+            <div className="space-y-3">
+              {creatorFeedback.length === 0 ? (
+                <div className="p-12 text-center rounded-3xl bg-zinc-50 dark:bg-zinc-900/40 border border-zinc-200 dark:border-zinc-800 space-y-2">
+                  <MessageSquare className="w-8 h-8 text-zinc-400 mx-auto" />
+                  <p className="text-xs font-bold text-zinc-700 dark:text-zinc-300">
+                    No messages yet on {creator.name}&apos;s profile.
+                  </p>
+                  <p className="text-xs text-zinc-500">
+                    Be the first reader to write a note or review!
+                  </p>
+                </div>
+              ) : (
+                creatorFeedback.map((fb) => (
+                  <div
+                    key={fb.id}
+                    className="p-4 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 space-y-2"
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2.5">
+                        <img
+                          src={fb.user.avatar}
+                          alt={fb.user.name}
+                          className="w-8 h-8 rounded-full object-cover ring-1 ring-zinc-200 dark:ring-zinc-700"
+                        />
+                        <div>
+                          <div className="flex items-center gap-1">
+                            <span className="font-bold text-xs text-zinc-900 dark:text-zinc-100">
+                              {fb.user.name}
+                            </span>
+                            {fb.user.isVerified && (
+                              <CheckCircle2 className="w-3.5 h-3.5 text-rose-500" />
+                            )}
+                          </div>
+                          <span className="text-[10px] text-zinc-400">
+                            {formatDate(fb.createdAt)}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                    <p className="text-xs text-zinc-600 dark:text-zinc-300 leading-relaxed pl-10">
+                      {fb.text}
+                    </p>
+                  </div>
+                ))
               )}
             </div>
           </div>
@@ -1294,6 +1431,22 @@ export default function CreatorProfilePage({ params }: CreatorProfileProps) {
           </div>
         </div>
       )}
+
+      {/* Tip Creator Modal */}
+      {creator && (
+        <TipCreatorModal
+          isOpen={isTipModalOpen}
+          onClose={() => setIsTipModalOpen(false)}
+          creator={creator}
+          onOpenCoinShop={() => setIsCoinShopOpen(true)}
+        />
+      )}
+
+      {/* Coin Shop Modal */}
+      <CoinShopModal
+        isOpen={isCoinShopOpen}
+        onClose={() => setIsCoinShopOpen(false)}
+      />
     </div>
   );
 }

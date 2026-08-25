@@ -54,6 +54,11 @@ import {
   CheckCheck,
   Maximize2,
   Type,
+  Mic,
+  Play,
+  Pause,
+  Radio,
+  Volume2,
 } from "lucide-react";
 import { dataStore } from "@/lib/data/store";
 import { useAuth } from "@/context/AuthContext";
@@ -173,12 +178,74 @@ export default function CreatorUploadWizardPage() {
   const [pageCompressionMessage, setPageCompressionMessage] = useState<string | null>(null);
   const [pagesError, setPagesError] = useState<string | null>(null);
   const [processedFileName, setProcessedFileName] = useState<string | null>(null);
-  const [pages, setPages] = useState<{ id: string; name: string; url: string; size?: string }[]>([]);
+  const [pages, setPages] = useState<
+    {
+      id: string;
+      name: string;
+      url: string;
+      size?: string;
+      dialogueLines?: { speaker: string; role: "HERO" | "HEROINE" | "VILLAIN" | "NARRATOR"; text: string }[];
+    }[]
+  >([]);
+  const [panelViewMode, setPanelViewMode] = useState<"grid" | "list">("grid");
+  const [isDraggingOver, setIsDraggingOver] = useState(false);
+  const [activeVoicePageIdx, setActiveVoicePageIdx] = useState<number | null>(null);
 
   // Novel Markdown Manuscript Studio State
   const [chapterNumber, setChapterNumber] = useState(1);
-  const [chapterTitle, setChapterTitle] = useState("");
+  const [chapterTitle, setChapterTitle] = useState("Chapter 1");
   const [chapterContent, setChapterContent] = useState("");
+  const [novelChaptersMap, setNovelChaptersMap] = useState<
+    Record<number, { title: string; content: string }>
+  >({
+    1: { title: "Chapter 1", content: "" },
+  });
+
+  // Switch between chapters cleanly - saves current and opens blank or existing chapter
+  const switchChapter = (newNum: number) => {
+    if (newNum < 1) return;
+    // 1. Save current chapter
+    const updatedMap = {
+      ...novelChaptersMap,
+      [chapterNumber]: {
+        title: chapterTitle || `Chapter ${chapterNumber}`,
+        content: chapterContent,
+      },
+    };
+    setNovelChaptersMap(updatedMap);
+
+    // 2. Load target chapter (or blank if new)
+    const target = updatedMap[newNum] || {
+      title: `Chapter ${newNum}`,
+      content: "",
+    };
+
+    setChapterNumber(newNum);
+    setChapterTitle(target.title || `Chapter ${newNum}`);
+    setChapterContent(target.content || "");
+  };
+
+  const handleContentChange = (newContent: string) => {
+    setChapterContent(newContent);
+    setNovelChaptersMap((prev) => ({
+      ...prev,
+      [chapterNumber]: {
+        title: chapterTitle || `Chapter ${chapterNumber}`,
+        content: newContent,
+      },
+    }));
+  };
+
+  const handleTitleChange = (newTitle: string) => {
+    setChapterTitle(newTitle);
+    setNovelChaptersMap((prev) => ({
+      ...prev,
+      [chapterNumber]: {
+        title: newTitle,
+        content: chapterContent,
+      },
+    }));
+  };
 
   // Handler for selecting an existing series to add a chapter to
   const handleSelectExistingSeries = (seriesId: string, type: "NOVEL" | "COMIC") => {
@@ -344,6 +411,51 @@ export default function CreatorUploadWizardPage() {
     }, 1200);
   };
 
+  // Comic Page Reordering & Batch Management Helpers
+  const movePageUp = (idx: number) => {
+    if (idx <= 0) return;
+    setPages((prev) => {
+      const arr = [...prev];
+      const temp = arr[idx];
+      arr[idx] = arr[idx - 1];
+      arr[idx - 1] = temp;
+      return arr;
+    });
+  };
+
+  const movePageDown = (idx: number) => {
+    setPages((prev) => {
+      if (idx >= prev.length - 1) return prev;
+      const arr = [...prev];
+      const temp = arr[idx];
+      arr[idx] = arr[idx + 1];
+      arr[idx + 1] = temp;
+      return arr;
+    });
+  };
+
+  const removePage = (idx: number) => {
+    setPages((prev) => prev.filter((_, i) => i !== idx));
+  };
+
+  const sortPagesByName = () => {
+    setPages((prev) =>
+      [...prev].sort((a, b) =>
+        a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: "base" })
+      )
+    );
+  };
+
+  const reversePages = () => {
+    setPages((prev) => [...prev].reverse());
+  };
+
+  const clearAllPages = () => {
+    if (confirm("Are you sure you want to remove all uploaded comic pages?")) {
+      setPages([]);
+    }
+  };
+
   // Markdown Formatting Toolbar Helpers
   const insertMarkdown = (before: string, after: string = "", placeholder: string = "text") => {
     const textarea = markdownTextareaRef.current;
@@ -483,29 +595,6 @@ export default function CreatorUploadWizardPage() {
       }
       return part;
     });
-  };
-
-  // Move Page Up / Down
-  const movePageUp = (idx: number) => {
-    if (idx === 0) return;
-    const updated = [...pages];
-    const temp = updated[idx];
-    updated[idx] = updated[idx - 1];
-    updated[idx - 1] = temp;
-    setPages(updated);
-  };
-
-  const movePageDown = (idx: number) => {
-    if (idx === pages.length - 1) return;
-    const updated = [...pages];
-    const temp = updated[idx];
-    updated[idx] = updated[idx + 1];
-    updated[idx + 1] = temp;
-    setPages(updated);
-  };
-
-  const removePage = (idx: number) => {
-    setPages((prev) => prev.filter((_, i) => i !== idx));
   };
 
   // Save Draft to localStorage
@@ -732,6 +821,33 @@ export default function CreatorUploadWizardPage() {
 
           // Also sync with local fast cache
           dataStore.saveComic(newComic);
+
+          // Automatically persist custom creator voice script for this episode
+          const voiceScript = pages.flatMap((p, pIdx) =>
+            (p.dialogueLines || []).map((d) => ({
+              panelIndex: pIdx,
+              speaker: d.speaker || "Character",
+              role: d.role || "HERO",
+              avatar:
+                d.role === "HEROINE"
+                  ? "🌸"
+                  : d.role === "VILLAIN"
+                  ? "👑"
+                  : d.role === "NARRATOR"
+                  ? "🎙️"
+                  : "⚡",
+              dialogue: d.text,
+              sfx: "WIND",
+            }))
+          );
+          if (voiceScript.length > 0) {
+            try {
+              localStorage.setItem(
+                `manga-dub-${slug.toLowerCase().replace(/[^a-z0-9]/g, "-")}-ep-${chapterNumber}-v3`,
+                JSON.stringify(voiceScript)
+              );
+            } catch {}
+          }
         }
       } else {
         // Pure Text Serialized Novel
@@ -755,7 +871,35 @@ export default function CreatorUploadWizardPage() {
         } else {
           setCloudPublishStatus("Saving novel manuscript to Supabase Cloud Database...");
           const novelId = `novel-${Date.now()}`;
-          const chapterId = `ch-${Date.now()}-1`;
+
+          // Collect all written chapters from novelChaptersMap
+          const allSavedChapters = {
+            ...novelChaptersMap,
+            [chapterNumber]: {
+              title: chapterTitle || `Chapter ${chapterNumber}`,
+              content: chapterContent,
+            },
+          };
+
+          const chaptersToAttach: Chapter[] = Object.entries(allSavedChapters)
+            .filter(([numStr, data]) => data.content.trim().length > 0 || numStr === "1")
+            .map(([numStr, data], idx) => {
+              const num = parseInt(numStr, 10);
+              const words = data.content.trim().split(/\s+/).filter(Boolean).length;
+              return {
+                id: `ch-${novelId}-${num}-${Date.now() + idx}`,
+                novelId,
+                chapterNumber: num,
+                title: data.title || `Chapter ${num}`,
+                content: data.content,
+                status: "PUBLISHED" as const,
+                wordCount: words,
+                readTimeMinutes: Math.max(1, Math.ceil(words / 200)),
+                isFree: true,
+                publishedAt: new Date().toISOString(),
+              };
+            })
+            .sort((a, b) => a.chapterNumber - b.chapterNumber);
 
           const newNovel: Novel = {
             id: novelId,
@@ -787,28 +931,17 @@ export default function CreatorUploadWizardPage() {
             isFeatured: false,
             isEditorPick: false,
             isPremium: false,
-            chaptersCount: 1,
+            chaptersCount: chaptersToAttach.length,
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString(),
-            chapters: [
-              {
-                id: chapterId,
-                novelId,
-                chapterNumber,
-                title: chapterTitle,
-                content: chapterContent,
-                status: "PUBLISHED",
-                wordCount,
-                isFree: true,
-                readTimeMinutes: readTime,
-                publishedAt: new Date().toISOString(),
-              },
-            ],
+            chapters: chaptersToAttach,
           };
 
           // Insert into Supabase PostgreSQL Cloud DB
           await dbService.insertNovel(newNovel);
-          await dbService.insertChapter(newNovel.chapters[0], novelId);
+          for (const ch of chaptersToAttach) {
+            await dbService.insertChapter(ch, novelId);
+          }
 
           // Also sync with local fast cache
           dataStore.saveNovel(newNovel);
@@ -1606,8 +1739,9 @@ export default function CreatorUploadWizardPage() {
                     <div className="flex items-center gap-1 bg-white dark:bg-zinc-900 p-1 rounded-xl border border-zinc-200 dark:border-zinc-800">
                       <button
                         type="button"
-                        onClick={() => setChapterNumber((prev) => Math.max(1, prev - 1))}
-                        className="w-7 h-7 rounded-lg bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 font-black text-xs text-zinc-800 dark:text-zinc-200 flex items-center justify-center cursor-pointer"
+                        onClick={() => switchChapter(chapterNumber - 1)}
+                        disabled={chapterNumber <= 1}
+                        className="w-7 h-7 rounded-lg bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 disabled:opacity-30 font-black text-xs text-zinc-800 dark:text-zinc-200 flex items-center justify-center cursor-pointer"
                       >
                         -
                       </button>
@@ -1615,12 +1749,16 @@ export default function CreatorUploadWizardPage() {
                         type="number"
                         min={1}
                         value={chapterNumber}
-                        onChange={(e) => setChapterNumber(Math.max(1, parseInt(e.target.value, 10) || 1))}
+                        onChange={(e) =>
+                          switchChapter(
+                            Math.max(1, parseInt(e.target.value, 10) || 1)
+                          )
+                        }
                         className="w-full text-center bg-transparent text-xs font-black text-zinc-900 dark:text-zinc-100 focus:outline-none"
                       />
                       <button
                         type="button"
-                        onClick={() => setChapterNumber((prev) => prev + 1)}
+                        onClick={() => switchChapter(chapterNumber + 1)}
                         className="w-7 h-7 rounded-lg bg-indigo-600 hover:bg-indigo-500 font-black text-xs text-white flex items-center justify-center cursor-pointer"
                       >
                         +
@@ -1636,7 +1774,7 @@ export default function CreatorUploadWizardPage() {
                       type="text"
                       required
                       value={chapterTitle}
-                      onChange={(e) => setChapterTitle(e.target.value)}
+                      onChange={(e) => handleTitleChange(e.target.value)}
                       placeholder={`e.g. Chapter ${chapterNumber}: The Awakening`}
                       className="w-full px-4 py-2.5 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-xs sm:text-sm font-semibold text-zinc-900 dark:text-zinc-100 focus:outline-none focus:border-indigo-500"
                     />
@@ -1645,24 +1783,23 @@ export default function CreatorUploadWizardPage() {
 
                 {/* Quick Chapter Selector Pills */}
                 <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-[11px]">
-                  <span className="text-zinc-500 text-[10px] font-bold uppercase whitespace-nowrap">Quick Select Ch:</span>
+                  <span className="text-zinc-500 text-[10px] font-bold uppercase whitespace-nowrap">
+                    Quick Select Ch:
+                  </span>
                   {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((num) => (
                     <button
                       key={num}
                       type="button"
-                      onClick={() => {
-                        setChapterNumber(num);
-                        if (!chapterTitle || chapterTitle.startsWith("Chapter ")) {
-                          setChapterTitle(`Chapter ${num}`);
-                        }
-                      }}
+                      onClick={() => switchChapter(num)}
                       className={`px-2 py-0.5 rounded-md font-bold whitespace-nowrap transition cursor-pointer ${
                         chapterNumber === num
-                          ? "bg-indigo-600 text-white"
+                          ? "bg-indigo-600 text-white shadow-xs"
+                          : novelChaptersMap[num]?.content
+                          ? "bg-indigo-500/20 text-indigo-400 border border-indigo-500/30"
                           : "bg-zinc-100 dark:bg-zinc-800 text-zinc-400 hover:text-zinc-200"
                       }`}
                     >
-                      Ch {num}
+                      Ch {num} {novelChaptersMap[num]?.content ? "✓" : ""}
                     </button>
                   ))}
                 </div>
@@ -1760,7 +1897,7 @@ export default function CreatorUploadWizardPage() {
                         ref={markdownTextareaRef}
                         rows={22}
                         value={chapterContent}
-                        onChange={(e) => setChapterContent(e.target.value)}
+                        onChange={(e) => handleContentChange(e.target.value)}
                         placeholder="Write your story manuscript in Markdown..."
                         className="w-full p-6 bg-transparent text-sm sm:text-base font-mono leading-relaxed text-zinc-900 dark:text-zinc-100 focus:outline-none resize-y min-h-[480px]"
                       />
@@ -1975,7 +2112,7 @@ export default function CreatorUploadWizardPage() {
                     </div>
                   )}
 
-                  {/* Chapter Details */}
+                  {/* Chapter/Episode Details */}
                   <div className="space-y-2">
                     <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
                       <div>
@@ -2009,7 +2146,7 @@ export default function CreatorUploadWizardPage() {
 
                       <div className="sm:col-span-3">
                         <label className="block text-xs font-bold text-zinc-700 dark:text-zinc-300 mb-1">
-                          Chapter Title *
+                          Episode Title *
                         </label>
                         <input
                           type="text"
@@ -2022,9 +2159,11 @@ export default function CreatorUploadWizardPage() {
                       </div>
                     </div>
 
-                    {/* Quick Chapter Selector Pills */}
+                    {/* Quick Episode Selector Pills */}
                     <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-[11px]">
-                      <span className="text-zinc-500 text-[10px] font-bold uppercase whitespace-nowrap">Quick Select Ep:</span>
+                      <span className="text-zinc-500 text-[10px] font-bold uppercase whitespace-nowrap">
+                        Quick Select Ep:
+                      </span>
                       {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((num) => (
                         <button
                           key={num}
@@ -2107,7 +2246,7 @@ export default function CreatorUploadWizardPage() {
                     </div>
                   )}
 
-                  {/* Bulk Images Ingestion Tab */}
+                  {/* Bulk Images Ingestion Tab with Drag and Drop */}
                   {uploadTab === "images" && (
                     <div className="space-y-4">
                       <input
@@ -2121,31 +2260,57 @@ export default function CreatorUploadWizardPage() {
                         className="hidden"
                       />
 
-                      <div className="p-8 rounded-3xl border-2 border-dashed border-zinc-200 dark:border-zinc-800 text-center space-y-3">
-                        <div className="w-12 h-12 rounded-2xl bg-indigo-600/10 text-indigo-500 flex items-center justify-center mx-auto">
+                      <div
+                        onDragOver={(e) => {
+                          e.preventDefault();
+                          setIsDraggingOver(true);
+                        }}
+                        onDragLeave={(e) => {
+                          e.preventDefault();
+                          setIsDraggingOver(false);
+                        }}
+                        onDrop={(e) => {
+                          e.preventDefault();
+                          setIsDraggingOver(false);
+                          if (e.dataTransfer.files) {
+                            handleBulkImagesUpload(e.dataTransfer.files);
+                          }
+                        }}
+                        onClick={() => imagesBulkInputRef.current?.click()}
+                        className={`p-8 sm:p-10 rounded-3xl border-2 border-dashed transition text-center space-y-3 cursor-pointer ${
+                          isDraggingOver
+                            ? "border-rose-500 bg-rose-500/10 scale-[1.01]"
+                            : "border-zinc-300 dark:border-zinc-800 hover:border-indigo-500 bg-zinc-50/50 dark:bg-zinc-950/50"
+                        }`}
+                      >
+                        <div className="w-14 h-14 rounded-2xl bg-indigo-600/10 text-indigo-500 flex items-center justify-center mx-auto">
                           {isCompressingPages ? (
-                            <Loader2 className="w-6 h-6 animate-spin text-indigo-400" />
+                            <Loader2 className="w-7 h-7 animate-spin text-indigo-400" />
                           ) : (
-                            <ImageIcon className="w-6 h-6" />
+                            <Upload className="w-7 h-7" />
                           )}
                         </div>
                         <div>
-                          <h4 className="font-extrabold text-sm text-zinc-900 dark:text-zinc-100">
-                            {isCompressingPages ? "Compressing Pages to WebP..." : "Upload Individual Page Images"}
+                          <h4 className="font-extrabold text-sm sm:text-base text-zinc-900 dark:text-zinc-100">
+                            {isCompressingPages
+                              ? "Compressing Pages to WebP..."
+                              : isDraggingOver
+                              ? "Drop Comic Pages Here!"
+                              : "Drag & Drop Bulk Comic / Manga Pages"}
                           </h4>
-                          <p className="text-xs text-zinc-500 mt-0.5">
-                            {pageCompressionMessage || "Bulk select JPG, PNG, or WebP images (Max 15MB/page). Auto-compressed in browser."}
+                          <p className="text-xs text-zinc-500 mt-1 max-w-md mx-auto">
+                            {pageCompressionMessage ||
+                              "Select or drop 20+ JPG, PNG, or WebP images (Max 15MB/page). Auto-optimizes to high-speed WebP."}
                           </p>
                         </div>
 
                         <button
                           type="button"
                           disabled={isCompressingPages}
-                          onClick={() => imagesBulkInputRef.current?.click()}
-                          className="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white font-bold text-xs shadow-md transition inline-flex items-center gap-1.5"
+                          className="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white font-bold text-xs shadow-md transition inline-flex items-center gap-1.5 cursor-pointer"
                         >
                           <Plus className="w-4 h-4" />
-                          <span>+ Select Multiple Page Images</span>
+                          <span>Browse Files from Computer</span>
                         </button>
                       </div>
                     </div>
@@ -2189,7 +2354,7 @@ export default function CreatorUploadWizardPage() {
                           <button
                             type="button"
                             onClick={() => pdfInputRef.current?.click()}
-                            className="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs shadow-md transition flex items-center gap-2"
+                            className="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs shadow-md transition flex items-center gap-2 cursor-pointer"
                           >
                             <Upload className="w-4 h-4" />
                             <span>Select PDF File</span>
@@ -2199,71 +2364,483 @@ export default function CreatorUploadWizardPage() {
                     </div>
                   )}
 
-                  {/* Extracted Pages List */}
-                  <div className="space-y-3 pt-2">
-                    <div className="flex items-center justify-between text-xs text-zinc-500">
-                      <span className="font-bold text-zinc-300">
-                        Extracted Pages ({pages.length} Pages Ready)
-                      </span>
-                      <span>Use arrows to reorder pages</span>
-                    </div>
-
-                    <div className="space-y-2 max-h-[380px] overflow-y-auto pr-1">
-                      {pages.map((p, idx) => (
-                        <div
-                          key={p.id}
-                          className="p-3 rounded-2xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 flex items-center justify-between gap-3 group"
-                        >
-                          <div className="flex items-center gap-3 min-w-0">
-                            <span className="w-6 text-center font-mono font-bold text-xs text-zinc-400">
-                              {String(idx + 1).padStart(2, "0")}
+                  {/* Extracted Pages Management Toolbar & Re-Order List/Grid */}
+                  {pages.length > 0 && (
+                    <div className="space-y-4 pt-2 border-t border-zinc-200 dark:border-zinc-800">
+                      {/* Toolbar Row */}
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <div>
+                          <span className="font-black text-xs sm:text-sm text-zinc-900 dark:text-zinc-100 flex items-center gap-1.5">
+                            <span>Uploaded Panels</span>
+                            <span className="px-2 py-0.5 rounded-full bg-indigo-500/10 text-indigo-400 text-xs font-bold">
+                              {pages.length} Pages
                             </span>
-                            <img
-                              src={p.url}
-                              alt={p.name}
-                              className="w-12 h-16 object-cover rounded-lg border border-zinc-700 flex-shrink-0"
-                            />
-                            <div className="min-w-0">
-                              <p className="text-xs font-bold text-zinc-900 dark:text-zinc-100 truncate">
-                                {p.name}
-                              </p>
-                              <p className="text-[10px] text-indigo-400">
-                                {p.size || "WebP Optimized Page"}
-                              </p>
-                            </div>
-                          </div>
+                          </span>
+                          <p className="text-[11px] text-zinc-400">
+                            Reorder pages to arrange reading sequence
+                          </p>
+                        </div>
 
-                          <div className="flex items-center gap-1">
+                        {/* Batch Controls: Sort, Reverse, Clear, Grid/List Toggle */}
+                        <div className="flex flex-wrap items-center gap-1.5">
+                          <button
+                            type="button"
+                            onClick={sortPagesByName}
+                            className="px-2.5 py-1 rounded-lg bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-300 text-[11px] font-bold transition flex items-center gap-1"
+                            title="Sort Alphabetically by Filename (Page 1, 2, 3...)"
+                          >
+                            <Sliders className="w-3 h-3" />
+                            <span>Sort Names</span>
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={reversePages}
+                            className="px-2.5 py-1 rounded-lg bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-300 text-[11px] font-bold transition flex items-center gap-1"
+                            title="Reverse Page Sequence (RTL / LTR)"
+                          >
+                            <RefreshCw className="w-3 h-3" />
+                            <span>Reverse</span>
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={clearAllPages}
+                            className="px-2.5 py-1 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-500 text-[11px] font-bold transition flex items-center gap-1"
+                            title="Clear All Uploaded Pages"
+                          >
+                            <Trash2 className="w-3 h-3" />
+                            <span>Clear</span>
+                          </button>
+
+                          <div className="flex items-center bg-zinc-100 dark:bg-zinc-800 p-0.5 rounded-lg border border-zinc-200 dark:border-zinc-700 ml-1">
                             <button
                               type="button"
-                              disabled={idx === 0}
-                              onClick={() => movePageUp(idx)}
-                              className="p-1.5 rounded-lg bg-zinc-200 dark:bg-zinc-800 hover:bg-zinc-300 disabled:opacity-20 text-zinc-700 dark:text-zinc-300 transition"
-                              title="Move Up"
+                              onClick={() => setPanelViewMode("grid")}
+                              className={`p-1 rounded text-xs transition ${
+                                panelViewMode === "grid"
+                                  ? "bg-indigo-600 text-white shadow-xs"
+                                  : "text-zinc-400 hover:text-zinc-200"
+                              }`}
+                              title="Thumbnail Grid View"
                             >
-                              <ArrowUp className="w-3.5 h-3.5" />
+                              ▦
                             </button>
                             <button
                               type="button"
-                              disabled={idx === pages.length - 1}
-                              onClick={() => movePageDown(idx)}
-                              className="p-1.5 rounded-lg bg-zinc-200 dark:bg-zinc-800 hover:bg-zinc-300 disabled:opacity-20 text-zinc-700 dark:text-zinc-300 transition"
-                              title="Move Down"
+                              onClick={() => setPanelViewMode("list")}
+                              className={`p-1 rounded text-xs transition ${
+                                panelViewMode === "list"
+                                  ? "bg-indigo-600 text-white shadow-xs"
+                                  : "text-zinc-400 hover:text-zinc-200"
+                              }`}
+                              title="Compact List View"
                             >
-                              <ArrowDown className="w-3.5 h-3.5" />
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => removePage(idx)}
-                              className="p-1.5 rounded-lg hover:bg-rose-950/40 text-zinc-400 hover:text-rose-500 transition ml-1"
-                              title="Delete Page"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
+                              ☰
                             </button>
                           </div>
                         </div>
-                      ))}
+                      </div>
+
+                      {/* THUMBNAIL GRID VIEW */}
+                      {panelViewMode === "grid" ? (
+                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 max-h-[460px] overflow-y-auto pr-1">
+                          {pages.map((p, idx) => (
+                            <div
+                              key={p.id}
+                              className="relative group p-2 rounded-2xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 hover:border-indigo-500/60 transition flex flex-col justify-between"
+                            >
+                              {/* Page Index Badge */}
+                              <div className="flex items-center justify-between pb-1.5">
+                                <span className="px-1.5 py-0.5 rounded-md bg-zinc-800 text-zinc-200 font-mono text-[10px] font-bold">
+                                  #{String(idx + 1).padStart(2, "0")}
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={() => removePage(idx)}
+                                  className="p-1 rounded text-zinc-400 hover:text-rose-500 hover:bg-rose-500/10 transition"
+                                  title="Delete Page"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
+
+                              {/* Thumbnail Image */}
+                              <div className="aspect-[3/4] w-full rounded-xl overflow-hidden bg-zinc-900 border border-zinc-700/60 relative">
+                                <img
+                                  src={p.url}
+                                  alt={p.name}
+                                  className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
+                                />
+                              </div>
+
+                              {/* Voice Dubbing Trigger */}
+                              <button
+                                type="button"
+                                onClick={() => setActiveVoicePageIdx(idx)}
+                                className="w-full mt-1.5 py-1 px-2 rounded-lg bg-indigo-600/10 hover:bg-indigo-600/20 text-indigo-400 text-[10px] font-bold transition flex items-center justify-center gap-1 cursor-pointer"
+                                title="Add/Edit exact voice lines for this manga panel"
+                              >
+                                <Mic className="w-3 h-3" />
+                                <span>
+                                  {p.dialogueLines && p.dialogueLines.length > 0
+                                    ? `${p.dialogueLines.length} Voice Lines ✓`
+                                    : "+ Voice Dubbing"}
+                                </span>
+                              </button>
+
+                              {/* Reorder Buttons */}
+                              <div className="flex items-center justify-between pt-1.5">
+                                <button
+                                  type="button"
+                                  disabled={idx === 0}
+                                  onClick={() => movePageUp(idx)}
+                                  className="px-2 py-1 rounded-lg bg-zinc-200 dark:bg-zinc-800 hover:bg-zinc-300 dark:hover:bg-zinc-700 disabled:opacity-20 text-zinc-700 dark:text-zinc-300 text-[10px] font-bold transition flex items-center gap-0.5 cursor-pointer"
+                                  title="Move Left / Earlier"
+                                >
+                                  <ChevronLeft className="w-3 h-3" />
+                                  <span>Left</span>
+                                </button>
+
+                                <button
+                                  type="button"
+                                  disabled={idx === pages.length - 1}
+                                  onClick={() => movePageDown(idx)}
+                                  className="px-2 py-1 rounded-lg bg-zinc-200 dark:bg-zinc-800 hover:bg-zinc-300 dark:hover:bg-zinc-700 disabled:opacity-20 text-zinc-700 dark:text-zinc-300 text-[10px] font-bold transition flex items-center gap-0.5 cursor-pointer"
+                                  title="Move Right / Later"
+                                >
+                                  <span>Right</span>
+                                  <ChevronRight className="w-3 h-3" />
+                                </button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        /* COMPACT LIST VIEW */
+                        <div className="space-y-2 max-h-[380px] overflow-y-auto pr-1">
+                          {pages.map((p, idx) => (
+                            <div
+                              key={p.id}
+                              className="p-3 rounded-2xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 flex items-center justify-between gap-3 group"
+                            >
+                              <div className="flex items-center gap-3 min-w-0">
+                                <span className="w-6 text-center font-mono font-bold text-xs text-zinc-400">
+                                  {String(idx + 1).padStart(2, "0")}
+                                </span>
+                                <img
+                                  src={p.url}
+                                  alt={p.name}
+                                  className="w-12 h-16 object-cover rounded-lg border border-zinc-700 flex-shrink-0"
+                                />
+                                <div className="min-w-0">
+                                  <p className="text-xs font-bold text-zinc-900 dark:text-zinc-100 truncate">
+                                    {p.name}
+                                  </p>
+                                  <button
+                                    type="button"
+                                    onClick={() => setActiveVoicePageIdx(idx)}
+                                    className="text-[10px] text-indigo-400 hover:underline flex items-center gap-1 mt-0.5"
+                                  >
+                                    <Mic className="w-2.5 h-2.5" />
+                                    <span>
+                                      {p.dialogueLines && p.dialogueLines.length > 0
+                                        ? `${p.dialogueLines.length} Voice Lines (Click to edit)`
+                                        : "+ Add Voice Dubbing"}
+                                    </span>
+                                  </button>
+                                </div>
+                              </div>
+
+                              <div className="flex items-center gap-1">
+                                <button
+                                  type="button"
+                                  disabled={idx === 0}
+                                  onClick={() => movePageUp(idx)}
+                                  className="p-1.5 rounded-lg bg-zinc-200 dark:bg-zinc-800 hover:bg-zinc-300 disabled:opacity-20 text-zinc-700 dark:text-zinc-300 transition cursor-pointer"
+                                  title="Move Up"
+                                >
+                                  <ArrowUp className="w-3.5 h-3.5" />
+                                </button>
+                                <button
+                                  type="button"
+                                  disabled={idx === pages.length - 1}
+                                  onClick={() => movePageDown(idx)}
+                                  className="p-1.5 rounded-lg bg-zinc-200 dark:bg-zinc-800 hover:bg-zinc-300 disabled:opacity-20 text-zinc-700 dark:text-zinc-300 transition cursor-pointer"
+                                  title="Move Down"
+                                >
+                                  <ArrowDown className="w-3.5 h-3.5" />
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => removePage(idx)}
+                                  className="p-1.5 rounded-lg hover:bg-rose-950/40 text-zinc-400 hover:text-rose-500 transition ml-1 cursor-pointer"
+                                  title="Delete Page"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
                     </div>
+                  )}
+
+                  {/* Dedicated Episode Voice Dubbing Script Studio for Creators */}
+                  <div className="p-6 rounded-3xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 space-y-4">
+                    <div className="flex flex-wrap items-center justify-between gap-2 border-b border-zinc-200 dark:border-zinc-800 pb-3">
+                      <div className="flex items-center gap-2">
+                        <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-rose-600 to-amber-500 text-white flex items-center justify-center shadow-sm">
+                          <Mic className="w-4 h-4" />
+                        </div>
+                        <div>
+                          <h4 className="font-extrabold text-sm text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
+                            <span>Manga Voice Dubbing & Speech Bubble Script Studio</span>
+                            <span className="px-2 py-0.5 rounded-full bg-rose-500/20 text-rose-500 text-[10px] font-bold">
+                              Live Voice Acting
+                            </span>
+                          </h4>
+                          <p className="text-xs text-zinc-500">
+                            Write character speech bubble dialogues for each panel to enable AI Voice Dubbing
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Quick AI Script Filler */}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (pages.length === 0) {
+                            setPages([
+                              {
+                                id: `page-${Date.now()}-1`,
+                                name: "Panel 01.webp",
+                                url: coverUrl || "https://picsum.photos/seed/manga1/800/1200",
+                                size: "380 KB (WebP)",
+                                dialogueLines: [
+                                  {
+                                    speaker: "Narrator",
+                                    role: "NARRATOR",
+                                    text: `Chapter ${chapterNumber}: ${chapterTitle || "My First Day"}.`,
+                                  },
+                                  {
+                                    speaker: "Hero",
+                                    role: "HERO",
+                                    text: "Where legends are born... or totally roasted.",
+                                  },
+                                ],
+                              },
+                              {
+                                id: `page-${Date.now()}-2`,
+                                name: "Panel 02.webp",
+                                url: coverUrl || "https://picsum.photos/seed/manga2/800/1200",
+                                size: "420 KB (WebP)",
+                                dialogueLines: [
+                                  {
+                                    speaker: "Hero",
+                                    role: "HERO",
+                                    text: "Heh... Everyone will be impressed by my confidence!",
+                                  },
+                                ],
+                              },
+                            ]);
+                            return;
+                          }
+                          const updated = pages.map((p, idx) => ({
+                            ...p,
+                            dialogueLines: [
+                              {
+                                speaker: idx === 0 ? "Narrator" : "Hero",
+                                role: (idx === 0 ? "NARRATOR" : "HERO") as
+                                  | "HERO"
+                                  | "HEROINE"
+                                  | "VILLAIN"
+                                  | "NARRATOR",
+                                text:
+                                  idx === 0
+                                    ? `Chapter ${chapterNumber}: ${chapterTitle || "The Awakening"}.`
+                                    : `Panel ${idx + 1}: Speech bubble dialogue text...`,
+                              },
+                            ],
+                          }));
+                          setPages(updated);
+                        }}
+                        className="px-3 py-1.5 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 hover:opacity-90 text-white text-xs font-bold transition flex items-center gap-1.5 shadow-sm cursor-pointer"
+                        title="Auto-fill starter template dialogues for all panels"
+                      >
+                        <Sparkles className="w-3.5 h-3.5" />
+                        <span>✨ Auto-Fill Template</span>
+                      </button>
+                    </div>
+
+                    {pages.length === 0 ? (
+                      <div className="p-6 rounded-2xl bg-zinc-100 dark:bg-zinc-900 border border-dashed border-zinc-300 dark:border-zinc-800 text-center space-y-3">
+                        <Mic className="w-8 h-8 text-indigo-400 mx-auto" />
+                        <div>
+                          <p className="text-xs font-bold text-zinc-800 dark:text-zinc-200">
+                            No Manga Pages Uploaded Yet
+                          </p>
+                          <p className="text-[11px] text-zinc-500 max-w-sm mx-auto mt-0.5">
+                            Upload your comic images above, or click &ldquo;✨ Auto-Fill Template&rdquo; to test the voice script editor!
+                          </p>
+                        </div>
+                      </div>
+                    ) : (
+                      /* Panel-by-Panel Script Cards */
+                      <div className="space-y-3 max-h-[420px] overflow-y-auto pr-1">
+                        {pages.map((p, pIdx) => (
+                          <div
+                            key={p.id}
+                            className="p-4 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 space-y-3"
+                          >
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-2">
+                                <span className="px-2 py-0.5 rounded-lg bg-zinc-200 dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 font-mono text-xs font-bold">
+                                  Panel #{pIdx + 1}
+                                </span>
+                                <span className="text-xs font-bold text-zinc-600 dark:text-zinc-300 truncate max-w-[200px]">
+                                  {p.name}
+                                </span>
+                              </div>
+
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const updated = [...pages];
+                                  const cur = updated[pIdx].dialogueLines || [];
+                                  updated[pIdx].dialogueLines = [
+                                    ...cur,
+                                    {
+                                      speaker: "Character",
+                                      role: "HERO",
+                                      text: "",
+                                    },
+                                  ];
+                                  setPages(updated);
+                                }}
+                                className="px-2.5 py-1 rounded-lg bg-indigo-600/10 hover:bg-indigo-600/20 text-indigo-500 text-xs font-bold transition flex items-center gap-1 cursor-pointer"
+                              >
+                                <Plus className="w-3 h-3" />
+                                <span>Add Dialogue</span>
+                              </button>
+                            </div>
+
+                            {/* Dialogue Lines for this page */}
+                            <div className="space-y-2">
+                              {(p.dialogueLines || []).map((line, dIdx) => (
+                                <div
+                                  key={dIdx}
+                                  className="p-3 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 space-y-2"
+                                >
+                                  <div className="flex flex-wrap items-center justify-between gap-2">
+                                    <div className="flex items-center gap-2">
+                                      <input
+                                        type="text"
+                                        value={line.speaker}
+                                        onChange={(e) => {
+                                          const updated = [...pages];
+                                          if (updated[pIdx].dialogueLines) {
+                                            updated[pIdx].dialogueLines![dIdx].speaker =
+                                              e.target.value;
+                                            setPages(updated);
+                                          }
+                                        }}
+                                        placeholder="Speaker Name"
+                                        className="px-2 py-1 rounded-lg bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 text-xs font-bold text-zinc-900 dark:text-zinc-100 focus:outline-none focus:border-rose-500 w-32"
+                                      />
+
+                                      <select
+                                        value={line.role}
+                                        onChange={(e) => {
+                                          const updated = [...pages];
+                                          if (updated[pIdx].dialogueLines) {
+                                            updated[pIdx].dialogueLines![dIdx].role = e
+                                              .target.value as any;
+                                            setPages(updated);
+                                          }
+                                        }}
+                                        className="px-2 py-1 rounded-lg bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 text-xs font-bold text-zinc-900 dark:text-zinc-100 focus:outline-none focus:border-rose-500 cursor-pointer"
+                                      >
+                                        <option value="HERO">Hero (Male ⚡)</option>
+                                        <option value="HEROINE">Heroine (Female 🌸)</option>
+                                        <option value="VILLAIN">Villain (Deep 👑)</option>
+                                        <option value="NARRATOR">Narrator (🎙️)</option>
+                                      </select>
+                                    </div>
+
+                                    <div className="flex items-center gap-1.5">
+                                      {/* Listen / Test Voice Button */}
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          if (
+                                            typeof window !== "undefined" &&
+                                            "speechSynthesis" in window
+                                          ) {
+                                            window.speechSynthesis.cancel();
+                                            const u = new SpeechSynthesisUtterance(
+                                              line.text || "Voice line test"
+                                            );
+                                            if (line.role === "HEROINE") u.pitch = 1.25;
+                                            else if (line.role === "VILLAIN") u.pitch = 0.75;
+                                            else u.pitch = 1.0;
+                                            window.speechSynthesis.speak(u);
+                                          }
+                                        }}
+                                        className="px-2 py-1 rounded-lg bg-zinc-200 dark:bg-zinc-800 hover:bg-zinc-300 dark:hover:bg-zinc-700 text-[11px] font-bold text-rose-500 flex items-center gap-1 cursor-pointer"
+                                        title="Test this voice line"
+                                      >
+                                        <Play className="w-2.5 h-2.5 fill-current" />
+                                        <span>Test</span>
+                                      </button>
+
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          const updated = [...pages];
+                                          if (updated[pIdx].dialogueLines) {
+                                            updated[pIdx].dialogueLines = updated[
+                                              pIdx
+                                            ].dialogueLines!.filter((_, i) => i !== dIdx);
+                                            setPages(updated);
+                                          }
+                                        }}
+                                        className="p-1 rounded text-zinc-400 hover:text-rose-500 hover:bg-rose-500/10 transition cursor-pointer"
+                                        title="Delete Line"
+                                      >
+                                        <Trash2 className="w-3.5 h-3.5" />
+                                      </button>
+                                    </div>
+                                  </div>
+
+                                  <textarea
+                                    rows={2}
+                                    value={line.text}
+                                    onChange={(e) => {
+                                      const updated = [...pages];
+                                      if (updated[pIdx].dialogueLines) {
+                                        updated[pIdx].dialogueLines![dIdx].text =
+                                          e.target.value;
+                                        setPages(updated);
+                                      }
+                                    }}
+                                    placeholder="Enter speech bubble dialogue text appearing on this page..."
+                                    className="w-full px-3 py-1.5 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-xs text-zinc-900 dark:text-zinc-100 focus:outline-none focus:border-rose-500"
+                                  />
+                                </div>
+                              ))}
+
+                              {(!p.dialogueLines || p.dialogueLines.length === 0) && (
+                                <p className="text-[11px] text-zinc-400 italic">
+                                  No dialogue added for this panel. (Click &ldquo;Add Dialogue&rdquo; to add character speech lines)
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -2539,6 +3116,167 @@ export default function CreatorUploadWizardPage() {
               >
                 Apply to Story
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Creator Panel Voice Dubbing Ingestion Modal */}
+      {activeVoicePageIdx !== null && pages[activeVoicePageIdx] && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in">
+          <div className="w-full max-w-3xl bg-zinc-950 border border-zinc-800 rounded-3xl p-6 text-white space-y-4 shadow-2xl max-h-[90vh] flex flex-col">
+            <div className="flex items-center justify-between border-b border-zinc-800 pb-3">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-xl bg-rose-500/20 text-rose-400 flex items-center justify-center font-bold text-xs">
+                  #{activeVoicePageIdx + 1}
+                </div>
+                <div>
+                  <h3 className="font-black text-sm text-zinc-100">
+                    Panel Voice Dubbing & Speech Bubble Script
+                  </h3>
+                  <p className="text-[11px] text-zinc-400">
+                    Add the character dialogues appearing on this manga page
+                  </p>
+                </div>
+              </div>
+
+              <button
+                onClick={() => setActiveVoicePageIdx(null)}
+                className="p-1.5 rounded-xl bg-zinc-800 text-zinc-400 hover:text-white"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-12 gap-4 flex-1 overflow-hidden">
+              {/* Left: Panel Preview */}
+              <div className="md:col-span-5 aspect-[3/4] rounded-2xl overflow-hidden bg-black border border-zinc-800 flex items-center justify-center">
+                <img
+                  src={pages[activeVoicePageIdx].url}
+                  alt={`Panel ${activeVoicePageIdx + 1}`}
+                  className="w-full h-full object-contain"
+                />
+              </div>
+
+              {/* Right: Dialogue Lines */}
+              <div className="md:col-span-7 space-y-3 overflow-y-auto pr-1 flex flex-col justify-between">
+                <div className="space-y-2.5">
+                  {(pages[activeVoicePageIdx].dialogueLines || []).map((line, dIdx) => (
+                    <div
+                      key={dIdx}
+                      className="p-3 rounded-2xl bg-zinc-900 border border-zinc-800 space-y-2"
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <input
+                          type="text"
+                          value={line.speaker}
+                          onChange={(e) => {
+                            const updated = [...pages];
+                            if (updated[activeVoicePageIdx].dialogueLines) {
+                              updated[activeVoicePageIdx].dialogueLines![dIdx].speaker =
+                                e.target.value;
+                              setPages(updated);
+                            }
+                          }}
+                          placeholder="Speaker (e.g. Hero, Ren)"
+                          className="px-2 py-1 rounded-lg bg-zinc-950 border border-zinc-700 text-xs font-bold text-zinc-200 focus:outline-none focus:border-rose-500 w-32"
+                        />
+
+                        <select
+                          value={line.role}
+                          onChange={(e) => {
+                            const updated = [...pages];
+                            if (updated[activeVoicePageIdx].dialogueLines) {
+                              updated[activeVoicePageIdx].dialogueLines![dIdx].role = e
+                                .target.value as any;
+                              setPages(updated);
+                            }
+                          }}
+                          className="px-2 py-1 rounded-lg bg-zinc-950 border border-zinc-700 text-xs font-bold text-zinc-200 focus:outline-none focus:border-rose-500"
+                        >
+                          <option value="HERO">Hero (Male Voice)</option>
+                          <option value="HEROINE">Heroine (Female Voice)</option>
+                          <option value="VILLAIN">Villain (Deep Voice)</option>
+                          <option value="NARRATOR">Narrator</option>
+                        </select>
+
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const updated = [...pages];
+                            if (updated[activeVoicePageIdx].dialogueLines) {
+                              updated[activeVoicePageIdx].dialogueLines = updated[
+                                activeVoicePageIdx
+                              ].dialogueLines!.filter((_, i) => i !== dIdx);
+                              setPages(updated);
+                            }
+                          }}
+                          className="text-zinc-500 hover:text-rose-500 p-1"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+
+                      <textarea
+                        rows={2}
+                        value={line.text}
+                        onChange={(e) => {
+                          const updated = [...pages];
+                          if (updated[activeVoicePageIdx].dialogueLines) {
+                            updated[activeVoicePageIdx].dialogueLines![dIdx].text =
+                              e.target.value;
+                            setPages(updated);
+                          }
+                        }}
+                        placeholder="Enter speech bubble dialogue text..."
+                        className="w-full px-3 py-1.5 rounded-xl bg-zinc-950 border border-zinc-800 text-xs text-zinc-100 focus:outline-none focus:border-rose-500"
+                      />
+                    </div>
+                  ))}
+
+                  {(!pages[activeVoicePageIdx].dialogueLines ||
+                    pages[activeVoicePageIdx].dialogueLines!.length === 0) && (
+                    <div className="p-6 rounded-2xl bg-zinc-900/50 border border-dashed border-zinc-800 text-center space-y-2">
+                      <Mic className="w-6 h-6 text-zinc-500 mx-auto" />
+                      <p className="text-xs text-zinc-400 font-medium">
+                        No voice lines added for this panel yet.
+                      </p>
+                    </div>
+                  )}
+                </div>
+
+                <div className="pt-2 flex items-center justify-between border-t border-zinc-800">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const updated = [...pages];
+                      const currentLines =
+                        updated[activeVoicePageIdx].dialogueLines || [];
+                      updated[activeVoicePageIdx].dialogueLines = [
+                        ...currentLines,
+                        {
+                          speaker: "Speaker",
+                          role: "HERO",
+                          text: "Speech bubble dialogue text...",
+                        },
+                      ];
+                      setPages(updated);
+                    }}
+                    className="px-3 py-1.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 text-xs font-bold text-zinc-300 flex items-center gap-1 cursor-pointer"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>+ Add Line</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setActiveVoicePageIdx(null)}
+                    className="px-5 py-1.5 rounded-xl bg-gradient-to-r from-indigo-600 to-rose-600 font-bold text-xs text-white shadow-md cursor-pointer"
+                  >
+                    Done
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         </div>

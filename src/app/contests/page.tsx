@@ -29,6 +29,7 @@ import { formatNumber, formatDate } from "@/lib/utils";
 import { Contest } from "@/lib/types";
 import { useContestCountdown } from "@/hooks/useContestCountdown";
 import { formatContestDeadline, getContestStatus } from "@/lib/utils/contest";
+import { dbService } from "@/lib/supabase/db";
 
 const SEEDED_CONTENDERS = [
   {
@@ -112,6 +113,15 @@ export default function ContestsPage() {
     if (allNovels.length > 0) {
       setSelectedNovelId(allNovels[0].id);
     }
+
+    // Fetch real-time live contest directly from Supabase Database
+    dbService.getContests().then((supabaseContests) => {
+      if (supabaseContests && supabaseContests.length > 0) {
+        const live = supabaseContests[0];
+        setContest(live);
+        dataStore.saveContest(live);
+      }
+    });
   }, []);
 
   // Filter user's published stories if logged in, otherwise all novels

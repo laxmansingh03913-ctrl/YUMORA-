@@ -10,12 +10,16 @@ import {
   ReadingProgress,
   Chapter,
   Comment,
+  Review,
   Follow,
   NotificationItem,
   NotificationPreferences,
   MonetizationEligibility,
   MonetizationTier,
   MonetizationStatus,
+  TipTransaction,
+  CoinPackage,
+  PayoutRequest,
 } from "../types";
 import {
   SEED_NOVELS,
@@ -29,6 +33,46 @@ import {
 import { idbGet, idbSet } from "./idb";
 import { dbService } from "../supabase/db";
 import { getContestStatus } from "../utils/contest";
+
+export const COIN_PACKAGES: CoinPackage[] = [
+  {
+    id: "coin-pack-starter",
+    coins: 100,
+    bonusCoins: 0,
+    priceUsd: 0.99,
+    priceInr: 79,
+    label: "Starter Pouch",
+  },
+  {
+    id: "coin-pack-popular",
+    coins: 500,
+    bonusCoins: 50,
+    priceUsd: 4.99,
+    priceInr: 399,
+    label: "Reader's Chest",
+    isPopular: true,
+    badge: "Most Popular (+10%)",
+  },
+  {
+    id: "coin-pack-champion",
+    coins: 1000,
+    bonusCoins: 200,
+    priceUsd: 9.99,
+    priceInr: 799,
+    label: "Champion's Vault",
+    isBestValue: true,
+    badge: "Best Value (+20%)",
+  },
+  {
+    id: "coin-pack-sovereign",
+    coins: 2500,
+    bonusCoins: 600,
+    priceUsd: 24.99,
+    priceInr: 1999,
+    label: "Sovereign Treasury",
+    badge: "+24% Bonus",
+  },
+];
 
 const STORAGE_KEYS = {
   NOVELS: "yumora_novels",
@@ -44,7 +88,11 @@ const STORAGE_KEYS = {
   CONTEST_SUBMISSIONS: "yomika_contest_submissions",
   REPORTS: "yumora_reports",
   COMMENTS: "yumora_comments",
+  REVIEWS: "yumora_reviews",
+  TIPS: "yumora_tips",
+  COINS: "yumora_user_coins",
   USERS: "yumora_users",
+  PAYOUTS: "yumora_payout_requests",
 };
 
 class DataStore {
@@ -61,9 +109,63 @@ class DataStore {
 
   private async syncFromSupabase() {
     try {
-      const [cloudNovels, cloudComics] = await Promise.all([
+      // 1. Sync from persistent Server DB (works across all browsers, incognito, profiles & devices)
+      try {
+        const res = await fetch("/api/storage");
+        if (res.ok) {
+          const json = await res.json();
+          const data = json?.data || {};
+          if (data.yumora_comics && Array.isArray(data.yumora_comics)) {
+            data.yumora_comics.forEach((c: Comic) => {
+              if (c && c.id) this.memoryComics.set(c.id, c);
+            });
+          }
+          if (data.yumora_novels && Array.isArray(data.yumora_novels)) {
+            data.yumora_novels.forEach((n: Novel) => {
+              if (n && n.id) this.memoryNovels.set(n.id, n);
+            });
+          }
+        }
+      } catch (e) {
+        // ignore
+      }
+
+      // Also ensure current browser's local items are backed up to server DB if server DB is empty
+      const localComics = this.getItem<Comic[]>(STORAGE_KEYS.COMICS, []);
+      if (localComics.length > 0) {
+        localComics.forEach((c) => {
+          if (c && c.id) this.memoryComics.set(c.id, c);
+        });
+        fetch("/api/storage", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            key: STORAGE_KEYS.COMICS,
+            data: Array.from(this.memoryComics.values()),
+          }),
+        }).catch(() => {});
+      }
+
+      const localNovels = this.getItem<Novel[]>(STORAGE_KEYS.NOVELS, []);
+      if (localNovels.length > 0) {
+        localNovels.forEach((n) => {
+          if (n && n.id) this.memoryNovels.set(n.id, n);
+        });
+        fetch("/api/storage", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            key: STORAGE_KEYS.NOVELS,
+            data: Array.from(this.memoryNovels.values()),
+          }),
+        }).catch(() => {});
+      }
+
+      // 2. Sync from Supabase if configured
+      const [cloudNovels, cloudComics, cloudContests] = await Promise.all([
         dbService.getNovels(),
         dbService.getComics(),
+        dbService.getContests(),
       ]);
 
       if (cloudNovels && cloudNovels.length > 0) {
@@ -77,8 +179,12 @@ class DataStore {
           if (c && c.id) this.memoryComics.set(c.id, c);
         });
       }
+
+      if (cloudContests && cloudContests.length > 0) {
+        this.setItem(STORAGE_KEYS.CONTESTS, cloudContests);
+      }
     } catch (e) {
-      console.warn("Supabase background sync notice:", e);
+      console.warn("Background sync notice:", e);
     }
   }
 
@@ -157,6 +263,14 @@ class DataStore {
     this.setItem(STORAGE_KEYS.NOVELS, novels);
     if (this.isBrowser()) {
       idbSet(STORAGE_KEYS.NOVELS, Array.from(this.memoryNovels.values())).catch(() => {});
+      fetch("/api/storage", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          key: STORAGE_KEYS.NOVELS,
+          data: Array.from(this.memoryNovels.values()),
+        }),
+      }).catch(() => {});
     }
     return novel;
   }
@@ -208,6 +322,14 @@ class DataStore {
     this.setItem(STORAGE_KEYS.COMICS, comics);
     if (this.isBrowser()) {
       idbSet(STORAGE_KEYS.COMICS, Array.from(this.memoryComics.values())).catch(() => {});
+      fetch("/api/storage", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          key: STORAGE_KEYS.COMICS,
+          data: Array.from(this.memoryComics.values()),
+        }),
+      }).catch(() => {});
     }
     return comic;
   }
@@ -587,19 +709,84 @@ class DataStore {
   }
 
   // Notification Methods
+  private getDefaultNotifications(): NotificationItem[] {
+    const now = Date.now();
+    return [
+      {
+        id: "notif-seed-1",
+        userId: "usr-reader-1",
+        creatorId: "usr-creator-2",
+        creatorName: "Animerecap Ninja",
+        creatorAvatar: "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=300",
+        title: "New Episode Released! ⚡",
+        message: "Animerecap Ninja published Episode 3: The Dungeon Awakes of 'The RPG: Shadow Descent'.",
+        contentUrl: "/comics/the-rpg",
+        type: "EPISODE_RELEASE",
+        isRead: false,
+        createdAt: new Date(now - 15 * 60 * 1000).toISOString(),
+      },
+      {
+        id: "notif-seed-2",
+        userId: "usr-reader-1",
+        creatorId: "usr-creator-1",
+        creatorName: "Elena Rostova",
+        creatorAvatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=300",
+        title: "Chapter 4 is Live! 📖",
+        message: "Elena Rostova published Chapter 4 of 'The Starfall Sovereign: Celestial Monarch'.",
+        contentUrl: "/novels/the-starfall-sovereign",
+        type: "CHAPTER_RELEASE",
+        isRead: false,
+        createdAt: new Date(now - 2 * 3600 * 1000).toISOString(),
+      },
+      {
+        id: "notif-seed-3",
+        userId: "usr-reader-1",
+        creatorId: "usr-creator-3",
+        creatorName: "Jin-Woo",
+        creatorAvatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=300",
+        title: "New Follower Alert 🎉",
+        message: "Jin-Woo followed your reader profile and bookmarked your reading list.",
+        contentUrl: "/creator/jinwoo",
+        type: "NEW_FOLLOWER",
+        isRead: true,
+        createdAt: new Date(now - 24 * 3600 * 1000).toISOString(),
+      },
+      {
+        id: "notif-seed-4",
+        userId: "usr-reader-1",
+        creatorName: "Yumora Editorial",
+        creatorAvatar: "/hero-character.png",
+        title: "Yomika Story Challenge #08 is LIVE 🏆",
+        message: "Prize pool of $850 USD is now open for fantasy and sci-fi writers. Check rules and submit!",
+        contentUrl: "/contests",
+        type: "ANNOUNCEMENT",
+        isRead: true,
+        createdAt: new Date(now - 48 * 3600 * 1000).toISOString(),
+      },
+    ];
+  }
+
   getNotifications(userId: string): NotificationItem[] {
-    const customNotifs = this.getItem<NotificationItem[]>(STORAGE_KEYS.NOTIFICATIONS, []);
-    return customNotifs.filter((n) => !n.userId || n.userId === userId);
+    let customNotifs = this.getItem<NotificationItem[]>(STORAGE_KEYS.NOTIFICATIONS, []);
+    if (!customNotifs || customNotifs.length === 0) {
+      customNotifs = this.getDefaultNotifications();
+      this.setItem(STORAGE_KEYS.NOTIFICATIONS, customNotifs);
+    }
+    return customNotifs.filter((n) => !n.userId || n.userId === userId || n.userId === "all");
   }
 
   getUnreadNotificationCount(userId: string): number {
     return this.getNotifications(userId).filter((n) => !n.isRead).length;
   }
 
-  createFollowNotification(notification: NotificationItem): void {
+  addNotification(notification: NotificationItem): void {
     const notifs = this.getItem<NotificationItem[]>(STORAGE_KEYS.NOTIFICATIONS, []);
     notifs.unshift(notification);
     this.setItem(STORAGE_KEYS.NOTIFICATIONS, notifs);
+  }
+
+  createFollowNotification(notification: NotificationItem): void {
+    this.addNotification(notification);
   }
 
   markNotificationRead(notificationId: string): void {
@@ -611,10 +798,22 @@ class DataStore {
     }
   }
 
+  deleteNotification(notificationId: string): void {
+    const notifs = this.getItem<NotificationItem[]>(STORAGE_KEYS.NOTIFICATIONS, []);
+    const updated = notifs.filter((n) => n.id !== notificationId);
+    this.setItem(STORAGE_KEYS.NOTIFICATIONS, updated);
+  }
+
+  clearAllNotifications(userId: string): void {
+    const notifs = this.getItem<NotificationItem[]>(STORAGE_KEYS.NOTIFICATIONS, []);
+    const updated = notifs.filter((n) => n.userId && n.userId !== userId && n.userId !== "all");
+    this.setItem(STORAGE_KEYS.NOTIFICATIONS, updated);
+  }
+
   markAllNotificationsRead(userId: string): void {
     const notifs = this.getItem<NotificationItem[]>(STORAGE_KEYS.NOTIFICATIONS, []);
     notifs.forEach((n) => {
-      if (!n.userId || n.userId === userId) {
+      if (!n.userId || n.userId === userId || n.userId === "all") {
         n.isRead = true;
       }
     });
@@ -622,8 +821,46 @@ class DataStore {
   }
 
   // Reading Progress
+  private getDefaultReadingProgress(): Record<string, ReadingProgress> {
+    const now = Date.now();
+    return {
+      "novel-1": {
+        contentId: "novel-1",
+        contentType: "NOVEL",
+        contentTitle: "The Starfall Sovereign: Celestial Monarch",
+        contentSlug: "the-starfall-sovereign",
+        coverUrl: "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=600&auto=format&fit=crop&q=80",
+        creatorName: "Elena Rostova",
+        chapterNumber: 3,
+        episodeTitle: "Chapter 3: The Awakening of the Blade",
+        progressPercentage: 68,
+        totalUnits: 12,
+        lastReadAt: new Date(now - 25 * 60 * 1000).toISOString(),
+      },
+      "comic-1": {
+        contentId: "comic-1",
+        contentType: "COMIC",
+        contentTitle: "The RPG: Shadow Descent",
+        contentSlug: "the-rpg",
+        coverUrl: "https://images.unsplash.com/photo-1563089145-599997674d42?w=600&auto=format&fit=crop&q=80",
+        creatorName: "Animerecap Ninja",
+        chapterNumber: 2,
+        episodeTitle: "Episode 2: Gate of the Undead King",
+        progressPercentage: 100,
+        totalUnits: 5,
+        lastReadAt: new Date(now - 3 * 3600 * 1000).toISOString(),
+      },
+    };
+  }
+
   getReadingProgressMap(): Record<string, ReadingProgress> {
-    return this.getItem<Record<string, ReadingProgress>>(STORAGE_KEYS.READING_PROGRESS, {});
+    const map = this.getItem<Record<string, ReadingProgress>>(STORAGE_KEYS.READING_PROGRESS, {});
+    if (Object.keys(map).length === 0) {
+      const defaults = this.getDefaultReadingProgress();
+      this.setItem(STORAGE_KEYS.READING_PROGRESS, defaults);
+      return defaults;
+    }
+    return map;
   }
 
   saveReadingProgress(progress: ReadingProgress): void {
@@ -636,6 +873,19 @@ class DataStore {
     return this.getReadingProgressMap()[contentId];
   }
 
+  removeReadingProgress(contentId: string): void {
+    const map = this.getReadingProgressMap();
+    delete map[contentId];
+    this.setItem(STORAGE_KEYS.READING_PROGRESS, map);
+  }
+
+  getRecentReadingProgressList(): ReadingProgress[] {
+    const map = this.getReadingProgressMap();
+    return Object.values(map).sort(
+      (a, b) => new Date(b.lastReadAt).getTime() - new Date(a.lastReadAt).getTime()
+    );
+  }
+
   // Comments
   getComments(contentId: string): Comment[] {
     const all = this.getItem<Comment[]>(STORAGE_KEYS.COMMENTS, []);
@@ -646,6 +896,86 @@ class DataStore {
     const all = this.getItem<Comment[]>(STORAGE_KEYS.COMMENTS, []);
     all.unshift(comment);
     this.setItem(STORAGE_KEYS.COMMENTS, all);
+  }
+
+  // Reviews
+  getReviews(contentId: string): Review[] {
+    const all = this.getItem<Review[]>(STORAGE_KEYS.REVIEWS, []);
+    return all.filter((r) => r.contentId === contentId);
+  }
+
+  addReview(review: Review): void {
+    const all = this.getItem<Review[]>(STORAGE_KEYS.REVIEWS, []);
+    all.unshift(review);
+    this.setItem(STORAGE_KEYS.REVIEWS, all);
+  }
+
+  // Coin & Wallet Methods
+  getUserCoins(userId: string): number {
+    const map = this.getItem<Record<string, number>>(STORAGE_KEYS.COINS, {});
+    if (map[userId] === undefined) {
+      // Default starter coins balance for active users
+      map[userId] = 350;
+      this.setItem(STORAGE_KEYS.COINS, map);
+    }
+    return map[userId];
+  }
+
+  addCoins(userId: string, amount: number): number {
+    const map = this.getItem<Record<string, number>>(STORAGE_KEYS.COINS, {});
+    const current = map[userId] ?? 350;
+    const updated = Math.max(0, current + amount);
+    map[userId] = updated;
+    this.setItem(STORAGE_KEYS.COINS, map);
+    return updated;
+  }
+
+  // Tipping Methods
+  sendTip(tip: TipTransaction): { success: boolean; error?: string; remainingCoins?: number } {
+    const currentCoins = this.getUserCoins(tip.fromUserId);
+    if (currentCoins < tip.amount) {
+      return { success: false, error: `Insufficient Coins balance. You have ${currentCoins} coins.` };
+    }
+
+    // Deduct coins from sender
+    const remaining = this.addCoins(tip.fromUserId, -tip.amount);
+
+    // Save tip transaction
+    const tips = this.getItem<TipTransaction[]>(STORAGE_KEYS.TIPS, []);
+    tips.unshift(tip);
+    this.setItem(STORAGE_KEYS.TIPS, tips);
+
+    // Credit coins & tips count to creator
+    this.addCoins(tip.toCreatorId, tip.amount);
+
+    // Send notification to creator
+    this.addNotification({
+      id: `notif-tip-${Date.now()}`,
+      userId: tip.toCreatorId,
+      creatorId: tip.fromUserId,
+      creatorName: tip.fromUserName,
+      creatorAvatar: tip.fromUserAvatar,
+      title: `🪙 ${tip.fromUserName} tipped you ${tip.amount} Coins!`,
+      message: tip.message
+        ? `"${tip.message}" on ${tip.contentTitle || "your profile"}`
+        : `Sent you encouragement with ${tip.tierTitle || "a Coin Tip"}!`,
+      contentUrl: `/creator/${tip.toCreatorName.toLowerCase().replace(/\\s+/g, '')}`,
+      type: "LIKE",
+      isRead: false,
+      createdAt: new Date().toISOString(),
+    });
+
+    return { success: true, remainingCoins: remaining };
+  }
+
+  getTipsForCreator(creatorId: string): TipTransaction[] {
+    const tips = this.getItem<TipTransaction[]>(STORAGE_KEYS.TIPS, []);
+    return tips.filter((t) => t.toCreatorId === creatorId);
+  }
+
+  getTipsSentByUser(userId: string): TipTransaction[] {
+    const tips = this.getItem<TipTransaction[]>(STORAGE_KEYS.TIPS, []);
+    return tips.filter((t) => t.fromUserId === userId);
   }
 
   // Community Posts
@@ -755,6 +1085,9 @@ class DataStore {
       contests.unshift(updated);
     }
     this.setItem(STORAGE_KEYS.CONTESTS, contests);
+    if (this.isBrowser()) {
+      dbService.upsertContest(updated).catch(() => {});
+    }
   }
 
   createContest(data: Partial<Contest>): Contest {
@@ -1235,6 +1568,81 @@ class DataStore {
       fraudAuditStatus: status,
       monetizationStatus: status === "CLEAN" ? "ACTIVE" : "UNDER_REVIEW",
     });
+  }
+
+  // ==========================================
+  // CREATOR PAYOUT & WITHDRAWAL ENGINE
+  // ==========================================
+
+  getPayoutRequests(creatorId?: string): PayoutRequest[] {
+    if (!this.isBrowser()) return [];
+    try {
+      const saved = localStorage.getItem(STORAGE_KEYS.PAYOUTS);
+      const all: PayoutRequest[] = saved ? JSON.parse(saved) : [];
+      if (creatorId) {
+        return all.filter((r) => r.creatorId === creatorId);
+      }
+      return all;
+    } catch {
+      return [];
+    }
+  }
+
+  createPayoutRequest(req: {
+    creatorId: string;
+    creatorName: string;
+    creatorEmail: string;
+    amountInr: number;
+    amountUsd: number;
+    method: "UPI" | "BANK" | "PAYPAL";
+    details: string;
+    accountHolderName: string;
+  }): PayoutRequest {
+    const newRequest: PayoutRequest = {
+      id: `pay_req_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+      creatorId: req.creatorId,
+      creatorName: req.creatorName,
+      creatorEmail: req.creatorEmail,
+      amountInr: req.amountInr,
+      amountUsd: req.amountUsd,
+      method: req.method,
+      details: req.details,
+      accountHolderName: req.accountHolderName,
+      status: "PENDING",
+      requestedAt: new Date().toISOString(),
+      transactionReference: `YOM-${req.method}-${Date.now().toString().slice(-6)}`,
+    };
+
+    if (this.isBrowser()) {
+      const all = this.getPayoutRequests();
+      all.unshift(newRequest);
+      localStorage.setItem(STORAGE_KEYS.PAYOUTS, JSON.stringify(all));
+    }
+
+    return newRequest;
+  }
+
+  updatePayoutRequestStatus(
+    id: string,
+    status: PayoutRequest["status"],
+    txRef?: string,
+    notes?: string
+  ): PayoutRequest | null {
+    if (!this.isBrowser()) return null;
+    const all = this.getPayoutRequests();
+    const index = all.findIndex((r) => r.id === id);
+    if (index === -1) return null;
+
+    all[index] = {
+      ...all[index],
+      status,
+      processedAt: new Date().toISOString(),
+      transactionReference: txRef || all[index].transactionReference,
+      notes: notes || all[index].notes,
+    };
+
+    localStorage.setItem(STORAGE_KEYS.PAYOUTS, JSON.stringify(all));
+    return all[index];
   }
 }
 

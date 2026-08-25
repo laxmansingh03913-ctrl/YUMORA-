@@ -21,13 +21,21 @@ import {
   Shield,
   Layers,
   Globe,
+  CheckCircle2,
+  Heart,
+  X,
+  Coins,
+  Plus,
+  Menu,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { useTheme } from "@/context/ThemeContext";
+import { useSidebar } from "@/context/SidebarContext";
 import { dataStore } from "@/lib/data/store";
 import { formatDate } from "@/lib/utils";
 import { SearchModal } from "../ui/SearchModal";
 import { AuthModal } from "../ui/AuthModal";
+import { CoinShopModal } from "../ui/CoinShopModal";
 import { Role, LanguageCode, NotificationItem } from "@/lib/types";
 
 const NAV_LINKS = [
@@ -51,14 +59,21 @@ const LANGUAGES: { code: LanguageCode; label: string; flag: string }[] = [
 
 export function Navbar() {
   const pathname = usePathname();
-  const { user, role, switchRole, openAuthModal, requireAuth, logout } = useAuth();
+  const { user, role, openAuthModal, requireAuth, logout } = useAuth();
   const { resolvedTheme, setTheme } = useTheme();
+  const {
+    toggleCollapse,
+    toggleMobile,
+    isCoinShopOpen: isSidebarCoinShopOpen,
+    closeCoinShop: closeSidebarCoinShop,
+  } = useSidebar();
 
   const [mounted, setMounted] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [isLangOpen, setIsLangOpen] = useState(false);
   const [isNotifsOpen, setIsNotifsOpen] = useState(false);
+  const [isCoinShopOpen, setIsCoinShopOpen] = useState(false);
   const [currentLang, setCurrentLang] = useState<LanguageCode>("en");
 
   const userMenuRef = React.useRef<HTMLDivElement>(null);
@@ -81,6 +96,10 @@ export function Navbar() {
     };
 
     const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") {
+        e.preventDefault();
+        setIsSearchOpen((prev) => !prev);
+      }
       if (e.key === "Escape") {
         setIsUserMenuOpen(false);
         setIsNotifsOpen(false);
@@ -111,9 +130,24 @@ export function Navbar() {
   return (
     <>
       <header className="sticky top-0 z-40 w-full border-b border-[#EAEAE5] dark:border-zinc-800 bg-[#FFFFFF]/95 dark:bg-[#121214]/95 backdrop-blur-md transition-colors">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-3 sm:gap-6">
-          {/* ZONE 1: LEFT - Logo & Desktop Navigation */}
-          <div className="flex items-center gap-4 lg:gap-8 flex-shrink-0">
+        <div className="w-full px-3 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-3 sm:gap-6">
+          {/* ZONE 1: LEFT - Sidebar Toggle & Brand Logo */}
+          <div className="flex items-center gap-2 sm:gap-3.5 flex-shrink-0">
+            <button
+              onClick={() => {
+                if (typeof window !== "undefined" && window.innerWidth < 768) {
+                  toggleMobile();
+                } else {
+                  toggleCollapse();
+                }
+              }}
+              className="p-2 -ml-1.5 rounded-xl text-zinc-600 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition cursor-pointer"
+              title="Toggle Navigation Menu"
+              aria-label="Toggle navigation menu"
+            >
+              <Menu className="w-5 h-5" />
+            </button>
+
             <Link href="/" className="flex items-center gap-2.5 group flex-shrink-0">
               {/* Red Square Y. Logo */}
               <div className="w-8 h-8 rounded-lg bg-[#D91E18] flex items-center justify-center font-black text-white text-base shadow-sm group-hover:scale-105 transition transform">
@@ -128,48 +162,22 @@ export function Navbar() {
                 </span>
               </div>
             </Link>
-
-            {/* Desktop Navigation Links */}
-            <nav className="hidden md:flex items-center gap-1 lg:gap-2 flex-shrink-0">
-              {NAV_LINKS.map((link) => {
-                const isActive = pathname === link.href || (link.href !== "/" && pathname.startsWith(link.href + "/"));
-                return (
-                  <Link
-                    key={link.name}
-                    href={link.href}
-                    className={`px-3 py-2 text-xs lg:text-sm font-semibold transition flex items-center gap-1.5 relative whitespace-nowrap ${
-                      isActive
-                        ? "text-[#111111] dark:text-white font-bold"
-                        : "text-zinc-600 dark:text-zinc-400 hover:text-[#111111] dark:hover:text-white"
-                    }`}
-                  >
-                    <link.icon className={`w-4 h-4 flex-shrink-0 ${isActive ? "text-[#D91E18]" : "text-zinc-400"}`} />
-                    <span className="whitespace-nowrap">{link.name}</span>
-                    {link.badge && (
-                      <span className="px-1.5 py-0.2 rounded-full text-[9px] font-black bg-[#D91E18] text-white">
-                        {link.badge}
-                      </span>
-                    )}
-                    {isActive && (
-                      <span className="absolute bottom-0 left-2 right-2 h-[2.5px] bg-[#D91E18] rounded-full" />
-                    )}
-                  </Link>
-                );
-              })}
-            </nav>
           </div>
 
-          {/* ZONE 2: CENTER / FLEXIBLE - Dedicated Search Zone */}
-          <div className="hidden sm:flex flex-1 items-center justify-center max-w-xs lg:max-w-sm px-2">
+          {/* ZONE 2: CENTER - Wide Prominent Spotlight Search */}
+          <div className="hidden sm:flex flex-1 items-center justify-center max-w-md lg:max-w-xl px-2">
             <button
               onClick={() => setIsSearchOpen(true)}
-              className="w-full flex items-center justify-between gap-2 h-9 px-3.5 rounded-lg bg-zinc-50 dark:bg-zinc-900/90 border border-zinc-200 dark:border-zinc-800 text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200 hover:border-zinc-300 dark:hover:border-zinc-700 transition text-xs shadow-2xs"
-              title="Search stories (⌘K)"
+              className="w-full flex items-center justify-between gap-2 h-10 px-4 rounded-xl bg-zinc-50 dark:bg-zinc-900/90 border border-zinc-200 dark:border-zinc-800 text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200 hover:border-zinc-300 dark:hover:border-zinc-700 transition text-xs shadow-2xs cursor-pointer group"
+              title="Global Spotlight Search (Ctrl + K)"
             >
-              <div className="flex items-center gap-2 min-w-0 overflow-hidden">
-                <span className="truncate text-zinc-400 text-xs">Search stories...</span>
+              <div className="flex items-center gap-2.5 min-w-0 overflow-hidden">
+                <Search className="w-4 h-4 text-zinc-400 group-hover:text-[#D91E18] transition flex-shrink-0" />
+                <span className="truncate text-zinc-400 text-xs font-medium">Search stories, webtoons, authors, genres...</span>
               </div>
-              <Search className="w-3.5 h-3.5 text-zinc-400 flex-shrink-0" />
+              <kbd className="hidden lg:inline-flex items-center gap-0.5 px-2 py-0.5 rounded-lg bg-zinc-200/80 dark:bg-zinc-800 text-[10px] font-mono font-bold text-zinc-500 border border-zinc-300 dark:border-zinc-700">
+                Ctrl K
+              </kbd>
             </button>
           </div>
 
@@ -245,13 +253,14 @@ export function Navbar() {
                 <div className="relative" ref={notifsRef}>
                   <button
                     onClick={() => setIsNotifsOpen(!isNotifsOpen)}
-                    className="p-2 rounded-xl text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-900 transition relative"
+                    aria-label="Notifications"
+                    className="p-2 rounded-xl text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-900 transition relative cursor-pointer"
                     title="Notifications"
                   >
                     <Bell className="w-4 h-4" />
                     {mounted && unreadCount > 0 && (
-                      <span className="absolute top-1 right-1 px-1 min-w-4 h-4 rounded-full bg-rose-500 text-white text-[9px] font-black flex items-center justify-center ring-2 ring-white dark:ring-zinc-950">
-                        {unreadCount}
+                      <span className="absolute top-1 right-1 px-1 min-w-4 h-4 rounded-full bg-[#D91E18] text-white text-[9px] font-black flex items-center justify-center ring-2 ring-white dark:ring-zinc-950 animate-pulse">
+                        {unreadCount > 9 ? "9+" : unreadCount}
                       </span>
                     )}
                   </button>
@@ -260,64 +269,142 @@ export function Navbar() {
                     <div
                       className="absolute right-0 top-full mt-2 w-80 sm:w-96 max-w-[calc(100vw-24px)] rounded-3xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-2xl p-4 z-50 animate-in fade-in space-y-3 origin-top-right"
                     >
+                      {/* Header */}
                       <div className="flex items-center justify-between pb-2 border-b border-zinc-100 dark:border-zinc-800">
                         <div className="flex items-center gap-2">
-                          <span className="font-black text-xs text-zinc-900 dark:text-zinc-100">
-                            Notifications
+                          <span className="font-black text-xs sm:text-sm text-zinc-900 dark:text-zinc-100">
+                            Activity & Alerts
                           </span>
                           {unreadCount > 0 && (
-                            <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-rose-500/10 text-rose-500">
+                            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#D91E18]/10 text-[#D91E18]">
                               {unreadCount} new
                             </span>
                           )}
                         </div>
-                        {unreadCount > 0 && (
-                          <button
-                            onClick={() => dataStore.markAllNotificationsRead(user.id)}
-                            className="text-[10px] text-rose-500 hover:text-rose-400 font-bold"
-                          >
-                            Mark all as read
-                          </button>
-                        )}
+
+                        <div className="flex items-center gap-2">
+                          {unreadCount > 0 && (
+                            <button
+                              onClick={() => {
+                                dataStore.markAllNotificationsRead(user.id);
+                                // Trigger re-render
+                                setMounted((prev) => !prev);
+                                setTimeout(() => setMounted(true), 10);
+                              }}
+                              className="text-[10px] text-[#D91E18] hover:text-[#B71813] font-bold flex items-center gap-1 cursor-pointer"
+                              title="Mark all as read"
+                            >
+                              <CheckCircle2 className="w-3 h-3" />
+                              <span>Mark all read</span>
+                            </button>
+                          )}
+                          {notifs.length > 0 && (
+                            <button
+                              onClick={() => {
+                                dataStore.clearAllNotifications(user.id);
+                                setMounted((prev) => !prev);
+                                setTimeout(() => setMounted(true), 10);
+                              }}
+                              className="text-[10px] text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 font-medium cursor-pointer"
+                              title="Clear all notifications"
+                            >
+                              Clear
+                            </button>
+                          )}
+                        </div>
                       </div>
 
-                      <div className="max-h-80 overflow-y-auto space-y-2 text-xs divide-y divide-zinc-100 dark:divide-zinc-800/60">
+                      {/* Notification Items List */}
+                      <div className="max-h-80 overflow-y-auto space-y-2 text-xs divide-y divide-zinc-100 dark:divide-zinc-800/60 scrollbar-thin">
                         {notifs.length === 0 ? (
-                          <p className="py-6 text-center text-xs text-zinc-400">No notifications yet.</p>
+                          <div className="py-8 text-center space-y-2">
+                            <Bell className="w-8 h-8 text-zinc-400 mx-auto opacity-50" />
+                            <p className="text-xs font-bold text-zinc-700 dark:text-zinc-300">
+                              No notifications yet
+                            </p>
+                            <p className="text-[11px] text-zinc-500 max-w-[200px] mx-auto">
+                              Follow creators or stories to get instant updates on new chapters & discussions.
+                            </p>
+                          </div>
                         ) : (
-                          notifs.map((n) => (
-                            <Link
-                              key={n.id}
-                              href={n.contentUrl}
-                              onClick={() => {
-                                dataStore.markNotificationRead(n.id);
-                                setIsNotifsOpen(false);
-                              }}
-                              className={`pt-2.5 first:pt-0 pb-1 flex items-start gap-3 rounded-xl transition ${
-                                !n.isRead ? "opacity-100" : "opacity-70 hover:opacity-100"
-                              }`}
-                            >
-                              <img
-                                src={n.creatorAvatar}
-                                alt={n.creatorName}
-                                className="w-8 h-8 rounded-full object-cover border border-zinc-700 flex-shrink-0 mt-0.5"
-                              />
-                              <div className="min-w-0 flex-1 space-y-0.5">
-                                <p className="font-bold text-zinc-900 dark:text-zinc-100 text-xs truncate">
-                                  {n.title}
-                                </p>
-                                <p className="text-[11px] text-zinc-500 dark:text-zinc-400 line-clamp-2 leading-relaxed">
-                                  {n.message}
-                                </p>
-                                <p className="text-[9px] text-zinc-400 pt-0.5">
-                                  {formatDate(n.createdAt)}
-                                </p>
+                          notifs.map((n) => {
+                            // Badge Icon by type
+                            let badgeColor = "bg-rose-500 text-white";
+                            let BadgeIcon = Sparkles;
+                            if (n.type === "CHAPTER_RELEASE" || n.type === "EPISODE_RELEASE") {
+                              badgeColor = "bg-indigo-600 text-white";
+                              BadgeIcon = BookOpen;
+                            } else if (n.type === "NEW_FOLLOWER") {
+                              badgeColor = "bg-emerald-600 text-white";
+                              BadgeIcon = Users;
+                            } else if (n.type === "LIKE") {
+                              badgeColor = "bg-rose-600 text-white";
+                              BadgeIcon = Heart;
+                            }
+
+                            return (
+                              <div
+                                key={n.id}
+                                className={`pt-2.5 first:pt-0 pb-1 flex items-start gap-3 rounded-2xl p-2 transition group ${
+                                  !n.isRead
+                                    ? "bg-zinc-50 dark:bg-zinc-800/40"
+                                    : "opacity-75 hover:opacity-100 hover:bg-zinc-50/50 dark:hover:bg-zinc-800/20"
+                                }`}
+                              >
+                                {/* Creator Avatar with Badge */}
+                                <div className="relative flex-shrink-0 mt-0.5">
+                                  <img
+                                    src={n.creatorAvatar || "/hero-character.png"}
+                                    alt={n.creatorName || "Alert"}
+                                    className="w-9 h-9 rounded-full object-cover border border-zinc-200 dark:border-zinc-700"
+                                  />
+                                  <span
+                                    className={`absolute -bottom-1 -right-1 w-4 h-4 rounded-full flex items-center justify-center ring-2 ring-white dark:ring-zinc-900 ${badgeColor}`}
+                                  >
+                                    <BadgeIcon className="w-2.5 h-2.5" />
+                                  </span>
+                                </div>
+
+                                <Link
+                                  href={n.contentUrl || "/"}
+                                  onClick={() => {
+                                    dataStore.markNotificationRead(n.id);
+                                    setIsNotifsOpen(false);
+                                  }}
+                                  className="min-w-0 flex-1 space-y-0.5"
+                                >
+                                  <div className="flex items-center justify-between gap-1">
+                                    <p className="font-bold text-zinc-900 dark:text-zinc-100 text-xs truncate">
+                                      {n.title}
+                                    </p>
+                                    {!n.isRead && (
+                                      <span className="w-2 h-2 rounded-full bg-[#D91E18] flex-shrink-0" />
+                                    )}
+                                  </div>
+                                  <p className="text-[11px] text-zinc-600 dark:text-zinc-400 line-clamp-2 leading-relaxed">
+                                    {n.message}
+                                  </p>
+                                  <p className="text-[9px] text-zinc-400 font-medium pt-0.5">
+                                    {formatDate(n.createdAt)}
+                                  </p>
+                                </Link>
+
+                                {/* Delete / Dismiss single notif */}
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    dataStore.deleteNotification(n.id);
+                                    setMounted((prev) => !prev);
+                                    setTimeout(() => setMounted(true), 10);
+                                  }}
+                                  className="opacity-0 group-hover:opacity-100 p-1 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 transition"
+                                  title="Dismiss notification"
+                                >
+                                  <X className="w-3.5 h-3.5" />
+                                </button>
                               </div>
-                              {!n.isRead && (
-                                <span className="w-2 h-2 rounded-full bg-rose-500 flex-shrink-0 mt-1.5" />
-                              )}
-                            </Link>
-                          ))
+                            );
+                          })
                         )}
                       </div>
                     </div>
@@ -329,6 +416,17 @@ export function Navbar() {
             {/* User Profile / Auth Buttons */}
             {user ? (
               <div className="flex items-center gap-2 sm:gap-2.5">
+                {/* Coins Counter Button */}
+                <button
+                  onClick={() => setIsCoinShopOpen(true)}
+                  className="hidden sm:flex items-center gap-1.5 px-2.5 py-1.5 rounded-full bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 text-amber-600 dark:text-amber-400 font-black text-xs transition transform active:scale-95 cursor-pointer shadow-xs"
+                  title="Yumora Coin Treasury (Click to get more coins)"
+                >
+                  <Coins className="w-3.5 h-3.5 text-amber-500" />
+                  <span>{dataStore.getUserCoins(user.id).toLocaleString()}</span>
+                  <Plus className="w-3 h-3 text-amber-500 ml-0.5" />
+                </button>
+
                 <Link
                   href="/creator/upload"
                   className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-[#D91E18] hover:bg-[#B71813] text-white font-bold text-xs shadow-xs transition transform hover:scale-[1.02] active:scale-[0.98] whitespace-nowrap"
@@ -342,7 +440,7 @@ export function Navbar() {
                   <button
                     onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
                     aria-label="User account menu"
-                    className="flex items-center gap-1.5 p-1 pl-1.5 rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 transition"
+                    className="flex items-center gap-1.5 p-1 pl-1.5 rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 transition cursor-pointer"
                   >
                     <img
                       src={user.avatar}
@@ -353,7 +451,7 @@ export function Navbar() {
                       {user.name.split(" ")[0]}
                     </span>
                     <span
-                      className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full uppercase hidden sm:inline ${
+                      className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full uppercase hidden sm:inline whitespace-nowrap flex-shrink-0 ${
                         role === "ADMIN"
                           ? "bg-amber-100 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400"
                           : role === "CREATOR"
@@ -401,29 +499,28 @@ export function Navbar() {
                         </div>
                       </div>
 
-                      {/* Fast Role Switcher */}
-                      <div className="p-3 border-b border-zinc-100 dark:border-zinc-800">
-                        <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 mb-1.5 flex items-center gap-1">
-                          <Sparkles className="w-3 h-3 text-amber-500" /> Switch Demo Role
-                        </p>
-                        <div className="grid grid-cols-3 gap-1.5">
-                          {(["READER", "CREATOR", "ADMIN"] as Role[]).map((r) => (
-                            <button
-                              key={r}
-                              onClick={() => {
-                                switchRole(r);
-                                setIsUserMenuOpen(false);
-                              }}
-                              className={`px-2 py-1.5 rounded-xl text-[10px] font-bold transition text-center ${
-                                role === r
-                                  ? "bg-gradient-to-r from-rose-600 to-indigo-600 text-white shadow-xs"
-                                  : "bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100"
-                              }`}
-                            >
-                              {r}
-                            </button>
-                          ))}
+                      {/* Coins Wallet Card */}
+                      <div className="mx-2 my-2 p-3 rounded-2xl bg-gradient-to-r from-amber-500/10 via-amber-500/5 to-rose-500/10 border border-amber-500/20 flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <div className="w-8 h-8 rounded-xl bg-amber-500/20 text-amber-500 flex items-center justify-center flex-shrink-0">
+                            <Coins className="w-4 h-4" />
+                          </div>
+                          <div>
+                            <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">Your Balance</p>
+                            <p className="text-xs font-black text-amber-600 dark:text-amber-400 font-mono">
+                              {dataStore.getUserCoins(user.id).toLocaleString()} Coins
+                            </p>
+                          </div>
                         </div>
+                        <button
+                          onClick={() => {
+                            setIsUserMenuOpen(false);
+                            setIsCoinShopOpen(true);
+                          }}
+                          className="px-2.5 py-1 rounded-xl bg-amber-500 hover:bg-amber-400 text-zinc-950 text-[11px] font-black transition shadow-xs cursor-pointer"
+                        >
+                          + Top Up
+                        </button>
                       </div>
 
                       {/* Navigation Links */}
@@ -446,17 +543,6 @@ export function Navbar() {
                           <span>Upload New Story / Comic</span>
                         </Link>
 
-                        {role === "ADMIN" && (
-                          <Link
-                            href="/admin"
-                            onClick={() => setIsUserMenuOpen(false)}
-                            className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition font-medium"
-                          >
-                            <Shield className="w-4 h-4 text-amber-400" />
-                            <span>Admin Moderation</span>
-                          </Link>
-                        )}
-
                         <Link
                           href={`/creator/${user.username}`}
                           onClick={() => setIsUserMenuOpen(false)}
@@ -473,6 +559,15 @@ export function Navbar() {
                         >
                           <Bookmark className="w-4 h-4 text-rose-400" />
                           <span>My Library & Reading History</span>
+                        </Link>
+
+                        <Link
+                          href="/admin"
+                          onClick={() => setIsUserMenuOpen(false)}
+                          className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition font-medium"
+                        >
+                          <Shield className="w-4 h-4 text-amber-500" />
+                          <span>Admin Control Center</span>
                         </Link>
                       </div>
 
@@ -516,6 +611,13 @@ export function Navbar() {
 
       {/* Modals */}
       <SearchModal isOpen={isSearchOpen} onClose={() => setIsSearchOpen(false)} />
+      <CoinShopModal
+        isOpen={isCoinShopOpen || isSidebarCoinShopOpen}
+        onClose={() => {
+          setIsCoinShopOpen(false);
+          closeSidebarCoinShop();
+        }}
+      />
       <AuthModal />
     </>
   );

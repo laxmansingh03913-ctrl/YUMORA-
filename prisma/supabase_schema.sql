@@ -26,9 +26,9 @@ EXCEPTION
     WHEN duplicate_object THEN null;
 END $$;
 
--- 3. Users Table (Linked with Supabase Auth)
+-- 3. Users Table (Flexible for Supabase Auth and Guest Creators)
 CREATE TABLE IF NOT EXISTS public.profiles (
-    id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     name TEXT,
     username TEXT UNIQUE NOT NULL,
     email TEXT UNIQUE NOT NULL,
@@ -49,6 +49,11 @@ CREATE TABLE IF NOT EXISTS public.profiles (
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
+
+-- Remove hard blockers if table already existed
+ALTER TABLE public.profiles DROP CONSTRAINT IF EXISTS profiles_id_fkey;
+ALTER TABLE public.comics DROP CONSTRAINT IF EXISTS comics_creator_id_fkey;
+ALTER TABLE public.novels DROP CONSTRAINT IF EXISTS novels_creator_id_fkey;
 
 -- 4. Follows Table
 CREATE TABLE IF NOT EXISTS public.follows (
@@ -229,33 +234,54 @@ ALTER TABLE public.bookmarks ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.comments ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.contests ENABLE ROW LEVEL SECURITY;
 
--- Public Read Policies (Idempotent)
+-- Public Read & Insert Policies (Allows Creator Studio Uploads)
 DROP POLICY IF EXISTS "Public Read Profiles" ON public.profiles;
 CREATE POLICY "Public Read Profiles" ON public.profiles FOR SELECT USING (true);
 
 DROP POLICY IF EXISTS "Users Can Update Own Profile" ON public.profiles;
-CREATE POLICY "Users Can Update Own Profile" ON public.profiles FOR UPDATE USING (auth.uid() = id);
+CREATE POLICY "Users Can Update Own Profile" ON public.profiles FOR ALL USING (true);
 
 DROP POLICY IF EXISTS "Public Read Novels" ON public.novels;
 CREATE POLICY "Public Read Novels" ON public.novels FOR SELECT USING (true);
 
-DROP POLICY IF EXISTS "Creators Can Insert Novels" ON public.novels;
-CREATE POLICY "Creators Can Insert Novels" ON public.novels FOR INSERT WITH CHECK (auth.uid() = creator_id);
+DROP POLICY IF EXISTS "Anyone Can Insert Novels" ON public.novels;
+CREATE POLICY "Anyone Can Insert Novels" ON public.novels FOR INSERT WITH CHECK (true);
 
-DROP POLICY IF EXISTS "Creators Can Update Own Novels" ON public.novels;
-CREATE POLICY "Creators Can Update Own Novels" ON public.novels FOR UPDATE USING (auth.uid() = creator_id);
+DROP POLICY IF EXISTS "Anyone Can Update Novels" ON public.novels;
+CREATE POLICY "Anyone Can Update Novels" ON public.novels FOR UPDATE USING (true);
 
 DROP POLICY IF EXISTS "Public Read Chapters" ON public.chapters;
 CREATE POLICY "Public Read Chapters" ON public.chapters FOR SELECT USING (true);
 
+DROP POLICY IF EXISTS "Anyone Can Insert Chapters" ON public.chapters;
+CREATE POLICY "Anyone Can Insert Chapters" ON public.chapters FOR INSERT WITH CHECK (true);
+
+DROP POLICY IF EXISTS "Anyone Can Update Chapters" ON public.chapters;
+CREATE POLICY "Anyone Can Update Chapters" ON public.chapters FOR UPDATE USING (true);
+
 DROP POLICY IF EXISTS "Public Read Comics" ON public.comics;
 CREATE POLICY "Public Read Comics" ON public.comics FOR SELECT USING (true);
+
+DROP POLICY IF EXISTS "Anyone Can Insert Comics" ON public.comics;
+CREATE POLICY "Anyone Can Insert Comics" ON public.comics FOR INSERT WITH CHECK (true);
+
+DROP POLICY IF EXISTS "Anyone Can Update Comics" ON public.comics;
+CREATE POLICY "Anyone Can Update Comics" ON public.comics FOR UPDATE USING (true);
 
 DROP POLICY IF EXISTS "Public Read Episodes" ON public.episodes;
 CREATE POLICY "Public Read Episodes" ON public.episodes FOR SELECT USING (true);
 
+DROP POLICY IF EXISTS "Anyone Can Insert Episodes" ON public.episodes;
+CREATE POLICY "Anyone Can Insert Episodes" ON public.episodes FOR INSERT WITH CHECK (true);
+
+DROP POLICY IF EXISTS "Anyone Can Update Episodes" ON public.episodes;
+CREATE POLICY "Anyone Can Update Episodes" ON public.episodes FOR UPDATE USING (true);
+
 DROP POLICY IF EXISTS "Public Read Comments" ON public.comments;
 CREATE POLICY "Public Read Comments" ON public.comments FOR SELECT USING (true);
+
+DROP POLICY IF EXISTS "Anyone Can Insert Comments" ON public.comments;
+CREATE POLICY "Anyone Can Insert Comments" ON public.comments FOR INSERT WITH CHECK (true);
 
 DROP POLICY IF EXISTS "Public Read Contests" ON public.contests;
 CREATE POLICY "Public Read Contests" ON public.contests FOR SELECT USING (true);

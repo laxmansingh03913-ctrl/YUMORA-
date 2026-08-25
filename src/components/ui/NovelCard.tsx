@@ -97,7 +97,7 @@ export function NovelCard({ novel, variant = "standard", rank }: NovelCardProps)
   }
 
   return (
-    <div className="group relative flex flex-col rounded-xl bg-white dark:bg-zinc-900 border border-[#EAEAE5] dark:border-zinc-800 hover:border-black dark:hover:border-white transition-all duration-200 overflow-hidden shadow-2xs">
+    <div className="group relative flex flex-col rounded-xl bg-white dark:bg-zinc-900 border border-[#EAEAE5] dark:border-zinc-800 hover:border-black dark:hover:border-white transition-all duration-200 overflow-hidden shadow-2xs hover-lift">
       {/* Cover Artwork Container */}
       <Link href={`/novels/${novel.slug}`} className="relative aspect-[3/4] overflow-hidden bg-zinc-100 dark:bg-zinc-800">
         <img

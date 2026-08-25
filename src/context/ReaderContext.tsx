@@ -56,12 +56,41 @@ export function ReaderProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const saveProgress = (contentId: string, chapterNumber: number, progressPercentage: number) => {
+  const saveProgress = (
+    contentId: string,
+    chapterNumber: number,
+    progressPercentage: number,
+    metadata?: {
+      contentTitle?: string;
+      contentSlug?: string;
+      coverUrl?: string;
+      creatorName?: string;
+      episodeTitle?: string;
+      totalUnits?: number;
+      contentType?: "NOVEL" | "COMIC";
+    }
+  ) => {
+    const novel = dataStore.getNovelById(contentId) || dataStore.getNovelBySlug(contentId);
+    const comic = dataStore.getComicById(contentId) || dataStore.getComicBySlug(contentId);
+
+    const title = metadata?.contentTitle || novel?.title || comic?.title;
+    const slug = metadata?.contentSlug || novel?.slug || comic?.slug;
+    const cover = metadata?.coverUrl || novel?.coverUrl || comic?.coverUrl;
+    const creator = metadata?.creatorName || novel?.creator.name || comic?.creator.name;
+    const total = metadata?.totalUnits || novel?.chapters.length || comic?.episodes.length;
+    const type = metadata?.contentType || (comic ? "COMIC" : "NOVEL");
+
     dataStore.saveReadingProgress({
       contentId,
-      contentType: "NOVEL",
+      contentType: type,
+      contentTitle: title,
+      contentSlug: slug,
+      coverUrl: cover,
+      creatorName: creator,
+      episodeTitle: metadata?.episodeTitle || (type === "NOVEL" ? `Chapter ${chapterNumber}` : `Episode ${chapterNumber}`),
       chapterNumber,
       progressPercentage,
+      totalUnits: total,
       lastReadAt: new Date().toISOString(),
     });
   };

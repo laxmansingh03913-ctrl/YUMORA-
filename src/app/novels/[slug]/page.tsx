@@ -21,12 +21,16 @@ import {
   Calendar,
   MessageSquare,
   ThumbsUp,
+  Coins,
+  Headphones,
 } from "lucide-react";
 import { dataStore } from "@/lib/data/store";
 import { useAuth } from "@/context/AuthContext";
 import { formatNumber, formatDate } from "@/lib/utils";
 import { ReportModal } from "@/components/ui/ReportModal";
 import { NovelCard } from "@/components/ui/NovelCard";
+import { TipCreatorModal } from "@/components/ui/TipCreatorModal";
+import { CoinShopModal } from "@/components/ui/CoinShopModal";
 import { Comment, Review } from "@/lib/types";
 
 interface PageProps {
@@ -45,6 +49,8 @@ export default function NovelDetailPage({ params }: PageProps) {
   const [isFollowingAuthor, setIsFollowingAuthor] = useState(false);
   const [activeTab, setActiveTab] = useState<"chapters" | "reviews" | "discussion">("chapters");
   const [isReportOpen, setIsReportOpen] = useState(false);
+  const [isTipModalOpen, setIsTipModalOpen] = useState(false);
+  const [isCoinShopOpen, setIsCoinShopOpen] = useState(false);
 
   // New comment / review inputs
   const [newCommentText, setNewCommentText] = useState("");
@@ -352,11 +358,11 @@ export default function NovelDetailPage({ params }: PageProps) {
                 </div>
               )}
 
-              {/* Action Buttons: Read Now, Bookmark, Like, Report */}
+              {/* Action Buttons: Read Now, Listen to Audiobook, Tip, Bookmark */}
               <div className="flex flex-wrap items-center gap-3 pt-2">
                 <button
                   onClick={() => requireAuth(`/novels/${novel.slug}/chapter/${nextChapterToRead}`)}
-                  className="px-8 py-3.5 rounded-2xl bg-gradient-to-r from-rose-600 to-indigo-600 hover:from-rose-500 hover:to-indigo-500 text-white font-bold text-sm shadow-xl shadow-rose-600/30 transition transform hover:scale-[1.02] flex items-center gap-2"
+                  className="px-7 py-3.5 rounded-2xl bg-gradient-to-r from-rose-600 to-indigo-600 hover:from-rose-500 hover:to-indigo-500 text-white font-bold text-sm shadow-xl shadow-rose-600/30 transition transform hover:scale-[1.02] flex items-center gap-2 cursor-pointer"
                 >
                   <BookOpen className="w-4 h-4" />
                   <span>
@@ -365,6 +371,24 @@ export default function NovelDetailPage({ params }: PageProps) {
                       : "Start Reading Ch. 1"}
                   </span>
                   <ChevronRight className="w-4 h-4" />
+                </button>
+
+                <button
+                  onClick={() => requireAuth(`/novels/${novel.slug}/chapter/${nextChapterToRead}?listen=true`)}
+                  className="px-6 py-3.5 rounded-2xl bg-gradient-to-r from-rose-600 to-amber-500 hover:opacity-95 text-white font-bold text-sm shadow-xl shadow-rose-600/30 transition transform hover:scale-[1.02] flex items-center gap-2 cursor-pointer"
+                  title="Listen to this chapter with AI Voice Narrator"
+                >
+                  <Headphones className="w-4 h-4" />
+                  <span>Listen to Audiobook</span>
+                </button>
+
+                <button
+                  onClick={() => setIsTipModalOpen(true)}
+                  className="px-5 py-3.5 rounded-2xl bg-gradient-to-r from-amber-500 via-amber-600 to-rose-600 hover:opacity-95 text-white font-black text-xs shadow-lg shadow-amber-500/20 transition transform hover:scale-[1.02] active:scale-[0.98] flex items-center gap-2 cursor-pointer"
+                  title="Tip Author with Coins"
+                >
+                  <Coins className="w-4 h-4" />
+                  <span>Tip Author</span>
                 </button>
 
                 <button
@@ -667,6 +691,25 @@ export default function NovelDetailPage({ params }: PageProps) {
         contentTitle={novel.title}
         contentType="NOVEL"
         creatorName={novel.creator.name}
+      />
+
+      {/* Tip Author Modal */}
+      <TipCreatorModal
+        isOpen={isTipModalOpen}
+        onClose={() => setIsTipModalOpen(false)}
+        creator={novel.creator}
+        content={{
+          id: novel.id,
+          title: novel.title,
+          type: "NOVEL",
+        }}
+        onOpenCoinShop={() => setIsCoinShopOpen(true)}
+      />
+
+      {/* Coin Shop Modal */}
+      <CoinShopModal
+        isOpen={isCoinShopOpen}
+        onClose={() => setIsCoinShopOpen(false)}
       />
     </div>
   );

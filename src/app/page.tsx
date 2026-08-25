@@ -23,6 +23,7 @@ import { dataStore } from "@/lib/data/store";
 import { useAuth } from "@/context/AuthContext";
 import { NovelCard } from "@/components/ui/NovelCard";
 import { ComicCard } from "@/components/ui/ComicCard";
+import { ContinueReadingWidget } from "@/components/home/ContinueReadingWidget";
 import { formatNumber, formatDate } from "@/lib/utils";
 import { formatContestDeadline, getContestStatus } from "@/lib/utils/contest";
 
@@ -272,6 +273,13 @@ export default function HomePage() {
           </div>
         </div>
       </section>
+
+      {/* ========================================================================= */}
+      {/* 1.5 CONTINUE READING SHELF (Pick Up Where You Left Off) */}
+      {/* ========================================================================= */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
+        <ContinueReadingWidget />
+      </div>
 
       {/* ========================================================================= */}
       {/* 2. FEATURED TODAY (注目の作品) CAROUSEL */}

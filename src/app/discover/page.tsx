@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import {
   Compass,
   Search,
@@ -12,20 +12,26 @@ import {
   Filter,
   Flame,
   CheckCircle2,
+  Image as ImageIcon,
+  Layers,
 } from "lucide-react";
 import { dataStore } from "@/lib/data/store";
+import { dbService } from "@/lib/supabase/db";
 import { NovelCard } from "@/components/ui/NovelCard";
-import { Novel, LanguageCode } from "@/lib/types";
+import { ComicCard } from "@/components/ui/ComicCard";
+import { Novel, Comic, LanguageCode } from "@/lib/types";
 
 const ALL_GENRES = [
   "All Genres",
   "Sci-Fi",
   "Fantasy",
   "Cyberpunk",
+  "Action",
   "Mystery",
   "Romance",
   "Adventure",
   "Steampunk",
+  "Supernatural",
   "Slice of Life",
 ];
 
@@ -40,63 +46,165 @@ const LANGUAGES: { code: string; label: string }[] = [
   { code: "hi", label: "हिन्दी (HI)" },
 ];
 
+type ContentMedium = "all" | "novels" | "comics";
+
+interface UnifiedWork {
+  id: string;
+  type: "NOVEL" | "COMIC";
+  title: string;
+  creatorName: string;
+  creatorUsername: string;
+  genre: string;
+  secondaryGenre?: string;
+  tags: string[];
+  description: string;
+  language: string;
+  status: string;
+  contentRating: string;
+  isEditorPick?: boolean;
+  reads: number;
+  rating: number;
+  likesCount: number;
+  createdAt: string;
+  novelData?: Novel;
+  comicData?: Comic;
+}
+
 export default function DiscoverPage() {
+  const [novels, setNovels] = useState<Novel[]>(() => dataStore.getNovels());
+  const [comics, setComics] = useState<Comic[]>(() => dataStore.getComics());
   const [searchQuery, setSearchQuery] = useState("");
+  const [selectedMedium, setSelectedMedium] = useState<ContentMedium>("all");
   const [selectedGenre, setSelectedGenre] = useState("All Genres");
   const [selectedLanguage, setSelectedLanguage] = useState("all");
   const [selectedStatus, setSelectedStatus] = useState("all");
   const [selectedRating, setSelectedRating] = useState("all");
   const [sortBy, setSortBy] = useState<"trending" | "reads" | "rating" | "newest" | "likes">("trending");
   const [activeTab, setActiveTab] = useState<"all" | "trending" | "editors" | "completed" | "gems">("all");
-  const [showMobileFilters, setShowMobileFilters] = useState(false);
 
-  const allNovels = dataStore.getNovels();
+  // Sync latest from data store and Supabase Cloud
+  useEffect(() => {
+    setNovels(dataStore.getNovels());
+    setComics(dataStore.getComics());
 
-  const filteredNovels = useMemo(() => {
-    return allNovels
-      .filter((novel) => {
+    // Fetch cloud novels
+    dbService.getNovels().then((cloudNovels) => {
+      if (cloudNovels && cloudNovels.length > 0) {
+        cloudNovels.forEach((n) => dataStore.saveNovel(n));
+        setNovels(dataStore.getNovels());
+      }
+    });
+
+    // Fetch cloud comics
+    dbService.getComics().then((cloudComics) => {
+      if (cloudComics && cloudComics.length > 0) {
+        cloudComics.forEach((c) => dataStore.saveComic(c));
+        setComics(dataStore.getComics());
+      }
+    });
+  }, []);
+
+  // Combine novels and comics into unified searchable works
+  const allWorks = useMemo<UnifiedWork[]>(() => {
+    const novelItems: UnifiedWork[] = novels.map((n) => ({
+      id: n.id,
+      type: "NOVEL",
+      title: n.title,
+      creatorName: n.creator?.name || "Creator",
+      creatorUsername: n.creator?.username || "creator",
+      genre: n.genre,
+      secondaryGenre: n.secondaryGenre,
+      tags: n.tags || [],
+      description: n.description,
+      language: n.language,
+      status: n.status,
+      contentRating: n.contentRating,
+      isEditorPick: n.isEditorPick,
+      reads: n.reads || 0,
+      rating: n.rating || 5.0,
+      likesCount: n.likesCount || 0,
+      createdAt: n.createdAt,
+      novelData: n,
+    }));
+
+    const comicItems: UnifiedWork[] = comics.map((c) => ({
+      id: c.id,
+      type: "COMIC",
+      title: c.title,
+      creatorName: c.creator?.name || "Creator",
+      creatorUsername: c.creator?.username || "creator",
+      genre: c.genre,
+      secondaryGenre: c.secondaryGenre,
+      tags: c.tags || [],
+      description: c.description,
+      language: c.language,
+      status: c.status,
+      contentRating: c.contentRating,
+      isEditorPick: c.isEditorPick,
+      reads: c.reads || 0,
+      rating: c.rating || 5.0,
+      likesCount: c.likesCount || 0,
+      createdAt: c.createdAt,
+      comicData: c,
+    }));
+
+    return [...novelItems, ...comicItems];
+  }, [novels, comics]);
+
+  // Filter and sort all works
+  const filteredWorks = useMemo(() => {
+    return allWorks
+      .filter((work) => {
+        // Medium / Type filter
+        if (selectedMedium === "novels" && work.type !== "NOVEL") return false;
+        if (selectedMedium === "comics" && work.type !== "COMIC") return false;
+
         // Tab filtering
-        if (activeTab === "trending" && novel.reads < 100000) return false;
-        if (activeTab === "editors" && !novel.isEditorPick) return false;
-        if (activeTab === "completed" && novel.status !== "COMPLETED") return false;
-        if (activeTab === "gems" && (novel.reads > 150000 || novel.rating < 4.8)) return false;
+        if (activeTab === "trending" && work.reads < 500) return false;
+        if (activeTab === "editors" && !work.isEditorPick) return false;
+        if (activeTab === "completed" && work.status !== "COMPLETED") return false;
+        if (activeTab === "gems" && (work.reads > 150000 || work.rating < 4.8)) return false;
 
         // Search query
         if (searchQuery.trim()) {
           const q = searchQuery.toLowerCase();
-          const matchTitle = novel.title.toLowerCase().includes(q);
-          const matchAuthor = novel.creator.name.toLowerCase().includes(q);
-          const matchTag = novel.tags.some((t) => t.toLowerCase().includes(q));
-          const matchDesc = novel.description.toLowerCase().includes(q);
+          const matchTitle = work.title.toLowerCase().includes(q);
+          const matchAuthor = work.creatorName.toLowerCase().includes(q);
+          const matchTag = work.tags.some((t) => t.toLowerCase().includes(q));
+          const matchDesc = work.description.toLowerCase().includes(q);
           if (!matchTitle && !matchAuthor && !matchTag && !matchDesc) return false;
         }
 
         // Genre
         if (selectedGenre !== "All Genres") {
-          if (novel.genre !== selectedGenre && novel.secondaryGenre !== selectedGenre) {
+          const g = selectedGenre.toLowerCase();
+          const matchGenre = work.genre.toLowerCase() === g;
+          const matchSecGenre = work.secondaryGenre?.toLowerCase() === g;
+          const matchTags = work.tags.some((t) => t.toLowerCase() === g);
+          if (!matchGenre && !matchSecGenre && !matchTags) {
             return false;
           }
         }
 
         // Language
-        if (selectedLanguage !== "all" && novel.language !== selectedLanguage) {
+        if (selectedLanguage !== "all" && work.language.toLowerCase() !== selectedLanguage.toLowerCase()) {
           return false;
         }
 
         // Status
-        if (selectedStatus !== "all" && novel.status !== selectedStatus) {
+        if (selectedStatus !== "all" && work.status !== selectedStatus) {
           return false;
         }
 
         // Content Rating
-        if (selectedRating !== "all" && novel.contentRating !== selectedRating) {
+        if (selectedRating !== "all" && work.contentRating !== selectedRating) {
           return false;
         }
 
         return true;
       })
       .sort((a, b) => {
-        if (sortBy === "trending") return b.reads * b.rating - a.reads * a.rating;
+        if (sortBy === "trending") return (b.reads + 1) * b.rating - (a.reads + 1) * a.rating;
         if (sortBy === "reads") return b.reads - a.reads;
         if (sortBy === "rating") return b.rating - a.rating;
         if (sortBy === "likes") return b.likesCount - a.likesCount;
@@ -106,7 +214,8 @@ export default function DiscoverPage() {
         return 0;
       });
   }, [
-    allNovels,
+    allWorks,
+    selectedMedium,
     searchQuery,
     selectedGenre,
     selectedLanguage,
@@ -118,6 +227,7 @@ export default function DiscoverPage() {
 
   const resetFilters = () => {
     setSearchQuery("");
+    setSelectedMedium("all");
     setSelectedGenre("All Genres");
     setSelectedLanguage("all");
     setSelectedStatus("all");
@@ -128,11 +238,15 @@ export default function DiscoverPage() {
 
   const hasActiveFilters =
     searchQuery ||
+    selectedMedium !== "all" ||
     selectedGenre !== "All Genres" ||
     selectedLanguage !== "all" ||
     selectedStatus !== "all" ||
     selectedRating !== "all" ||
     activeTab !== "all";
+
+  const novelCount = filteredWorks.filter((w) => w.type === "NOVEL").length;
+  const comicCount = filteredWorks.filter((w) => w.type === "COMIC").length;
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
@@ -146,10 +260,10 @@ export default function DiscoverPage() {
             </span>
           </div>
           <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black text-[#111111] dark:text-white tracking-tight">
-            Explore Stories & Creators
+            Explore Stories, Comics & Creators
           </h1>
           <p className="text-xs sm:text-sm text-[#555555] dark:text-zinc-400 mt-1 font-medium">
-            Filter by genre, language, length, status, and community acclaim
+            Discover original novels, vertical webtoons, manga series, and independent creators
           </p>
         </div>
 
@@ -157,39 +271,81 @@ export default function DiscoverPage() {
         <div className="relative w-full md:w-80">
           <input
             type="text"
-            placeholder="Search keywords, authors..."
+            placeholder="Search titles, authors, keywords..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-9 pr-4 py-2 rounded-lg bg-white dark:bg-zinc-900 border border-[#EAEAE5] dark:border-zinc-700 text-[#111111] dark:text-white text-xs focus:outline-none focus:border-[#D91E18] transition placeholder-zinc-400"
+            className="w-full pl-9 pr-4 py-2 rounded-lg bg-white dark:bg-zinc-900 border border-[#EAEAE5] dark:border-zinc-700 text-[#111111] dark:text-white text-xs focus:outline-none focus:border-[#D91E18] transition placeholder-zinc-400 shadow-2xs"
           />
           <Search className="w-4 h-4 text-zinc-400 absolute left-3 top-1/2 -translate-y-1/2" />
         </div>
       </div>
 
-      {/* Curated Discovery Tabs */}
-      <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
-        {[
-          { id: "all", label: "All Works" },
-          { id: "trending", label: "🔥 Trending" },
-          { id: "editors", label: "🏆 Editor's Picks" },
-          { id: "gems", label: "💎 Hidden Gems" },
-          { id: "completed", label: "✅ Completed" },
-        ].map((tab) => (
+      {/* Content Medium Switcher & Curated Tabs */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        {/* Medium Selector (All, Novels, Comics) */}
+        <div className="flex items-center gap-1 bg-zinc-100 dark:bg-zinc-900/90 p-1 rounded-xl border border-zinc-200 dark:border-zinc-800 w-fit">
           <button
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id as typeof activeTab)}
-            className={`px-3.5 py-1.5 rounded-lg text-xs font-black whitespace-nowrap transition ${
-              activeTab === tab.id
-                ? "bg-[#D91E18] text-white shadow-xs"
-                : "bg-white dark:bg-zinc-900 border border-[#EAEAE5] dark:border-zinc-800 text-zinc-600 dark:text-zinc-400 hover:text-black dark:hover:text-white hover:border-black"
+            onClick={() => setSelectedMedium("all")}
+            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 ${
+              selectedMedium === "all"
+                ? "bg-white dark:bg-zinc-800 text-[#D91E18] shadow-xs font-black"
+                : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100"
             }`}
           >
-            {tab.label}
+            <Layers className="w-3.5 h-3.5" />
+            <span>All Content ({allWorks.length})</span>
           </button>
-        ))}
+
+          <button
+            onClick={() => setSelectedMedium("novels")}
+            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 ${
+              selectedMedium === "novels"
+                ? "bg-white dark:bg-zinc-800 text-[#D91E18] shadow-xs font-black"
+                : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100"
+            }`}
+          >
+            <BookOpen className="w-3.5 h-3.5" />
+            <span>Novels ({novels.length})</span>
+          </button>
+
+          <button
+            onClick={() => setSelectedMedium("comics")}
+            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 ${
+              selectedMedium === "comics"
+                ? "bg-white dark:bg-zinc-800 text-[#D91E18] shadow-xs font-black"
+                : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100"
+            }`}
+          >
+            <ImageIcon className="w-3.5 h-3.5" />
+            <span>Comics & Manga ({comics.length})</span>
+          </button>
+        </div>
+
+        {/* Curated Discovery Tabs */}
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
+          {[
+            { id: "all", label: "Featured" },
+            { id: "trending", label: "🔥 Trending" },
+            { id: "editors", label: "🏆 Editor's Picks" },
+            { id: "gems", label: "💎 Hidden Gems" },
+            { id: "completed", label: "✅ Completed" },
+          ].map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id as typeof activeTab)}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition ${
+                activeTab === tab.id
+                  ? "bg-[#D91E18] text-white shadow-xs font-black"
+                  : "bg-white dark:bg-zinc-900 border border-[#EAEAE5] dark:border-zinc-800 text-zinc-600 dark:text-zinc-400 hover:text-black dark:hover:text-white hover:border-black"
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
       </div>
 
-      {/* Filter Bar */}
+      {/* Filter Options Bar */}
       <div className="p-4 rounded-xl bg-white dark:bg-zinc-900 border border-[#EAEAE5] dark:border-zinc-800 shadow-2xs space-y-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -293,21 +449,28 @@ export default function DiscoverPage() {
 
       {/* Results Header */}
       <div className="flex items-center justify-between text-xs text-zinc-500 dark:text-zinc-400">
-        <span>Showing {filteredNovels.length} stories</span>
+        <span>
+          Showing <strong>{filteredWorks.length}</strong> works
+          {selectedMedium === "all" && filteredWorks.length > 0 && (
+            <span className="text-zinc-400 ml-1">
+              ({novelCount} novels, {comicCount} comics & manga)
+            </span>
+          )}
+        </span>
         <span>
           Sorted by: <strong className="text-zinc-800 dark:text-zinc-200 capitalize">{sortBy}</strong>
         </span>
       </div>
 
       {/* Results Grid */}
-      {filteredNovels.length === 0 ? (
+      {filteredWorks.length === 0 ? (
         <div className="py-20 text-center space-y-4 rounded-3xl bg-zinc-50 dark:bg-zinc-900/40 border border-dashed border-zinc-300 dark:border-zinc-800">
           <BookOpen className="w-12 h-12 text-zinc-400 mx-auto" />
           <h3 className="text-lg font-bold text-zinc-900 dark:text-zinc-100">
-            No matching stories found
+            No matching works found
           </h3>
           <p className="text-xs text-zinc-500 max-w-sm mx-auto">
-            Try adjusting your search keywords, genre filter, or reset your filters to discover other tales.
+            Try adjusting your search keywords, category or medium filters to discover other stories and comics.
           </p>
           <button
             onClick={resetFilters}
@@ -318,9 +481,15 @@ export default function DiscoverPage() {
         </div>
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
-          {filteredNovels.map((novel) => (
-            <NovelCard key={novel.id} novel={novel} />
-          ))}
+          {filteredWorks.map((work) => {
+            if (work.type === "COMIC" && work.comicData) {
+              return <ComicCard key={work.id} comic={work.comicData} />;
+            }
+            if (work.type === "NOVEL" && work.novelData) {
+              return <NovelCard key={work.id} novel={work.novelData} />;
+            }
+            return null;
+          })}
         </div>
       )}
     </div>

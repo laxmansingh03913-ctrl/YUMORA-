@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, use } from "react";
 import Link from "next/link";
-import { notFound, useRouter } from "next/navigation";
+import { notFound, useRouter, useSearchParams } from "next/navigation";
 import {
   ArrowLeft,
   ChevronLeft,
@@ -17,11 +17,23 @@ import {
   X,
   List,
   Check,
+  Maximize2,
+  Minimize2,
+  Play,
+  Pause,
+  Minus,
+  Plus,
+  Type,
+  Eye,
+  Sliders,
+  Headphones,
 } from "lucide-react";
 import { dataStore } from "@/lib/data/store";
 import { useReader } from "@/context/ReaderContext";
 import { useAuth } from "@/context/AuthContext";
-import { formatNumber, formatDate } from "@/lib/utils";
+import { AudiobookPlayer } from "@/components/reader/AudiobookPlayer";
+import { AIAssistantModal } from "@/components/reader/AIAssistantModal";
+import DanmakuOverlay from "@/components/reader/DanmakuOverlay";
 import { Comment } from "@/lib/types";
 
 interface ReaderPageProps {
@@ -34,6 +46,8 @@ interface ReaderPageProps {
 export default function ChapterReaderPage({ params }: ReaderPageProps) {
   const resolvedParams = use(params);
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const shouldAutoListen = searchParams ? searchParams.get("listen") === "true" : false;
   const novelSlug = resolvedParams.slug;
   const chapterNumber = parseInt(resolvedParams.chapterNumber, 10);
 
@@ -51,6 +65,58 @@ export default function ChapterReaderPage({ params }: ReaderPageProps) {
   const [isBookmarked, setIsBookmarked] = useState(false);
   const [comments, setComments] = useState<Comment[]>([]);
   const [commentText, setCommentText] = useState("");
+  const [autoScrollSpeed, setAutoScrollSpeed] = useState<number>(0);
+  const [isBionicReading, setIsBionicReading] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [showQuickDock, setShowQuickDock] = useState(true);
+  const [isAudiobookOpen, setIsAudiobookOpen] = useState(shouldAutoListen);
+  const [isAiAssistantOpen, setIsAiAssistantOpen] = useState(false);
+  const [activeAudioParagraphIdx, setActiveAudioParagraphIdx] = useState(0);
+
+  const paragraphs = React.useMemo(
+    () => (chapter ? chapter.content.split("\n\n").filter((p) => p.trim()) : []),
+    [chapter]
+  );
+
+  const handleAudioParagraphChange = (idx: number) => {
+    setActiveAudioParagraphIdx(idx);
+    const targetElement = document.getElementById(`novel-p-${idx}`);
+    if (targetElement) {
+      targetElement.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+  };
+
+  // Auto-scroll loop
+  useEffect(() => {
+    if (autoScrollSpeed <= 0) return;
+    const speedMs = autoScrollSpeed === 1 ? 35 : autoScrollSpeed === 2 ? 22 : 12;
+    const interval = setInterval(() => {
+      window.scrollBy({ top: 1, behavior: "auto" });
+      // Pause if reached bottom
+      if (window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 10) {
+        setAutoScrollSpeed(0);
+      }
+    }, speedMs);
+
+    return () => clearInterval(interval);
+  }, [autoScrollSpeed]);
+
+  // Fullscreen toggle listener
+  useEffect(() => {
+    const handleFsChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+    document.addEventListener("fullscreenchange", handleFsChange);
+    return () => document.removeEventListener("fullscreenchange", handleFsChange);
+  }, []);
+
+  const toggleFullscreen = () => {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen().catch(() => {});
+    } else {
+      document.exitFullscreen().catch(() => {});
+    }
+  };
 
   // Scroll listener for reading progress
   useEffect(() => {
@@ -191,6 +257,22 @@ export default function ChapterReaderPage({ params }: ReaderPageProps) {
     }
   };
 
+  const renderParagraphContent = (paragraph: string) => {
+    if (!isBionicReading) return paragraph;
+    const words = paragraph.split(" ");
+    return words.map((word, i) => {
+      const mid = Math.ceil(word.length / 2);
+      const boldPart = word.slice(0, mid);
+      const rest = word.slice(mid);
+      return (
+        <span key={i}>
+          <span className="font-extrabold opacity-100">{boldPart}</span>
+          <span className="opacity-80">{rest}</span>{" "}
+        </span>
+      );
+    });
+  };
+
   return (
     <div className={`min-h-screen transition-colors duration-200 ${getThemeClasses()}`}>
       {/* 1. TOP PROGRESS BAR */}
@@ -221,6 +303,30 @@ export default function ChapterReaderPage({ params }: ReaderPageProps) {
         </div>
 
         <div className="flex items-center gap-1 sm:gap-2">
+          {/* AI Story Assistant Trigger */}
+          <button
+            onClick={() => setIsAiAssistantOpen(true)}
+            className="px-3 py-1.5 rounded-xl bg-gradient-to-r from-amber-500/10 via-rose-500/10 to-indigo-500/10 hover:bg-rose-500/20 border border-rose-500/30 text-rose-400 text-xs font-black transition flex items-center gap-1.5 cursor-pointer shadow-xs"
+            title="AI Story Companion (Translate, Summarize, Character Codex, Chat)"
+          >
+            <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+            <span>AI Companion</span>
+          </button>
+
+          {/* AI Audiobook Narrator Trigger */}
+          <button
+            onClick={() => setIsAudiobookOpen((prev) => !prev)}
+            className={`px-3 py-1.5 rounded-xl transition flex items-center gap-1.5 cursor-pointer text-xs font-bold ${
+              isAudiobookOpen
+                ? "bg-gradient-to-r from-rose-600 to-amber-500 text-white shadow-md shadow-rose-600/30"
+                : "bg-white/10 hover:bg-white/20 text-zinc-200"
+            }`}
+            title="Listen to Chapter with AI Narrator"
+          >
+            <Headphones className="w-3.5 h-3.5" />
+            <span>{isAudiobookOpen ? "Listening" : "Listen"}</span>
+          </button>
+
           {/* Chapter Quick Selector */}
           <button
             onClick={() => setIsChapterListOpen(true)}
@@ -285,11 +391,22 @@ export default function ChapterReaderPage({ params }: ReaderPageProps) {
             lineHeight: settings.lineHeight,
           }}
         >
-          {chapter.content.split("\n\n").map((paragraph, idx) => (
-            <p key={idx} className="indent-4 sm:indent-6">
-              {paragraph}
-            </p>
-          ))}
+          {paragraphs.map((paragraph, idx) => {
+            const isSpeakingThis = isAudiobookOpen && activeAudioParagraphIdx === idx;
+            return (
+              <p
+                key={idx}
+                id={`novel-p-${idx}`}
+                className={`indent-4 sm:indent-6 transition-all duration-300 ${
+                  isSpeakingThis
+                    ? "bg-rose-500/15 border-l-4 border-rose-500 pl-4 py-2 rounded-r-2xl shadow-sm ring-1 ring-rose-500/20"
+                    : ""
+                }`}
+              >
+                {renderParagraphContent(paragraph)}
+              </p>
+            );
+          })}
         </article>
 
         {/* Chapter End Divider */}
@@ -605,6 +722,169 @@ export default function ChapterReaderPage({ params }: ReaderPageProps) {
           </div>
         </div>
       )}
+
+      {/* 8. FLOATING QUICK CONTROL DOCK */}
+      <aside aria-label="Quick reading controls" className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40">
+        <div className="flex items-center gap-1.5 sm:gap-2 px-3 py-2 rounded-full bg-zinc-950/90 dark:bg-zinc-900/90 text-white backdrop-blur-xl border border-zinc-700/60 shadow-2xl shadow-black/50">
+          {/* Font Size Steppers */}
+          <div className="flex items-center gap-0.5 bg-zinc-800/80 rounded-full px-1 py-0.5 border border-zinc-700/50">
+            <button
+              onClick={() => updateSettings({ fontSize: Math.max(13, settings.fontSize - 1) })}
+              className="w-7 h-7 rounded-full flex items-center justify-center text-zinc-300 hover:text-white hover:bg-zinc-700 transition cursor-pointer"
+              title="Decrease Font Size (A-)"
+            >
+              <Minus className="w-3.5 h-3.5" />
+            </button>
+            <span className="text-[11px] font-mono font-black px-1 min-w-[28px] text-center text-rose-400">
+              {settings.fontSize}px
+            </span>
+            <button
+              onClick={() => updateSettings({ fontSize: Math.min(32, settings.fontSize + 1) })}
+              className="w-7 h-7 rounded-full flex items-center justify-center text-zinc-300 hover:text-white hover:bg-zinc-700 transition cursor-pointer"
+              title="Increase Font Size (A+)"
+            >
+              <Plus className="w-3.5 h-3.5" />
+            </button>
+          </div>
+
+          {/* Quick Theme Dots */}
+          <div className="flex items-center gap-1 bg-zinc-800/80 rounded-full px-1.5 py-1 border border-zinc-700/50">
+            {[
+              { id: "dark", bg: "bg-[#0c0c12]", title: "Dark" },
+              { id: "midnight", bg: "bg-black", title: "OLED Pitch Black" },
+              { id: "sepia", bg: "bg-[#f7f1e5]", title: "Cream Sepia Paper" },
+              { id: "slate", bg: "bg-[#1e293b]", title: "Slate Gray" },
+              { id: "light", bg: "bg-white", title: "Clean Light" },
+            ].map((t) => (
+              <button
+                key={t.id}
+                onClick={() => updateSettings({ theme: t.id as typeof settings.theme })}
+                className={`w-5 h-5 rounded-full border transition cursor-pointer ${t.bg} ${
+                  settings.theme === t.id
+                    ? "ring-2 ring-rose-500 scale-110 border-white"
+                    : "border-zinc-600 hover:scale-105 opacity-70"
+                }`}
+                title={t.title}
+              />
+            ))}
+          </div>
+
+          {/* Auto Scroll Play / Speed Button */}
+          <button
+            onClick={() => setAutoScrollSpeed((prev) => (prev >= 3 ? 0 : prev + 1))}
+            className={`px-2.5 py-1 rounded-full text-xs font-bold transition flex items-center gap-1 cursor-pointer ${
+              autoScrollSpeed > 0
+                ? "bg-rose-600 text-white animate-pulse"
+                : "bg-zinc-800/80 text-zinc-300 hover:bg-zinc-700"
+            }`}
+            title="Auto-Scroll (Click to change speed 1x / 2x / 3x / Off)"
+          >
+            {autoScrollSpeed > 0 ? (
+              <>
+                <Pause className="w-3 h-3 fill-current" />
+                <span>{autoScrollSpeed}x</span>
+              </>
+            ) : (
+              <>
+                <Play className="w-3 h-3 fill-current" />
+                <span className="hidden sm:inline">Auto</span>
+              </>
+            )}
+          </button>
+
+          {/* AI Story Assistant Trigger */}
+          <button
+            onClick={() => setIsAiAssistantOpen(true)}
+            className="px-2.5 py-1 rounded-full text-xs font-black transition flex items-center gap-1 cursor-pointer bg-gradient-to-r from-amber-500/20 via-rose-500/20 to-indigo-500/20 border border-rose-500/40 text-rose-400 hover:text-white hover:bg-rose-600"
+            title="AI Story Assistant (Translate, Summarize, Character Codex, Chat)"
+          >
+            <Sparkles className="w-3 h-3 text-amber-400" />
+            <span className="hidden sm:inline">AI</span>
+          </button>
+
+          {/* AI Audiobook Narrator Toggle */}
+          <button
+            onClick={() => setIsAudiobookOpen((prev) => !prev)}
+            className={`px-2.5 py-1 rounded-full text-xs font-bold transition flex items-center gap-1 cursor-pointer ${
+              isAudiobookOpen
+                ? "bg-gradient-to-r from-rose-600 to-amber-500 text-white shadow-md shadow-rose-600/30 animate-pulse"
+                : "bg-zinc-800/80 text-zinc-300 hover:bg-zinc-700"
+            }`}
+            title="Listen to Chapter (AI Voice Audiobook)"
+          >
+            <Headphones className="w-3 h-3" />
+            <span className="hidden sm:inline">Listen</span>
+          </button>
+
+          {/* Bionic Reading Toggle */}
+          <button
+            onClick={() => setIsBionicReading((prev) => !prev)}
+            className={`px-2.5 py-1 rounded-full text-xs font-bold transition flex items-center gap-1 cursor-pointer ${
+              isBionicReading
+                ? "bg-amber-500 text-zinc-950 font-black"
+                : "bg-zinc-800/80 text-zinc-300 hover:bg-zinc-700"
+            }`}
+            title="Bionic Reading Mode (Highlights first letters of words for faster comprehension)"
+          >
+            <Eye className="w-3 h-3" />
+            <span className="hidden md:inline">Bionic</span>
+          </button>
+
+          {/* Fullscreen Button */}
+          <button
+            onClick={toggleFullscreen}
+            className="w-7 h-7 rounded-full bg-zinc-800/80 hover:bg-zinc-700 text-zinc-300 hover:text-white flex items-center justify-center transition cursor-pointer"
+            title="Toggle Distraction-Free Fullscreen"
+          >
+            {isFullscreen ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />}
+          </button>
+
+          {/* Full Settings Dialog Trigger */}
+          <button
+            onClick={() => setIsSettingsOpen(true)}
+            className="w-7 h-7 rounded-full bg-zinc-800/80 hover:bg-zinc-700 text-zinc-300 hover:text-white flex items-center justify-center transition cursor-pointer"
+            title="Full Reader Appearance Settings"
+          >
+            <Sliders className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      </aside>
+
+      {/* 9. AI AUDIOBOOK NARRATOR DOCK */}
+      {isAudiobookOpen && (
+        <AudiobookPlayer
+          paragraphs={paragraphs}
+          chapterTitle={chapter.title}
+          chapterNumber={chapter.chapterNumber}
+          authorName={novel.creator.name}
+          currentParagraphIdx={activeAudioParagraphIdx}
+          onParagraphChange={handleAudioParagraphChange}
+          onClose={() => setIsAudiobookOpen(false)}
+          onChapterComplete={() => {
+            if (nextChapter) {
+              router.push(`/novels/${novel.slug}/chapter/${nextChapter.chapterNumber}`);
+            }
+          }}
+        />
+      )}
+
+      {/* 10. AI STORY ASSISTANT MODAL */}
+      <AIAssistantModal
+        isOpen={isAiAssistantOpen}
+        onClose={() => setIsAiAssistantOpen(false)}
+        chapterTitle={chapter.title}
+        chapterNumber={chapter.chapterNumber}
+        novelTitle={novel.title}
+        authorName={novel.creator.name}
+        chapterContent={chapter.content}
+      />
+
+      {/* 11. REAL-TIME DANMAKU / BULLET REACTION COMMENTS STREAM */}
+      <DanmakuOverlay
+        storyId={novel.id}
+        episodeNumber={chapter.chapterNumber}
+        storyTitle={novel.title}
+      />
     </div>
   );
 }

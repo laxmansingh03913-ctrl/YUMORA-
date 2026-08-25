@@ -2,7 +2,7 @@
 
 import React from "react";
 import Link from "next/link";
-import { Star, Image as ImageIcon, Sparkles, Eye } from "lucide-react";
+import { Star, Image as ImageIcon, Sparkles, Eye, CheckCircle2 } from "lucide-react";
 import { Comic } from "@/lib/types";
 import { formatNumber } from "@/lib/utils";
 
@@ -12,8 +12,14 @@ interface ComicCardProps {
 }
 
 export function ComicCard({ comic, rank }: ComicCardProps) {
+  const creator = comic.creator || {
+    name: "Creator",
+    username: "creator",
+    isVerified: true,
+  };
+
   return (
-    <div className="group relative flex flex-col rounded-xl bg-white dark:bg-zinc-900 border border-[#EAEAE5] dark:border-zinc-800 hover:border-black dark:hover:border-white transition-all duration-200 overflow-hidden shadow-2xs">
+    <div className="group relative flex flex-col rounded-xl bg-white dark:bg-zinc-900 border border-[#EAEAE5] dark:border-zinc-800 hover:border-black dark:hover:border-white transition-all duration-200 overflow-hidden shadow-2xs hover-lift">
       <Link href={`/comics/${comic.slug}`} className="relative aspect-[3/4] overflow-hidden bg-zinc-100 dark:bg-zinc-800">
         <img
           src={comic.coverUrl}
@@ -56,6 +62,18 @@ export function ComicCard({ comic, rank }: ComicCardProps) {
               {comic.title}
             </h3>
           </Link>
+          <div className="flex items-center justify-between mt-1 text-[11px] text-zinc-500 dark:text-zinc-400">
+            <Link
+              href={`/creator/${creator.username}`}
+              className="hover:text-black dark:hover:text-white transition flex items-center gap-1 truncate"
+            >
+              <span>{creator.name}</span>
+              {creator.isVerified && (
+                <CheckCircle2 className="w-3 h-3 text-[#D91E18] flex-shrink-0" />
+              )}
+            </Link>
+            <span>{comic.episodesCount || comic.episodes?.length || 1} Ch</span>
+          </div>
           <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1 line-clamp-2 leading-relaxed">
             {comic.description}
           </p>
@@ -64,7 +82,7 @@ export function ComicCard({ comic, rank }: ComicCardProps) {
         <div className="flex items-center justify-between pt-2 border-t border-[#EAEAE5] dark:border-zinc-800 text-[11px] text-zinc-500 dark:text-zinc-400 font-medium">
           <span className="flex items-center gap-1">
             <ImageIcon className="w-3.5 h-3.5 text-zinc-400" />
-            {comic.episodesCount} Chapters
+            {comic.episodesCount || comic.episodes?.length || 1} Episodes
           </span>
           <span className="flex items-center gap-1">
             <Eye className="w-3 h-3 text-zinc-400" />

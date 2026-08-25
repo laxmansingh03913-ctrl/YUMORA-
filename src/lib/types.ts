@@ -37,6 +37,8 @@ export interface UserProfile {
   followersCount: number;
   followingCount: number;
   totalReads: number;
+  coins?: number;
+  totalTipsReceived?: number;
   createdAt: string;
 }
 
@@ -208,6 +210,12 @@ export interface ReadingProgress {
   chapterNumber: number;
   progressPercentage: number;
   lastReadAt: string;
+  contentTitle?: string;
+  contentSlug?: string;
+  coverUrl?: string;
+  creatorName?: string;
+  episodeTitle?: string;
+  totalUnits?: number;
 }
 
 export interface Contest {
@@ -334,14 +342,59 @@ export interface Follow {
 export interface NotificationItem {
   id: string;
   userId: string; // recipient
-  creatorId: string;
+  creatorId?: string;
   creatorName: string;
   creatorAvatar: string;
   title: string;
   message: string;
   contentUrl: string;
-  type: 'CHAPTER_RELEASE' | 'EPISODE_RELEASE' | 'STORY_RELEASE' | 'ANNOUNCEMENT';
+  type: 'CHAPTER_RELEASE' | 'EPISODE_RELEASE' | 'STORY_RELEASE' | 'ANNOUNCEMENT' | 'NEW_FOLLOWER' | 'LIKE' | 'COMMENT' | 'REVIEW' | 'SYSTEM';
   isRead: boolean;
   createdAt: string;
 }
+
+export interface TipTransaction {
+  id: string;
+  fromUserId: string;
+  fromUserName: string;
+  fromUserAvatar: string;
+  toCreatorId: string;
+  toCreatorName: string;
+  contentId?: string;
+  contentTitle?: string;
+  amount: number; // in Coins
+  tierTitle?: string;
+  message?: string;
+  createdAt: string;
+}
+
+export interface CoinPackage {
+  id: string;
+  coins: number;
+  bonusCoins: number;
+  priceUsd: number;
+  priceInr: number;
+  label: string;
+  isPopular?: boolean;
+  isBestValue?: boolean;
+  badge?: string;
+}
+
+export interface PayoutRequest {
+  id: string;
+  creatorId: string;
+  creatorName: string;
+  creatorEmail: string;
+  amountInr: number;
+  amountUsd: number;
+  method: 'UPI' | 'BANK' | 'PAYPAL';
+  details: string;
+  accountHolderName: string;
+  status: 'PENDING' | 'APPROVED' | 'COMPLETED' | 'REJECTED';
+  requestedAt: string;
+  processedAt?: string;
+  transactionReference?: string;
+  notes?: string;
+}
+
 

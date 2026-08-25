@@ -118,11 +118,6 @@ export function Footer() {
                 </Link>
               </li>
               <li>
-                <Link href="/admin" className="hover:text-rose-500 transition flex items-center gap-1.5">
-                  <Shield className="w-3.5 h-3.5 text-amber-400" /> Content Moderation
-                </Link>
-              </li>
-              <li>
                 <Link href="/privacy" className="hover:text-rose-500 transition">
                   Privacy Policy
                 </Link>
