@@ -183,22 +183,20 @@ export default function NovelDetailPage({ params }: PageProps) {
     .slice(0, 3);
 
   return (
-    <div className="min-h-screen pb-20 space-y-12">
-      {/* 1. HERO BACKDROP BANNER */}
-      <div className="relative pt-8 pb-12 overflow-hidden border-b border-zinc-200/80 dark:border-zinc-800/80">
-        {/* Dynamic blurred backdrop art */}
-        <div className="absolute inset-0 pointer-events-none">
-          <img
-            src={novel.bannerUrl || novel.coverUrl}
-            alt={novel.title}
-            className="w-full h-full object-cover opacity-25 filter blur-3xl scale-110 transform"
-          />
-          <div className="absolute inset-0 bg-gradient-to-b from-zinc-950/60 via-zinc-950/80 to-zinc-950" />
-        </div>
+    <div className="min-h-screen pb-24 text-zinc-100 bg-[#0c0c12]">
+      {/* 1. CINEMATIC HERO BANNER & METADATA OVERLAY */}
+      <div className="relative w-full min-h-[420px] sm:min-h-[480px] lg:min-h-[520px] overflow-hidden bg-zinc-950 flex flex-col justify-between">
+        {/* Background Image / Ambient Backdrop */}
+        <div
+          className="absolute inset-0 bg-cover bg-center filter blur-xl scale-110 opacity-30 pointer-events-none"
+          style={{ backgroundImage: `url(${novel.bannerUrl || novel.coverUrl})` }}
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-[#0c0c12] via-[#0c0c12]/80 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-r from-[#0c0c12] via-transparent to-[#0c0c12]/60" />
 
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          {/* Breadcrumbs */}
-          <nav className="flex items-center gap-2 text-xs text-zinc-400 mb-6">
+        {/* Top Breadcrumb Nav */}
+        <div className="relative max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 pt-6 z-20">
+          <nav className="flex items-center gap-2 text-xs text-zinc-400">
             <Link href="/" className="hover:text-rose-500 transition">
               Home
             </Link>
@@ -213,44 +211,46 @@ export default function NovelDetailPage({ params }: PageProps) {
             <span>/</span>
             <span className="text-zinc-200 truncate">{novel.title}</span>
           </nav>
+        </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-            {/* Left: Artwork Cover & Quick Status */}
-            <div className="lg:col-span-4 flex flex-col items-center sm:items-start">
-              <div className="relative aspect-[3/4] w-64 sm:w-72 rounded-3xl overflow-hidden shadow-2xl border border-zinc-700/50 bg-zinc-900 group">
-                <img
-                  src={novel.coverUrl}
-                  alt={novel.title}
-                  className="w-full h-full object-cover group-hover:scale-105 transition duration-500"
-                />
-                {novel.isFeatured && (
-                  <span className="absolute top-3 left-3 px-3 py-1 rounded-full text-xs font-black bg-rose-600 text-white shadow-lg flex items-center gap-1">
-                    <Sparkles className="w-3 h-3" /> FEATURED
-                  </span>
-                )}
-                <span className="absolute bottom-3 right-3 px-2.5 py-1 rounded-lg text-xs font-bold bg-black/70 backdrop-blur-md text-white">
-                  {novel.status}
-                </span>
-              </div>
+        {/* Content Container */}
+        <div className="relative h-full max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 flex flex-col justify-end pb-8 sm:pb-12 z-10 pt-8">
+          <div className="flex flex-col md:flex-row gap-6 sm:gap-8 items-start md:items-end">
+            {/* Novel Cover with Rank & Hot badge */}
+            <div className="relative w-36 sm:w-48 lg:w-56 aspect-[3/4] rounded-2xl overflow-hidden shadow-2xl border-2 border-white/10 flex-shrink-0 group">
+              <img
+                src={novel.coverUrl}
+                alt={novel.title}
+                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent pointer-events-none" />
+              {novel.isFeatured && (
+                <div className="absolute top-2 left-2 px-2 py-0.5 rounded-full bg-rose-600 text-white text-[10px] font-black uppercase tracking-wider shadow-md">
+                  Featured
+                </div>
+              )}
             </div>
 
-            {/* Right: Metadata, Rating, Synopsis, CTAs */}
-            <div className="lg:col-span-8 space-y-5 text-zinc-100">
-              {/* Tags & Genre */}
+            {/* Details & Author Info */}
+            <div className="flex-1 space-y-3 sm:space-y-4">
+              {/* Tags and Badges */}
               <div className="flex flex-wrap items-center gap-2">
-                <span className="px-3 py-1 rounded-full text-xs font-bold bg-rose-600/20 text-rose-400 border border-rose-500/30">
+                <span className="px-3 py-1 rounded-full text-xs font-bold bg-rose-600 text-white shadow-sm shadow-rose-600/30">
                   {novel.genre}
                 </span>
                 {novel.secondaryGenre && (
-                  <span className="px-3 py-1 rounded-full text-xs font-semibold bg-zinc-800 text-zinc-300">
+                  <span className="px-3 py-1 rounded-full text-xs font-medium bg-zinc-800 text-zinc-300 border border-zinc-700/60">
                     {novel.secondaryGenre}
                   </span>
                 )}
                 <span className="px-2.5 py-0.5 rounded-full text-xs font-medium bg-zinc-800/80 text-zinc-400">
-                  Language: {novel.language.toUpperCase()}
+                  Status: {novel.status}
                 </span>
                 <span className="px-2.5 py-0.5 rounded-full text-xs font-medium bg-zinc-800/80 text-zinc-400">
-                  Rating: {novel.contentRating}
+                  Language: {(novel.language || "en").toUpperCase()}
+                </span>
+                <span className="px-2.5 py-0.5 rounded-full text-xs font-medium bg-zinc-800/80 text-zinc-400">
+                  Rating: {novel.contentRating || "TEEN"}
                 </span>
               </div>
 
@@ -262,24 +262,24 @@ export default function NovelDetailPage({ params }: PageProps) {
               {/* Author Row */}
               <div className="flex items-center gap-3">
                 <Link
-                  href={`/creator/${novel.creator.username}`}
+                  href={`/creator/${creator.username}`}
                   className="flex items-center gap-2 hover:opacity-80 transition group"
                 >
                   <img
-                    src={novel.creator.avatar}
-                    alt={novel.creator.name}
+                    src={creator.avatar}
+                    alt={creator.name}
                     className="w-10 h-10 rounded-full object-cover ring-2 ring-rose-500/50"
                   />
                   <div>
                     <div className="flex items-center gap-1">
                       <span className="font-bold text-sm text-white group-hover:text-rose-400 transition">
-                        {novel.creator.name}
+                        {creator.name}
                       </span>
-                      {novel.creator.isVerified && (
+                      {creator.isVerified && (
                         <CheckCircle2 className="w-4 h-4 text-rose-500" />
                       )}
                     </div>
-                    <span className="text-xs text-zinc-400">@{novel.creator.username}</span>
+                    <span className="text-xs text-zinc-400">@{creator.username}</span>
                   </div>
                 </Link>
 
@@ -690,14 +690,14 @@ export default function NovelDetailPage({ params }: PageProps) {
         contentId={novel.id}
         contentTitle={novel.title}
         contentType="NOVEL"
-        creatorName={novel.creator.name}
+        creatorName={creator.name}
       />
 
       {/* Tip Author Modal */}
       <TipCreatorModal
         isOpen={isTipModalOpen}
         onClose={() => setIsTipModalOpen(false)}
-        creator={novel.creator}
+        creator={creator}
         content={{
           id: novel.id,
           title: novel.title,

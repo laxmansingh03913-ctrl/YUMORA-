@@ -107,14 +107,59 @@ export const dbService = {
     try {
       const { data, error } = await supabase
         .from("novels")
-        .select("*, chapters(*), creator:profiles(*)")
+        .select("*, chapters(*)")
         .order("created_at", { ascending: false });
 
-      if (error) {
-        console.warn("Supabase fetch novels notice:", error.message);
+      if (error || !data) {
         return [];
       }
-      return (data as unknown as Novel[]) || [];
+      return (data || []).map((row: any) => ({
+        id: row.id,
+        creatorId: row.creator_id || "creator",
+        creator: {
+          id: row.creator_id || "creator",
+          name: "Original Author",
+          username: `creator_${String(row.creator_id || "auth").slice(0, 6)}`,
+          avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=85",
+          isVerified: true,
+        },
+        title: row.title || "Untitled Novel",
+        slug: row.slug || row.id,
+        description: row.description || "",
+        coverUrl: row.cover_url || "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=800&auto=format&fit=crop&q=85",
+        bannerUrl: row.banner_url,
+        genre: row.genre || "Fantasy",
+        secondaryGenre: row.secondary_genre,
+        tags: Array.isArray(row.tags) ? row.tags : [],
+        language: row.language || "en",
+        status: row.status || "ONGOING",
+        contentRating: row.content_rating || "TEEN",
+        contentWarning: row.content_warning,
+        views: row.views || 0,
+        reads: row.reads || 0,
+        likesCount: row.likes_count || 0,
+        bookmarksCount: row.bookmarks_count || 0,
+        rating: row.rating || 5.0,
+        totalRatings: row.total_ratings || 0,
+        isFeatured: !!row.is_featured,
+        isEditorPick: !!row.is_editor_pick,
+        isPremium: !!row.is_premium,
+        chaptersCount: row.chapters_count || (row.chapters?.length || 0),
+        chapters: (row.chapters || []).map((ch: any) => ({
+          id: ch.id,
+          novelId: ch.novel_id || row.id,
+          chapterNumber: ch.chapter_number || 1,
+          title: ch.title || `Chapter ${ch.chapter_number || 1}`,
+          content: ch.content || "",
+          status: ch.status || "PUBLISHED",
+          wordCount: ch.word_count || 0,
+          isFree: ch.is_free ?? true,
+          publishedAt: ch.published_at || new Date().toISOString(),
+          readTimeMinutes: ch.read_time_minutes || 1,
+        })),
+        createdAt: row.created_at || new Date().toISOString(),
+        updatedAt: row.updated_at || row.created_at || new Date().toISOString(),
+      }));
     } catch {
       return [];
     }
@@ -124,12 +169,59 @@ export const dbService = {
     try {
       const { data, error } = await supabase
         .from("novels")
-        .select("*, chapters(*), creator:profiles(*)")
+        .select("*, chapters(*)")
         .eq("slug", slug)
         .single();
 
-      if (error) return null;
-      return (data as unknown as Novel) || null;
+      if (error || !data) return null;
+      const row: any = data;
+      return {
+        id: row.id,
+        creatorId: row.creator_id || "creator",
+        creator: {
+          id: row.creator_id || "creator",
+          name: "Original Author",
+          username: `creator_${String(row.creator_id || "auth").slice(0, 6)}`,
+          avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=85",
+          isVerified: true,
+        },
+        title: row.title || "Untitled Novel",
+        slug: row.slug || row.id,
+        description: row.description || "",
+        coverUrl: row.cover_url || "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=800&auto=format&fit=crop&q=85",
+        bannerUrl: row.banner_url,
+        genre: row.genre || "Fantasy",
+        secondaryGenre: row.secondary_genre,
+        tags: Array.isArray(row.tags) ? row.tags : [],
+        language: row.language || "en",
+        status: row.status || "ONGOING",
+        contentRating: row.content_rating || "TEEN",
+        contentWarning: row.content_warning,
+        views: row.views || 0,
+        reads: row.reads || 0,
+        likesCount: row.likes_count || 0,
+        bookmarksCount: row.bookmarks_count || 0,
+        rating: row.rating || 5.0,
+        totalRatings: row.total_ratings || 0,
+        isFeatured: !!row.is_featured,
+        isEditorPick: !!row.is_editor_pick,
+        isPremium: !!row.is_premium,
+        chaptersCount: row.chapters_count || (row.chapters?.length || 0),
+        chapters: (row.chapters || []).map((ch: any) => ({
+          id: ch.id,
+          novelId: ch.novel_id || row.id,
+          chapterNumber: ch.chapter_number || 1,
+          title: ch.title || `Chapter ${ch.chapter_number || 1}`,
+          content: ch.content || "",
+          status: ch.status || "PUBLISHED",
+          wordCount: ch.word_count || 0,
+          isFree: ch.is_free ?? true,
+          publishedAt: ch.published_at || new Date().toISOString(),
+          readTimeMinutes: ch.read_time_minutes || 1,
+        })),
+        createdAt: row.created_at || new Date().toISOString(),
+        updatedAt: row.updated_at || row.created_at || new Date().toISOString(),
+      };
     } catch {
       return null;
     }
@@ -230,14 +322,62 @@ export const dbService = {
     try {
       const { data, error } = await supabase
         .from("comics")
-        .select("*, episodes(*), creator:profiles(*)")
+        .select("*, episodes(*)")
         .order("created_at", { ascending: false });
 
-      if (error) {
-        console.warn("Supabase fetch comics notice:", error.message);
+      if (error || !data) {
         return [];
       }
-      return (data as unknown as Comic[]) || [];
+      return (data || []).map((row: any) => ({
+        id: row.id,
+        creatorId: row.creator_id || "creator",
+        creator: {
+          id: row.creator_id || "creator",
+          name: "Original Artist",
+          username: `creator_${String(row.creator_id || "auth").slice(0, 6)}`,
+          avatar: "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=400&auto=format&fit=crop&q=85",
+          isVerified: true,
+        },
+        title: row.title || "Untitled Comic",
+        slug: row.slug || row.id,
+        description: row.description || "",
+        coverUrl: row.cover_url || "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=800&auto=format&fit=crop&q=85",
+        bannerUrl: row.banner_url,
+        genre: row.genre || "Action",
+        secondaryGenre: row.secondary_genre,
+        tags: Array.isArray(row.tags) ? row.tags : [],
+        language: row.language || "en",
+        format: row.format || "PAGE_BASED",
+        readingDirection: row.reading_direction || "VERTICAL",
+        subType: row.sub_type || "MANGA",
+        allowPdfDownload: row.allow_pdf_download ?? true,
+        status: row.status || "ONGOING",
+        contentRating: row.content_rating || "TEEN",
+        contentWarning: row.content_warning,
+        views: row.views || 0,
+        reads: row.reads || 0,
+        likesCount: row.likes_count || 0,
+        bookmarksCount: row.bookmarks_count || 0,
+        rating: row.rating || 5.0,
+        totalRatings: row.total_ratings || 0,
+        isFeatured: !!row.is_featured,
+        isEditorPick: !!row.is_editor_pick,
+        isPremium: !!row.is_premium,
+        episodesCount: row.episodes_count || (row.episodes?.length || 0),
+        episodes: (row.episodes || []).map((ep: any) => ({
+          id: ep.id,
+          comicId: ep.comic_id || row.id,
+          episodeNumber: ep.episode_number || 1,
+          title: ep.title || `Episode ${ep.episode_number || 1}`,
+          thumbnailUrl: ep.thumbnail_url,
+          imageUrls: Array.isArray(ep.image_urls) ? ep.image_urls : [],
+          status: ep.status || "PUBLISHED",
+          publishedAt: ep.published_at || new Date().toISOString(),
+          likesCount: ep.likes_count || 0,
+        })),
+        createdAt: row.created_at || new Date().toISOString(),
+        updatedAt: row.updated_at || row.created_at || new Date().toISOString(),
+      }));
     } catch {
       return [];
     }
@@ -247,12 +387,62 @@ export const dbService = {
     try {
       const { data, error } = await supabase
         .from("comics")
-        .select("*, episodes(*), creator:profiles(*)")
+        .select("*, episodes(*)")
         .eq("slug", slug)
         .single();
 
-      if (error) return null;
-      return (data as unknown as Comic) || null;
+      if (error || !data) return null;
+      const row: any = data;
+      return {
+        id: row.id,
+        creatorId: row.creator_id || "creator",
+        creator: {
+          id: row.creator_id || "creator",
+          name: "Original Artist",
+          username: `creator_${String(row.creator_id || "auth").slice(0, 6)}`,
+          avatar: "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=400&auto=format&fit=crop&q=85",
+          isVerified: true,
+        },
+        title: row.title || "Untitled Comic",
+        slug: row.slug || row.id,
+        description: row.description || "",
+        coverUrl: row.cover_url || "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=800&auto=format&fit=crop&q=85",
+        bannerUrl: row.banner_url,
+        genre: row.genre || "Action",
+        secondaryGenre: row.secondary_genre,
+        tags: Array.isArray(row.tags) ? row.tags : [],
+        language: row.language || "en",
+        format: row.format || "PAGE_BASED",
+        readingDirection: row.reading_direction || "VERTICAL",
+        subType: row.sub_type || "MANGA",
+        allowPdfDownload: row.allow_pdf_download ?? true,
+        status: row.status || "ONGOING",
+        contentRating: row.content_rating || "TEEN",
+        contentWarning: row.content_warning,
+        views: row.views || 0,
+        reads: row.reads || 0,
+        likesCount: row.likes_count || 0,
+        bookmarksCount: row.bookmarks_count || 0,
+        rating: row.rating || 5.0,
+        totalRatings: row.total_ratings || 0,
+        isFeatured: !!row.is_featured,
+        isEditorPick: !!row.is_editor_pick,
+        isPremium: !!row.is_premium,
+        episodesCount: row.episodes_count || (row.episodes?.length || 0),
+        episodes: (row.episodes || []).map((ep: any) => ({
+          id: ep.id,
+          comicId: ep.comic_id || row.id,
+          episodeNumber: ep.episode_number || 1,
+          title: ep.title || `Episode ${ep.episode_number || 1}`,
+          thumbnailUrl: ep.thumbnail_url,
+          imageUrls: Array.isArray(ep.image_urls) ? ep.image_urls : [],
+          status: ep.status || "PUBLISHED",
+          publishedAt: ep.published_at || new Date().toISOString(),
+          likesCount: ep.likes_count || 0,
+        })),
+        createdAt: row.created_at || new Date().toISOString(),
+        updatedAt: row.updated_at || row.created_at || new Date().toISOString(),
+      };
     } catch {
       return null;
     }
