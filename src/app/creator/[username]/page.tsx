@@ -39,6 +39,7 @@ import {
   MessageSquare,
   Send,
   Coins,
+  Palette,
 } from "lucide-react";
 import { dataStore } from "@/lib/data/store";
 import { useAuth } from "@/context/AuthContext";
@@ -49,6 +50,7 @@ import { NotificationPreferences, UserProfile, Novel, Comic, Comment } from "@/l
 import { compressImageToWebP, validateImageFile } from "@/lib/image-processing";
 import { TipCreatorModal } from "@/components/ui/TipCreatorModal";
 import { CoinShopModal } from "@/components/ui/CoinShopModal";
+import { BannerCustomizerModal } from "@/components/ui/BannerCustomizerModal";
 import { dbService } from "@/lib/supabase/db";
 
 import { useParams } from "next/navigation";
@@ -193,6 +195,7 @@ export default function CreatorProfilePage({ params }: CreatorProfileProps) {
   const [newFeedbackText, setNewFeedbackText] = useState("");
   const [isTipModalOpen, setIsTipModalOpen] = useState(false);
   const [isCoinShopOpen, setIsCoinShopOpen] = useState(false);
+  const [isBannerCustomizerOpen, setIsBannerCustomizerOpen] = useState(false);
 
   // Followers & Following Modal
   const [listModalType, setListModalType] = useState<"followers" | "following" | null>(null);
@@ -487,6 +490,17 @@ export default function CreatorProfilePage({ params }: CreatorProfileProps) {
     }
   };
 
+  // Custom Banner Save Handler
+  const handleSaveBanner = (newBannerUrl: string) => {
+    if (!user) return;
+    const updated = dataStore.updateUserProfile(user.id, {
+      banner: newBannerUrl,
+    });
+    updateProfile(updated);
+    setAsyncCreator(updated);
+    showToast("✓ Profile banner updated successfully!");
+  };
+
   // Save quick edits to public profile
   const handleSaveQuickProfile = (e: React.FormEvent) => {
     e.preventDefault();
@@ -561,7 +575,7 @@ export default function CreatorProfilePage({ params }: CreatorProfileProps) {
       {/* 1. CREATOR HERO BANNER & PROFILE HEADER */}
       <div className="relative">
         {/* Banner with Ambient Shimmer & Gradient Overlay */}
-        <div className="h-48 sm:h-60 md:h-72 w-full bg-gradient-to-r from-rose-950 via-zinc-900 to-indigo-950 overflow-hidden relative">
+        <div className="h-48 sm:h-60 md:h-72 w-full bg-gradient-to-r from-rose-950 via-zinc-900 to-indigo-950 overflow-hidden relative group">
           <img
             src={
               creator.banner ||
@@ -573,6 +587,19 @@ export default function CreatorProfilePage({ params }: CreatorProfileProps) {
           {/* Multi-Stop Depth Gradients */}
           <div className="absolute inset-0 bg-gradient-to-t from-[#FAFAFA] dark:from-[#0B0B0C] via-transparent to-black/30" />
           <div className="absolute inset-0 bg-radial-gradient from-transparent via-black/20 to-black/60 pointer-events-none" />
+
+          {/* Change Banner Button for Self */}
+          {isSelf && (
+            <button
+              type="button"
+              onClick={() => setIsBannerCustomizerOpen(true)}
+              className="absolute top-4 right-4 sm:top-6 sm:right-8 z-20 px-3.5 py-2 rounded-xl bg-black/70 hover:bg-black/90 text-white font-bold text-xs backdrop-blur-md border border-white/20 shadow-xl transition transform hover:scale-105 active:scale-95 flex items-center gap-2 cursor-pointer group-hover:border-rose-500/50"
+            >
+              <Palette className="w-4 h-4 text-rose-400" />
+              <span className="hidden sm:inline">Customize Cover Banner</span>
+              <span className="sm:hidden">Banner</span>
+            </button>
+          )}
         </div>
 
         {/* Profile Info Container */}
@@ -1627,6 +1654,14 @@ export default function CreatorProfilePage({ params }: CreatorProfileProps) {
       <CoinShopModal
         isOpen={isCoinShopOpen}
         onClose={() => setIsCoinShopOpen(false)}
+      />
+
+      {/* Banner Customizer Modal */}
+      <BannerCustomizerModal
+        isOpen={isBannerCustomizerOpen}
+        onClose={() => setIsBannerCustomizerOpen(false)}
+        currentBanner={creator?.banner}
+        onSaveBanner={handleSaveBanner}
       />
     </div>
   );
