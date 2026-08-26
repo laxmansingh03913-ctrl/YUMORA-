@@ -7,6 +7,10 @@ import {
   ArrowLeft,
   ChevronLeft,
   ChevronRight,
+  ChevronUp,
+  ChevronDown,
+  ArrowUp,
+  ArrowDown,
   Settings,
   Bookmark,
   MessageSquare,
@@ -73,10 +77,31 @@ export default function ChapterReaderPage({ params }: ReaderPageProps) {
   const [isAiAssistantOpen, setIsAiAssistantOpen] = useState(false);
   const [activeAudioParagraphIdx, setActiveAudioParagraphIdx] = useState(0);
 
-  const paragraphs = React.useMemo(
-    () => (chapter ? chapter.content.split("\n\n").filter((p) => p.trim()) : []),
-    [chapter]
-  );
+  const [loadedChapters, setLoadedChapters] = useState<Chapter[]>([]);
+
+  useEffect(() => {
+    if (chapter) {
+      setLoadedChapters([chapter]);
+    }
+  }, [chapter]);
+
+  const loadNextContinuousChapter = () => {
+    if (!novel) return;
+    const lastLoaded = loadedChapters[loadedChapters.length - 1];
+    if (!lastLoaded) return;
+    const next = novel.chapters.find((c) => c.chapterNumber === lastLoaded.chapterNumber + 1);
+    if (next && !loadedChapters.some((c) => c.chapterNumber === next.chapterNumber)) {
+      setLoadedChapters((prev) => [...prev, next]);
+    }
+  };
+
+  const scrollToTop = () => {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const scrollToBottom = () => {
+    window.scrollTo({ top: document.documentElement.scrollHeight, behavior: "smooth" });
+  };
 
   const handleAudioParagraphChange = (idx: number) => {
     setActiveAudioParagraphIdx(idx);
@@ -383,100 +408,149 @@ export default function ChapterReaderPage({ params }: ReaderPageProps) {
           </div>
         </div>
 
-        {/* Story Prose */}
-        <article
-          className={`space-y-6 leading-relaxed ${getFontFamilyClass()}`}
-          style={{
-            fontSize: `${settings.fontSize}px`,
-            lineHeight: settings.lineHeight,
-          }}
-        >
-          {paragraphs.map((paragraph, idx) => {
-            const isSpeakingThis = isAudiobookOpen && activeAudioParagraphIdx === idx;
-            const imgMatch = paragraph.trim().match(/^!\[(.*?)\]\((.*?)\)$/);
-            const isSystemBox =
-              paragraph.trim().startsWith("[") &&
-              paragraph.includes("]") &&
-              (paragraph.includes("ALERT") ||
-                paragraph.includes("SYSTEM") ||
-                paragraph.includes("SKILL") ||
-                paragraph.includes("LEVEL") ||
-                paragraph.includes("QUEST") ||
-                paragraph.includes("WARNING") ||
-                paragraph.includes("EXTRACTION") ||
-                paragraph.includes("CORONATION") ||
-                paragraph.includes("MATCH") ||
-                paragraph.includes("Do you accept"));
-
-            if (imgMatch) {
-              const [, caption, src] = imgMatch;
-              return (
-                <div key={idx} className="my-8 space-y-2 text-center select-none not-prose">
-                  <div className="relative rounded-3xl overflow-hidden shadow-2xl border border-white/10 max-h-[600px] mx-auto group">
-                    <img
-                      src={src}
-                      alt={caption || "Light Novel Illustration"}
-                      className="w-full h-full object-cover max-h-[550px] transition duration-500 group-hover:scale-105"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent pointer-events-none" />
-                  </div>
-                  {caption && (
-                    <p className="text-xs text-zinc-400 italic font-sans tracking-wide">
-                      ✦ {caption} ✦
-                    </p>
-                  )}
-                </div>
-              );
-            }
-
-            if (isSystemBox) {
-              return (
-                <div
-                  key={idx}
-                  id={`novel-p-${idx}`}
-                  className="my-5 p-4 sm:p-5 rounded-2xl bg-indigo-950/40 dark:bg-indigo-950/60 border border-indigo-500/40 text-indigo-200 text-xs sm:text-sm font-mono shadow-lg shadow-indigo-950/30 space-y-1 backdrop-blur-xs relative overflow-hidden not-prose"
-                >
-                  <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/10 rounded-full blur-2xl pointer-events-none" />
-                  <div className="flex items-center gap-2 text-indigo-400 font-bold uppercase tracking-wider text-[10px] pb-1.5 border-b border-indigo-500/20">
-                    <span className="w-2 h-2 rounded-full bg-indigo-400 animate-pulse" />
-                    <span>SYSTEM NOTIFICATION</span>
-                  </div>
-                  <div className="pt-1.5 whitespace-pre-line leading-relaxed font-semibold">
-                    {paragraph}
-                  </div>
-                </div>
-              );
-            }
+        {/* Continuous Multi-Chapter Story Prose */}
+        <div className="space-y-12">
+          {loadedChapters.map((ch, chIdx) => {
+            const chParagraphs = ch.content.split("\n\n").filter((p) => p.trim());
+            const isFirstChapter = chIdx === 0;
 
             return (
-              <p
-                key={idx}
-                id={`novel-p-${idx}`}
-                className={`indent-4 sm:indent-6 transition-all duration-300 ${
-                  isSpeakingThis
-                    ? "bg-rose-500/15 border-l-4 border-rose-500 pl-4 py-2 rounded-r-2xl shadow-sm ring-1 ring-rose-500/20"
-                    : ""
-                }`}
-              >
-                {renderParagraphContent(paragraph)}
-              </p>
+              <div key={ch.id} className="space-y-6">
+                {!isFirstChapter && (
+                  <div className="pt-14 pb-6 text-center border-t-2 border-dashed border-rose-500/30 my-10 space-y-2">
+                    <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-rose-950/40 border border-rose-500/30 text-rose-400 text-[10px] font-black uppercase tracking-widest">
+                      <Sparkles className="w-3 h-3" />
+                      <span>CONTINUOUS CHAPTER</span>
+                    </div>
+                    <h2 className="text-xl sm:text-2xl font-black text-white">{ch.title}</h2>
+                    <p className="text-xs text-zinc-400">
+                      Chapter {ch.chapterNumber} • {ch.wordCount.toLocaleString()} words
+                    </p>
+                  </div>
+                )}
+
+                <article
+                  className={`space-y-6 leading-relaxed ${getFontFamilyClass()}`}
+                  style={{
+                    fontSize: `${settings.fontSize}px`,
+                    lineHeight: settings.lineHeight,
+                  }}
+                >
+                  {chParagraphs.map((paragraph, idx) => {
+                    const globalParagraphIdx = chIdx * 100 + idx;
+                    const isSpeakingThis =
+                      isAudiobookOpen && activeAudioParagraphIdx === globalParagraphIdx;
+                    const imgMatch = paragraph.trim().match(/^!\[(.*?)\]\((.*?)\)$/);
+                    const isSystemBox =
+                      paragraph.trim().startsWith("[") &&
+                      paragraph.includes("]") &&
+                      (paragraph.includes("ALERT") ||
+                        paragraph.includes("SYSTEM") ||
+                        paragraph.includes("SKILL") ||
+                        paragraph.includes("LEVEL") ||
+                        paragraph.includes("QUEST") ||
+                        paragraph.includes("WARNING") ||
+                        paragraph.includes("EXTRACTION") ||
+                        paragraph.includes("CORONATION") ||
+                        paragraph.includes("MATCH") ||
+                        paragraph.includes("Do you accept"));
+
+                    if (imgMatch) {
+                      const [, caption, src] = imgMatch;
+                      return (
+                        <div
+                          key={idx}
+                          className="my-8 space-y-2 text-center select-none not-prose"
+                        >
+                          <div className="relative rounded-3xl overflow-hidden shadow-2xl border border-white/10 max-h-[600px] mx-auto group">
+                            <img
+                              src={src}
+                              alt={caption || "Light Novel Illustration"}
+                              className="w-full h-full object-cover max-h-[550px] transition duration-500 group-hover:scale-105"
+                            />
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent pointer-events-none" />
+                          </div>
+                          {caption && (
+                            <p className="text-xs text-zinc-400 italic font-sans tracking-wide">
+                              ✦ {caption} ✦
+                            </p>
+                          )}
+                        </div>
+                      );
+                    }
+
+                    if (isSystemBox) {
+                      return (
+                        <div
+                          key={idx}
+                          id={`novel-p-${globalParagraphIdx}`}
+                          className="my-5 p-4 sm:p-5 rounded-2xl bg-indigo-950/40 dark:bg-indigo-950/60 border border-indigo-500/40 text-indigo-200 text-xs sm:text-sm font-mono shadow-lg shadow-indigo-950/30 space-y-1 backdrop-blur-xs relative overflow-hidden not-prose"
+                        >
+                          <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/10 rounded-full blur-2xl pointer-events-none" />
+                          <div className="flex items-center gap-2 text-indigo-400 font-bold uppercase tracking-wider text-[10px] pb-1.5 border-b border-indigo-500/20">
+                            <span className="w-2 h-2 rounded-full bg-indigo-400 animate-pulse" />
+                            <span>SYSTEM NOTIFICATION</span>
+                          </div>
+                          <div className="pt-1.5 whitespace-pre-line leading-relaxed font-semibold">
+                            {paragraph}
+                          </div>
+                        </div>
+                      );
+                    }
+
+                    return (
+                      <p
+                        key={idx}
+                        id={`novel-p-${globalParagraphIdx}`}
+                        className={`indent-4 sm:indent-6 transition-all duration-300 ${
+                          isSpeakingThis
+                            ? "bg-rose-500/15 border-l-4 border-rose-500 pl-4 py-2 rounded-r-2xl shadow-sm ring-1 ring-rose-500/20"
+                            : ""
+                        }`}
+                      >
+                        {renderParagraphContent(paragraph)}
+                      </p>
+                    );
+                  })}
+                </article>
+              </div>
             );
           })}
-        </article>
+        </div>
 
-        {/* Chapter End Divider */}
-        <div className="my-16 py-8 border-t border-b border-white/10 text-center space-y-3">
+        {/* Chapter End Divider & Continuous Flow Trigger */}
+        <div className="my-16 py-8 border-t border-b border-white/10 text-center space-y-4">
           <Sparkles className="w-6 h-6 text-rose-500 mx-auto" />
           <p className="text-sm font-semibold">
-            End of Chapter {chapter.chapterNumber}
+            End of Chapter {loadedChapters[loadedChapters.length - 1]?.chapterNumber || chapter.chapterNumber}
           </p>
+
+          {/* Continuous Scroll: Load next chapter right below without page reload */}
+          {(() => {
+            const lastLoadedNum = loadedChapters[loadedChapters.length - 1]?.chapterNumber || chapterNumber;
+            const nextCh = novel.chapters.find((c) => c.chapterNumber === lastLoadedNum + 1);
+            if (!nextCh) return null;
+
+            return (
+              <div className="py-3 max-w-md mx-auto">
+                <button
+                  onClick={loadNextContinuousChapter}
+                  className="w-full py-3.5 px-6 rounded-2xl bg-gradient-to-r from-rose-600 via-purple-600 to-indigo-600 hover:from-rose-500 hover:to-indigo-500 text-white font-black text-xs sm:text-sm shadow-xl shadow-rose-600/25 transition transform hover:scale-102 flex items-center justify-center gap-2 cursor-pointer"
+                >
+                  <ChevronDown className="w-4 h-4 animate-bounce" />
+                  <span>Load Next Chapter Continuously (Ch. {nextCh.chapterNumber})</span>
+                </button>
+              </div>
+            );
+          })()}
+
           <p className="text-xs opacity-60 max-w-sm mx-auto">
             Enjoyed this chapter? Support {novel.creator.name} by leaving a reaction or sharing your thoughts below.
           </p>
-          <div className="pt-2 flex items-center justify-center gap-3">
+          <div className="pt-1 flex items-center justify-center gap-3">
             <button
               onClick={() => setIsCommentsOpen(true)}
-              className="px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-xs font-bold transition flex items-center gap-1.5"
+              className="px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-xs font-bold transition flex items-center gap-1.5 cursor-pointer"
             >
               <MessageSquare className="w-3.5 h-3.5" />
               <span>Discuss Chapter ({comments.length})</span>
@@ -903,6 +977,49 @@ export default function ChapterReaderPage({ params }: ReaderPageProps) {
             <Sliders className="w-3.5 h-3.5" />
           </button>
         </div>
+      </aside>
+
+      {/* 8.5 FLOATING VERTICAL SCROLL NAVIGATION PAD (RIGHT EDGE) */}
+      <aside className="fixed right-3 sm:right-6 top-1/2 -translate-y-1/2 z-40 hidden sm:flex flex-col items-center gap-2 p-2 rounded-2xl bg-zinc-900/90 border border-zinc-700/80 shadow-2xl backdrop-blur-md text-zinc-300 select-none">
+        {/* Scroll To Top */}
+        <button
+          onClick={scrollToTop}
+          className="p-2 rounded-xl hover:bg-zinc-800 hover:text-white transition cursor-pointer"
+          title="Scroll to Top"
+        >
+          <ArrowUp className="w-4 h-4 text-rose-400" />
+        </button>
+
+        {/* Live Scroll % Badge */}
+        <div className="w-10 py-1 text-center font-mono font-black text-[10px] text-zinc-400 border-y border-zinc-800">
+          {Math.round(scrollProgress)}%
+        </div>
+
+        {/* Auto Scroll Toggle */}
+        <button
+          onClick={() => setAutoScrollSpeed((prev) => (prev >= 3 ? 0 : prev + 1))}
+          className={`p-2 rounded-xl transition flex flex-col items-center cursor-pointer ${
+            autoScrollSpeed > 0
+              ? "bg-rose-600 text-white shadow-lg shadow-rose-600/30 animate-pulse"
+              : "hover:bg-zinc-800 hover:text-white"
+          }`}
+          title={`Auto-Scroll: ${autoScrollSpeed > 0 ? `${autoScrollSpeed}x Speed` : 'Off'}`}
+        >
+          {autoScrollSpeed > 0 ? (
+            <Pause className="w-4 h-4 fill-current" />
+          ) : (
+            <Play className="w-4 h-4 fill-current" />
+          )}
+        </button>
+
+        {/* Scroll To Bottom */}
+        <button
+          onClick={scrollToBottom}
+          className="p-2 rounded-xl hover:bg-zinc-800 hover:text-white transition cursor-pointer"
+          title="Scroll to Bottom"
+        >
+          <ArrowDown className="w-4 h-4 text-rose-400" />
+        </button>
       </aside>
 
       {/* 9. AI AUDIOBOOK NARRATOR DOCK */}
