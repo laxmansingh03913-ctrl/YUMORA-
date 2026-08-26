@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "next lint",
     "postinstall": "prisma generate",
-    "deploy": "git add . && git commit -m \"chore: update site\" --allow-empty && git push origin main"
+    "deploy": "git add . && git commit -m \"chore: update site\" --allow-empty && git push origin main",
+    "delopy": "npm run deploy"
   },
   "dependencies": {
     "@prisma/client": "^5.22.0",
