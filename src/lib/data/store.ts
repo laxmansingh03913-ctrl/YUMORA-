@@ -550,35 +550,39 @@ class DataStore {
   }
 
   getFollowers(creatorId: string): UserProfile[] {
+    if (!creatorId) return [];
     const targetUser = this.getUserById(creatorId) || this.getUserByUsername(creatorId);
     const targetId = targetUser ? targetUser.id : creatorId;
     const followerIds = this.getFollowRelationships()
-      .filter((f) => f.followingId === targetId)
+      .filter((f) => f && f.followingId === targetId)
       .map((f) => f.followerId);
 
-    return this.getUsers().filter((u) => followerIds.includes(u.id));
+    return this.getUsers().filter((u) => u && u.id && followerIds.includes(u.id));
   }
 
   getFollowing(userId: string): UserProfile[] {
+    if (!userId) return [];
     const followingIds = this.getFollowRelationships()
-      .filter((f) => f.followerId === userId)
+      .filter((f) => f && f.followerId === userId)
       .map((f) => f.followingId);
 
-    return this.getUsers().filter((u) => followingIds.includes(u.id));
+    return this.getUsers().filter((u) => u && u.id && followingIds.includes(u.id));
   }
 
   getFollowerCount(creatorId: string): number {
+    if (!creatorId) return 0;
     const targetUser = this.getUserById(creatorId) || this.getUserByUsername(creatorId);
     if (!targetUser) return 0;
-    const baseCount = targetUser.followersCount || 0;
+    const baseCount = typeof targetUser.followersCount === "number" ? targetUser.followersCount : 0;
     const customFollowers = this.getFollowRelationships().filter(
-      (f) => f.followingId === targetUser.id && f.followerId !== "usr-reader-1"
+      (f) => f && f.followingId === targetUser.id && f.followerId !== "usr-reader-1"
     ).length;
     return baseCount + customFollowers;
   }
 
   getFollowingCount(userId: string): number {
-    return this.getFollowRelationships().filter((f) => f.followerId === userId).length;
+    if (!userId) return 0;
+    return this.getFollowRelationships().filter((f) => f && f.followerId === userId).length;
   }
 
   // Legacy fast follow helper
@@ -1267,17 +1271,29 @@ class DataStore {
   getUsers(): UserProfile[] {
     const customUsers = this.getItem<UserProfile[]>(STORAGE_KEYS.USERS || "yumora_users", []);
     const map = new Map<string, UserProfile>();
-    SEED_USERS.forEach((u) => map.set(u.id, u));
-    customUsers.forEach((u) => map.set(u.id, u));
+    SEED_USERS.forEach((u) => {
+      if (u && u.id) map.set(u.id, u);
+    });
+    if (Array.isArray(customUsers)) {
+      customUsers.forEach((u) => {
+        if (u && u.id) map.set(u.id, u);
+      });
+    }
     return Array.from(map.values());
   }
 
   getUserById(id: string): UserProfile | undefined {
-    return this.getUsers().find((u) => u.id === id);
+    if (!id) return undefined;
+    return this.getUsers().find((u) => u && u.id === id);
   }
 
   getUserByUsername(username: string): UserProfile | undefined {
-    return this.getUsers().find((u) => u.username.toLowerCase() === username.toLowerCase());
+    if (!username || typeof username !== "string") return undefined;
+    const clean = username.trim().toLowerCase().replace(/^@/, "");
+    return this.getUsers().find((u) => {
+      if (!u || !u.username || typeof u.username !== "string") return false;
+      return u.username.trim().toLowerCase().replace(/^@/, "") === clean;
+    });
   }
 
   updateUserProfile(userId: string, updates: Partial<UserProfile>): UserProfile {

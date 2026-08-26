@@ -51,6 +51,8 @@ import { TipCreatorModal } from "@/components/ui/TipCreatorModal";
 import { CoinShopModal } from "@/components/ui/CoinShopModal";
 import { dbService } from "@/lib/supabase/db";
 
+import { useParams } from "next/navigation";
+
 const ALL_GENRES = [
   "Fantasy",
   "Sci-Fi",
@@ -63,21 +65,28 @@ const ALL_GENRES = [
 ];
 
 interface CreatorProfileProps {
-  params: Promise<{ username: string }>;
+  params?: Promise<{ username: string }> | { username: string };
 }
 
 export default function CreatorProfilePage({ params }: CreatorProfileProps) {
-  const resolvedParams = use(params);
-  const username = resolvedParams.username;
+  const routeParams = useParams<{ username: string }>();
+  // Safely extract username from Next.js useParams or params prop
+  const rawParam =
+    routeParams?.username ||
+    (params && typeof (params as any)?.then !== "function" && (params as any)?.username) ||
+    "";
+  const username = decodeURIComponent(rawParam || "").trim().replace(/^@/, "");
+
   const { user, isAuthenticated, openAuthModal, updateProfile } = useAuth();
 
   // Find creator from dataStore or fallback to authenticated user
   const [asyncCreator, setAsyncCreator] = useState<UserProfile | null>(() => {
+    if (!username) return null;
     const fromStore = dataStore.getUserByUsername(username) || dataStore.getUserById(username);
     if (fromStore) return fromStore;
     if (
       user &&
-      (user.username.toLowerCase() === username.toLowerCase() ||
+      ((user.username && user.username.toLowerCase() === username.toLowerCase()) ||
         user.id === username)
     ) {
       return user;
@@ -90,6 +99,10 @@ export default function CreatorProfilePage({ params }: CreatorProfileProps) {
   // Sync / Fetch profile from Supabase Database if not found locally
   useEffect(() => {
     let isMounted = true;
+    if (!username) {
+      setIsLoadingProfile(false);
+      return;
+    }
 
     const fetchCreatorProfile = async () => {
       // 1. Check if already in local store
@@ -105,7 +118,7 @@ export default function CreatorProfilePage({ params }: CreatorProfileProps) {
       // 2. Check current authenticated user
       if (
         user &&
-        (user.username.toLowerCase() === username.toLowerCase() ||
+        ((user.username && user.username.toLowerCase() === username.toLowerCase()) ||
           user.id === username)
       ) {
         if (isMounted) {
@@ -140,7 +153,14 @@ export default function CreatorProfilePage({ params }: CreatorProfileProps) {
   const creator = asyncCreator;
 
   // Self check
-  const isSelf = Boolean(user && creator && (user.id === creator.id || user.username.toLowerCase() === creator.username.toLowerCase()));
+  const isSelf = Boolean(
+    user &&
+      creator &&
+      (user.id === creator.id ||
+        (user.username &&
+          creator.username &&
+          user.username.toLowerCase() === creator.username.toLowerCase()))
+  );
 
   // Follow State
   const [isFollowing, setIsFollowing] = useState(false);
@@ -159,11 +179,17 @@ export default function CreatorProfilePage({ params }: CreatorProfileProps) {
   const [editCountry, setEditCountry] = useState(creator?.country || "United States");
   const [editWebsite, setEditWebsite] = useState(creator?.website || "");
   const [editTwitter, setEditTwitter] = useState(creator?.twitter || "");
-  const [editGenres, setEditGenres] = useState<string[]>(creator?.primaryGenres || ["Fantasy", "Sci-Fi"]);
+  const [editGenres, setEditGenres] = useState<string[]>(
+    creator?.primaryGenres || ["Fantasy", "Sci-Fi"]
+  );
 
   // Tabs: all, novels, webtoons, comics, about, feedback
-  const [activeTab, setActiveTab] = useState<"all" | "novels" | "webtoons" | "comics" | "about" | "feedback">("all");
-  const [creatorFeedback, setCreatorFeedback] = useState<Comment[]>(() => (creator ? dataStore.getComments(creator.id) : []));
+  const [activeTab, setActiveTab] = useState<
+    "all" | "novels" | "webtoons" | "comics" | "about" | "feedback"
+  >("all");
+  const [creatorFeedback, setCreatorFeedback] = useState<Comment[]>(() =>
+    creator?.id ? dataStore.getComments(creator.id) : []
+  );
   const [newFeedbackText, setNewFeedbackText] = useState("");
   const [isTipModalOpen, setIsTipModalOpen] = useState(false);
   const [isCoinShopOpen, setIsCoinShopOpen] = useState(false);
@@ -184,9 +210,13 @@ export default function CreatorProfilePage({ params }: CreatorProfileProps) {
   // Sync state when creator or user changes
   useEffect(() => {
     if (creator) {
-      setFollowersCount(dataStore.getFollowerCount(creator.id) || creator.followersCount || 0);
-      setFollowingCount(creator.followingCount || dataStore.getFollowingCount(creator.id) || 0);
-      setEditName(creator.name);
+      setFollowersCount(
+        dataStore.getFollowerCount(creator.id) || creator.followersCount || 0
+      );
+      setFollowingCount(
+        creator.followingCount || dataStore.getFollowingCount(creator.id) || 0
+      );
+      setEditName(creator.name || "");
       setEditBio(creator.bio || "");
       setEditCountry(creator.country || "United States");
       setEditWebsite(creator.website || "");
@@ -221,6 +251,67 @@ export default function CreatorProfilePage({ params }: CreatorProfileProps) {
     return displayName.slice(0, 2).toUpperCase() || "CR";
   }, [creator?.name]);
 
+  // Safe Public Works List
+  const creatorNovels = useMemo(() => {
+    if (!creator?.id) return [];
+    return dataStore
+      .getNovels()
+      .filter((n) => n && n.creatorId === creator.id && n.status !== "DRAFT");
+  }, [creator?.id]);
+
+  const creatorComics = useMemo(() => {
+    if (!creator?.id) return [];
+    return dataStore
+      .getComics()
+      .filter((c) => c && c.creatorId === creator.id && c.status !== "DRAFT");
+  }, [creator?.id]);
+
+  const webtoonsList = useMemo(() => {
+    return creatorComics.filter(
+      (c) => c && (c.subType === "WEBTOON" || c.format === "VERTICAL")
+    );
+  }, [creatorComics]);
+
+  const westernComicsList = useMemo(() => {
+    return creatorComics.filter(
+      (c) => c && c.subType !== "WEBTOON" && c.format !== "VERTICAL"
+    );
+  }, [creatorComics]);
+
+  const totalWorks = creatorNovels.length + creatorComics.length;
+
+  // Real Public Statistics
+  const totalPublicReads = useMemo(() => {
+    const novelReads = creatorNovels.reduce((acc, n) => acc + (n?.reads || 0), 0);
+    const comicReads = creatorComics.reduce((acc, c) => acc + (c?.reads || 0), 0);
+    return novelReads + comicReads || creator?.totalReads || 0;
+  }, [creatorNovels, creatorComics, creator?.totalReads]);
+
+  const totalPublicLikes = useMemo(() => {
+    const novelLikes = creatorNovels.reduce((acc, n) => acc + (n?.likesCount || 0), 0);
+    const comicLikes = creatorComics.reduce(
+      (acc, c) =>
+        acc +
+        (c?.likesCount ||
+          (Array.isArray(c?.episodes)
+            ? c.episodes.reduce((eAcc, ep) => eAcc + (ep?.likesCount || 0), 0)
+            : 0)),
+      0
+    );
+    return novelLikes + comicLikes;
+  }, [creatorNovels, creatorComics]);
+
+  // Followers & Following Lists
+  const followersList = useMemo(() => {
+    if (!creator?.id) return [];
+    return dataStore.getFollowers(creator.id);
+  }, [creator?.id, followersCount]);
+
+  const followingList = useMemo(() => {
+    if (!creator?.id) return [];
+    return dataStore.getFollowing(creator.id);
+  }, [creator?.id, followingCount]);
+
   if (isLoadingProfile && !creator) {
     return (
       <div className="min-h-[70vh] flex flex-col items-center justify-center p-6 text-center space-y-4 max-w-md mx-auto animate-pulse">
@@ -229,7 +320,7 @@ export default function CreatorProfilePage({ params }: CreatorProfileProps) {
         </div>
         <div className="space-y-1">
           <p className="text-sm font-bold text-zinc-600 dark:text-zinc-400">Loading creator profile...</p>
-          <p className="text-xs text-zinc-400 font-mono">@{username}</p>
+          <p className="text-xs text-zinc-400 font-mono">@{username || "creator"}</p>
         </div>
       </div>
     );
@@ -266,43 +357,6 @@ export default function CreatorProfilePage({ params }: CreatorProfileProps) {
       </div>
     );
   }
-
-  // Real Public Content (Approved & Published only)
-  const creatorNovels = dataStore
-    .getNovels()
-    .filter((n) => n.creatorId === creator.id && n.status !== "DRAFT");
-  const creatorComics = dataStore
-    .getComics()
-    .filter((c) => c.creatorId === creator.id && c.status !== "DRAFT");
-
-  const webtoonsList = creatorComics.filter(
-    (c) => c.subType === "WEBTOON" || c.format === "VERTICAL"
-  );
-  const westernComicsList = creatorComics.filter(
-    (c) => c.subType !== "WEBTOON" && c.format !== "VERTICAL"
-  );
-  const totalWorks = creatorNovels.length + creatorComics.length;
-
-  // Real Public Statistics
-  const totalPublicReads =
-    creatorNovels.reduce((acc, n) => acc + n.reads, 0) +
-    creatorComics.reduce((acc, c) => acc + c.reads, 0) ||
-    creator.totalReads ||
-    0;
-  const totalPublicLikes =
-    creatorNovels.reduce((acc, n) => acc + n.likesCount, 0) +
-    creatorComics.reduce(
-      (acc, c) =>
-        acc +
-        (c.likesCount ||
-          c.episodes?.reduce((eAcc, ep) => eAcc + (ep.likesCount || 0), 0) ||
-          0),
-      0
-    );
-
-  // Followers & Following Lists
-  const followersList = dataStore.getFollowers(creator.id);
-  const followingList = dataStore.getFollowing(creator.id);
 
   // Follow Toggle with Optimistic UI & Error Rollback
   const handleFollowAction = () => {
@@ -485,11 +539,13 @@ export default function CreatorProfilePage({ params }: CreatorProfileProps) {
 
   // Filtered List for Modal Search
   const activeList = listModalType === "followers" ? followersList : followingList;
-  const filteredList = activeList.filter((u) => {
-    const q = listSearchQuery.toLowerCase();
-    return (
-      u.name.toLowerCase().includes(q) || u.username.toLowerCase().includes(q)
-    );
+  const filteredList = (activeList || []).filter((u) => {
+    if (!u) return false;
+    const q = (listSearchQuery || "").toLowerCase().trim();
+    if (!q) return true;
+    const name = (u.name || "").toLowerCase();
+    const uname = (u.username || "").toLowerCase();
+    return name.includes(q) || uname.includes(q);
   });
 
   return (
@@ -502,57 +558,64 @@ export default function CreatorProfilePage({ params }: CreatorProfileProps) {
         </div>
       )}
 
-      {/* 1. CREATOR HERO BANNER */}
+      {/* 1. CREATOR HERO BANNER & PROFILE HEADER */}
       <div className="relative">
-        <div className="h-44 sm:h-56 md:h-64 w-full bg-gradient-to-r from-rose-950 via-zinc-900 to-indigo-950 overflow-hidden relative">
+        {/* Banner with Ambient Shimmer & Gradient Overlay */}
+        <div className="h-48 sm:h-60 md:h-72 w-full bg-gradient-to-r from-rose-950 via-zinc-900 to-indigo-950 overflow-hidden relative">
           <img
             src={
               creator.banner ||
-              "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=1400&auto=format&fit=crop&q=80"
+              "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=1600&auto=format&fit=crop&q=85"
             }
             alt={creator.name}
-            className="w-full h-full object-cover opacity-60 mix-blend-overlay"
+            className="w-full h-full object-cover opacity-60 mix-blend-overlay scale-105 transition duration-700 hover:scale-100"
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-zinc-950/80 via-zinc-950/20 to-transparent" />
+          {/* Multi-Stop Depth Gradients */}
+          <div className="absolute inset-0 bg-gradient-to-t from-[#FAFAFA] dark:from-[#0B0B0C] via-transparent to-black/30" />
+          <div className="absolute inset-0 bg-radial-gradient from-transparent via-black/20 to-black/60 pointer-events-none" />
         </div>
 
         {/* Profile Info Container */}
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="relative flex flex-col md:flex-row md:items-end justify-between gap-6 pb-6 border-b border-[#EAEAE5] dark:border-zinc-800">
-            {/* Left: Floating Avatar + Name & Details (Safely on body canvas) */}
-            <div className="flex flex-col sm:flex-row items-start sm:items-end gap-4 sm:gap-6">
-              <div className="-mt-14 sm:-mt-18 md:-mt-20 relative group flex-shrink-0 z-10">
-                <div className="w-28 h-28 sm:w-32 sm:h-32 md:w-36 md:h-36 rounded-3xl overflow-hidden ring-4 ring-white dark:ring-[#121214] shadow-2xl bg-gradient-to-br from-rose-600 via-rose-500 to-indigo-600 flex items-center justify-center text-white font-black text-3xl sm:text-4xl flex-shrink-0 relative">
-                  {creator.avatar && !avatarError ? (
-                    <img
-                      src={creator.avatar}
-                      alt={creator.name}
-                      onError={() => setAvatarError(true)}
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <span>{initials}</span>
-                  )}
+            {/* Left: Glowing Multi-Layer Avatar + Details */}
+            <div className="flex flex-col sm:flex-row items-start sm:items-end gap-5 sm:gap-7">
+              <div className="-mt-16 sm:-mt-20 md:-mt-24 relative group flex-shrink-0 z-10">
+                <div className="relative w-32 h-32 sm:w-36 sm:h-36 md:w-40 md:h-40 rounded-3xl p-1 bg-gradient-to-tr from-rose-500 via-amber-500 to-indigo-500 shadow-2xl shadow-rose-950/30 dark:shadow-rose-950/60 transition-transform duration-300 group-hover:scale-105">
+                  <div className="w-full h-full rounded-[22px] overflow-hidden bg-zinc-950 flex items-center justify-center text-white font-black text-4xl sm:text-5xl relative">
+                    {creator.avatar && !avatarError ? (
+                      <img
+                        src={creator.avatar}
+                        alt={creator.name}
+                        onError={() => setAvatarError(true)}
+                        className="w-full h-full object-cover transition duration-300 group-hover:scale-105"
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-gradient-to-br from-indigo-600 via-rose-600 to-amber-600 flex items-center justify-center">
+                        <span className="tracking-tight drop-shadow-md">{initials}</span>
+                      </div>
+                    )}
 
-                  {/* Upload Overlay for Self */}
-                  {isSelf && (
-                    <button
-                      type="button"
-                      onClick={() => fileInputRef.current?.click()}
-                      disabled={isUploadingAvatar}
-                      className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition duration-200 flex flex-col items-center justify-center gap-1 text-white backdrop-blur-xs cursor-pointer"
-                      title="Upload Custom Profile Picture"
-                    >
-                      {isUploadingAvatar ? (
-                        <Loader2 className="w-6 h-6 animate-spin text-rose-400" />
-                      ) : (
-                        <>
-                          <Camera className="w-6 h-6 text-rose-400" />
-                          <span className="text-[10px] font-bold">Change Photo</span>
-                        </>
-                      )}
-                    </button>
-                  )}
+                    {/* Upload Overlay for Self */}
+                    {isSelf && (
+                      <button
+                        type="button"
+                        onClick={() => fileInputRef.current?.click()}
+                        disabled={isUploadingAvatar}
+                        className="absolute inset-0 bg-black/70 opacity-0 group-hover:opacity-100 transition duration-200 flex flex-col items-center justify-center gap-1.5 text-white backdrop-blur-xs cursor-pointer"
+                        title="Upload Custom Profile Picture"
+                      >
+                        {isUploadingAvatar ? (
+                          <Loader2 className="w-6 h-6 animate-spin text-rose-400" />
+                        ) : (
+                          <>
+                            <Camera className="w-6 h-6 text-rose-400" />
+                            <span className="text-[10px] font-extrabold uppercase tracking-wide">Change Photo</span>
+                          </>
+                        )}
+                      </button>
+                    )}
+                  </div>
                 </div>
 
                 {/* Hidden File Input for Avatar Upload */}
@@ -568,44 +631,44 @@ export default function CreatorProfilePage({ params }: CreatorProfileProps) {
 
                 {creator.isVerified && (
                   <div
-                    className="absolute -bottom-1 -right-1 p-1.5 rounded-full bg-zinc-950 ring-2 ring-white dark:ring-zinc-900 shadow-md z-10"
-                    title="Verified Creator"
+                    className="absolute -bottom-1.5 -right-1.5 p-2 rounded-2xl bg-zinc-950 ring-4 ring-white dark:ring-[#0B0B0C] shadow-xl z-20 flex items-center justify-center"
+                    title="Verified Yomika Creator"
                   >
-                    <CheckCircle2 className="w-4 h-4 text-rose-500 fill-rose-500/20" />
+                    <CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5 text-rose-500 fill-rose-500/20" />
                   </div>
                 )}
               </div>
 
-              {/* Text Information */}
-              <div className="space-y-1.5 min-w-0 pt-1 sm:pt-2">
+              {/* Text Information & Badges */}
+              <div className="space-y-2 min-w-0 pt-1 sm:pt-2">
                 <div className="flex flex-wrap items-center gap-2.5">
                   <h1 className="text-2xl sm:text-3xl md:text-4xl font-black text-[#111111] dark:text-white tracking-tight">
                     {creator.name}
                   </h1>
                   <span
-                    className={`px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wide ${
+                    className={`px-3 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider shadow-xs ${
                       creator.role === "ADMIN"
-                        ? "bg-amber-500/10 text-amber-500 border border-amber-500/30"
-                        : "bg-[#D91E18]/10 text-[#D91E18] border border-[#D91E18]/30"
+                        ? "bg-amber-500/15 text-amber-500 border border-amber-500/30"
+                        : "bg-[#D91E18]/15 text-[#D91E18] border border-[#D91E18]/30"
                     }`}
                   >
-                    {creator.role === "ADMIN" ? "Official Team" : "Verified Creator"}
+                    {creator.role === "ADMIN" ? "★ Official Team" : "✓ Verified Storyteller"}
                   </span>
                 </div>
 
-                <div className="flex flex-wrap items-center gap-3 text-xs text-[#555555] dark:text-zinc-400 font-medium">
-                  <span className="font-bold text-[#111111] dark:text-zinc-200">
+                <div className="flex flex-wrap items-center gap-3 text-xs text-zinc-600 dark:text-zinc-400 font-medium">
+                  <span className="font-bold text-zinc-900 dark:text-zinc-200 px-2.5 py-1 rounded-lg bg-zinc-100 dark:bg-zinc-800/80 border border-zinc-200 dark:border-zinc-700/60 font-mono text-[11px]">
                     @{creator.username}
                   </span>
 
                   {creator.country && (
-                    <span className="flex items-center gap-1">
+                    <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-zinc-100 dark:bg-zinc-800/50 border border-zinc-200/60 dark:border-zinc-800 text-[11px]">
                       <MapPin className="w-3.5 h-3.5 text-[#D91E18]" />
                       <span>{creator.country}</span>
                     </span>
                   )}
 
-                  <span className="flex items-center gap-1 text-zinc-400">
+                  <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-zinc-100 dark:bg-zinc-800/50 border border-zinc-200/60 dark:border-zinc-800 text-[11px]">
                     <Calendar className="w-3.5 h-3.5 text-zinc-400" />
                     <span>Joined {creator.createdAt ? formatDate(creator.createdAt) : "Recently"}</span>
                   </span>
@@ -613,13 +676,13 @@ export default function CreatorProfilePage({ params }: CreatorProfileProps) {
               </div>
             </div>
 
-            {/* Action Buttons: Follow / Edit / Share */}
+            {/* Action Buttons: Follow / Tip / Edit / Share */}
             <div className="flex flex-wrap items-center gap-2.5 pt-2 md:pt-0">
               {isSelf ? (
                 <>
                   <button
                     onClick={() => setIsEditModalOpen(true)}
-                    className="px-4 py-2.5 rounded-xl bg-white dark:bg-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-700 border border-[#EAEAE5] dark:border-zinc-700 text-zinc-900 dark:text-zinc-100 font-bold text-xs transition flex items-center gap-1.5 shadow-2xs"
+                    className="px-4 py-2.5 rounded-xl bg-white dark:bg-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-700 border border-[#EAEAE5] dark:border-zinc-700 text-zinc-900 dark:text-zinc-100 font-bold text-xs transition flex items-center gap-1.5 shadow-sm cursor-pointer"
                   >
                     <Edit3 className="w-3.5 h-3.5 text-[#D91E18]" />
                     <span>Edit Profile</span>
@@ -627,22 +690,22 @@ export default function CreatorProfilePage({ params }: CreatorProfileProps) {
 
                   <Link
                     href="/creator"
-                    className="px-4 py-2.5 rounded-xl bg-[#D91E18] hover:bg-[#B71813] text-white font-bold text-xs shadow-md transition flex items-center gap-1.5"
+                    className="px-4 py-2.5 rounded-xl bg-[#D91E18] hover:bg-[#B71813] text-white font-bold text-xs shadow-md shadow-rose-950/20 transition flex items-center gap-1.5 cursor-pointer"
                   >
                     <PenTool className="w-3.5 h-3.5" />
                     <span>Studio Dashboard</span>
                   </Link>
                 </>
               ) : (
-                <div className="relative flex items-center flex-1 sm:flex-none">
-                  {/* Main Follow / Following Button */}
+                <div className="relative flex items-center gap-2 flex-1 sm:flex-none">
+                  {/* Main Follow Button */}
                   <button
                     onClick={handleFollowAction}
                     disabled={isFollowLoading}
-                    className={`flex-1 sm:flex-none px-6 py-2.5 rounded-xl font-bold text-xs shadow-md transition flex items-center justify-center gap-1.5 ${
+                    className={`flex-1 sm:flex-none px-6 py-2.5 rounded-xl font-bold text-xs shadow-md transition flex items-center justify-center gap-2 cursor-pointer ${
                       isFollowing
                         ? "bg-zinc-800 text-zinc-200 border border-zinc-700 hover:bg-zinc-700"
-                        : "bg-[#D91E18] hover:bg-[#B71813] text-white shadow-rose-600/20 transform hover:scale-[1.02] active:scale-[0.98]"
+                        : "bg-gradient-to-r from-rose-600 via-rose-500 to-rose-700 hover:opacity-95 text-white shadow-rose-600/30 transform hover:scale-[1.02] active:scale-[0.98]"
                     }`}
                   >
                     {isFollowing ? (
@@ -658,22 +721,22 @@ export default function CreatorProfilePage({ params }: CreatorProfileProps) {
                     )}
                   </button>
 
-                  {/* Dropdown Options trigger when following */}
+                  {/* Dropdown for Follow Notifications */}
                   {isFollowing && (
                     <div className="relative">
                       <button
                         onClick={() => setShowFollowDropdown(!showFollowDropdown)}
-                        className="ml-1.5 p-2.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-300 border border-zinc-700 transition"
+                        className="p-2.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-300 border border-zinc-700 transition cursor-pointer"
                         title="Notification Settings"
                       >
                         <ChevronDown className="w-3.5 h-3.5" />
                       </button>
 
                       {showFollowDropdown && (
-                        <div className="absolute right-0 top-full mt-2 w-56 p-2 rounded-2xl bg-zinc-900 border border-zinc-800 shadow-2xl z-30 space-y-1 animate-in fade-in">
+                        <div className="absolute right-0 top-full mt-2 w-60 p-2 rounded-2xl bg-zinc-900 border border-zinc-800 shadow-2xl z-30 space-y-1 animate-in fade-in">
                           <button
                             onClick={() => setShowNotificationModal(true)}
-                            className="w-full px-3 py-2 rounded-xl text-left text-xs font-semibold text-zinc-200 hover:bg-zinc-800 flex items-center justify-between transition"
+                            className="w-full px-3 py-2 rounded-xl text-left text-xs font-semibold text-zinc-200 hover:bg-zinc-800 flex items-center justify-between transition cursor-pointer"
                           >
                             <span className="flex items-center gap-2">
                               {notificationsEnabled ? (
@@ -692,7 +755,7 @@ export default function CreatorProfilePage({ params }: CreatorProfileProps) {
 
                           <button
                             onClick={handleFollowAction}
-                            className="w-full px-3 py-2 rounded-xl text-left text-xs font-semibold text-rose-400 hover:bg-rose-950/40 hover:text-rose-300 flex items-center gap-2 transition"
+                            className="w-full px-3 py-2 rounded-xl text-left text-xs font-semibold text-rose-400 hover:bg-rose-950/40 hover:text-rose-300 flex items-center gap-2 transition cursor-pointer"
                           >
                             <X className="w-3.5 h-3.5" />
                             <span>Unfollow @{creator.username}</span>
@@ -701,24 +764,23 @@ export default function CreatorProfilePage({ params }: CreatorProfileProps) {
                       )}
                     </div>
                   )}
+
                   {/* Tip Creator Button */}
-                  {!isSelf && (
-                    <button
-                      onClick={() => setIsTipModalOpen(true)}
-                      className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 via-amber-600 to-rose-600 hover:opacity-95 text-white font-black text-xs shadow-md shadow-amber-500/20 transition transform hover:scale-[1.02] active:scale-[0.98] flex items-center gap-1.5 cursor-pointer"
-                      title={`Send Coins Tip to ${creator.name}`}
-                    >
-                      <Coins className="w-3.5 h-3.5" />
-                      <span>Tip Creator</span>
-                    </button>
-                  )}
+                  <button
+                    onClick={() => setIsTipModalOpen(true)}
+                    className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 via-amber-600 to-rose-600 hover:opacity-95 text-white font-black text-xs shadow-md shadow-amber-500/25 transition transform hover:scale-[1.02] active:scale-[0.98] flex items-center gap-1.5 cursor-pointer"
+                    title={`Send Coins Tip to ${creator.name}`}
+                  >
+                    <Coins className="w-4 h-4 text-amber-100" />
+                    <span>Tip Creator</span>
+                  </button>
                 </div>
               )}
 
               {/* Share Profile Button */}
               <button
                 onClick={handleShareProfile}
-                className="p-2.5 rounded-xl bg-white dark:bg-zinc-900 border border-[#EAEAE5] dark:border-zinc-800 text-zinc-600 dark:text-zinc-300 hover:text-[#D91E18] hover:border-zinc-300 dark:hover:border-zinc-700 transition shadow-2xs"
+                className="p-2.5 rounded-xl bg-white dark:bg-zinc-900 border border-[#EAEAE5] dark:border-zinc-800 text-zinc-600 dark:text-zinc-300 hover:text-[#D91E18] hover:border-zinc-300 dark:hover:border-zinc-700 transition shadow-2xs cursor-pointer"
                 title="Share Profile Link"
               >
                 <Share2 className="w-4 h-4" />
@@ -737,9 +799,9 @@ export default function CreatorProfilePage({ params }: CreatorProfileProps) {
                 </a>
               )}
 
-              {creator.twitter && (
+              {creator.twitter && typeof creator.twitter === "string" && (
                 <a
-                  href={`https://twitter.com/${creator.twitter.replace("@", "")}`}
+                  href={`https://twitter.com/${creator.twitter.replace(/^@/, "").trim()}`}
                   target="_blank"
                   rel="noreferrer"
                   className="p-2.5 rounded-xl bg-white dark:bg-zinc-900 border border-[#EAEAE5] dark:border-zinc-800 text-zinc-600 dark:text-zinc-300 hover:text-[#D91E18] transition shadow-2xs flex items-center justify-center"
@@ -756,55 +818,83 @@ export default function CreatorProfilePage({ params }: CreatorProfileProps) {
           {/* Creator Bio Snippet */}
           {creator.bio && (
             <div className="pt-4 max-w-3xl">
-              <p className="text-xs sm:text-sm text-[#444444] dark:text-zinc-300 leading-relaxed whitespace-pre-line font-medium">
+              <p className="text-xs sm:text-sm text-zinc-700 dark:text-zinc-300 leading-relaxed whitespace-pre-line font-medium">
                 {creator.bio}
               </p>
             </div>
           )}
 
-          {/* 2. CREATOR PUBLIC STATISTICS STRIP */}
-          <div className="mt-6 p-4 rounded-2xl bg-white dark:bg-zinc-900 border border-[#EAEAE5] dark:border-zinc-800 grid grid-cols-2 sm:grid-cols-4 gap-4 text-center shadow-2xs">
-            <div className="space-y-0.5">
-              <p className="text-xl sm:text-2xl font-black text-[#111111] dark:text-white">
+          {/* 2. CREATOR PREMIUM GLASSMORPHIC STATISTICS CARDS */}
+          <div className="mt-6 grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+            {/* Card 1: Total Reads */}
+            <div className="group p-4 rounded-2xl bg-white dark:bg-zinc-900/90 border border-zinc-200/80 dark:border-zinc-800/80 shadow-sm hover:border-teal-500/40 dark:hover:border-teal-500/40 transition-all duration-300 hover:-translate-y-0.5">
+              <div className="flex items-center justify-between pb-1.5">
+                <span className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider">
+                  Total Reads
+                </span>
+                <div className="w-8 h-8 rounded-xl bg-teal-500/10 dark:bg-teal-500/20 text-teal-600 dark:text-teal-400 flex items-center justify-center border border-teal-500/20 group-hover:scale-110 transition">
+                  <Eye className="w-4 h-4" />
+                </div>
+              </div>
+              <p className="text-2xl sm:text-3xl font-black text-zinc-900 dark:text-white tracking-tight">
                 {formatNumber(totalPublicReads)}
               </p>
-              <p className="text-[11px] font-bold text-zinc-400 uppercase tracking-wide">
-                Total Reads
-              </p>
+              <p className="text-[10px] text-zinc-400 font-medium pt-0.5">Lifetime audience reads</p>
             </div>
 
+            {/* Card 2: Followers */}
             <button
               onClick={() => {
                 setListModalType("followers");
                 setListSearchQuery("");
               }}
-              className="space-y-0.5 p-1 rounded-xl hover:bg-zinc-50 dark:hover:bg-zinc-800 transition cursor-pointer"
+              className="group text-left p-4 rounded-2xl bg-white dark:bg-zinc-900/90 border border-zinc-200/80 dark:border-zinc-800/80 shadow-sm hover:border-indigo-500/40 dark:hover:border-indigo-500/40 transition-all duration-300 hover:-translate-y-0.5 cursor-pointer"
             >
-              <p className="text-xl sm:text-2xl font-black text-indigo-600 dark:text-indigo-400">
+              <div className="flex items-center justify-between pb-1.5">
+                <span className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider flex items-center gap-1">
+                  <span>Followers</span>
+                  <span className="text-[9px] text-indigo-500 font-bold">↗</span>
+                </span>
+                <div className="w-8 h-8 rounded-xl bg-indigo-500/10 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 flex items-center justify-center border border-indigo-500/20 group-hover:scale-110 transition">
+                  <Users className="w-4 h-4" />
+                </div>
+              </div>
+              <p className="text-2xl sm:text-3xl font-black text-indigo-600 dark:text-indigo-400 tracking-tight">
                 {formatNumber(followersCount)}
               </p>
-              <p className="text-[11px] font-bold text-zinc-400 uppercase tracking-wide flex items-center justify-center gap-1">
-                <span>Followers</span>
-                <span className="text-[9px] text-zinc-500">↗</span>
-              </p>
+              <p className="text-[10px] text-zinc-400 font-medium pt-0.5">Subscribed fans & readers</p>
             </button>
 
-            <div className="space-y-0.5">
-              <p className="text-xl sm:text-2xl font-black text-[#111111] dark:text-white">
+            {/* Card 3: Published Works */}
+            <div className="group p-4 rounded-2xl bg-white dark:bg-zinc-900/90 border border-zinc-200/80 dark:border-zinc-800/80 shadow-sm hover:border-amber-500/40 dark:hover:border-amber-500/40 transition-all duration-300 hover:-translate-y-0.5">
+              <div className="flex items-center justify-between pb-1.5">
+                <span className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider">
+                  Published Works
+                </span>
+                <div className="w-8 h-8 rounded-xl bg-amber-500/10 dark:bg-amber-500/20 text-amber-600 dark:text-amber-400 flex items-center justify-center border border-amber-500/20 group-hover:scale-110 transition">
+                  <BookOpen className="w-4 h-4" />
+                </div>
+              </div>
+              <p className="text-2xl sm:text-3xl font-black text-zinc-900 dark:text-white tracking-tight">
                 {totalWorks}
               </p>
-              <p className="text-[11px] font-bold text-zinc-400 uppercase tracking-wide">
-                Published Works
-              </p>
+              <p className="text-[10px] text-zinc-400 font-medium pt-0.5">Original series released</p>
             </div>
 
-            <div className="space-y-0.5">
-              <p className="text-xl sm:text-2xl font-black text-[#D91E18]">
+            {/* Card 4: Story Likes */}
+            <div className="group p-4 rounded-2xl bg-white dark:bg-zinc-900/90 border border-zinc-200/80 dark:border-zinc-800/80 shadow-sm hover:border-rose-500/40 dark:hover:border-rose-500/40 transition-all duration-300 hover:-translate-y-0.5">
+              <div className="flex items-center justify-between pb-1.5">
+                <span className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider">
+                  Story Likes
+                </span>
+                <div className="w-8 h-8 rounded-xl bg-rose-500/10 dark:bg-rose-500/20 text-rose-600 dark:text-rose-400 flex items-center justify-center border border-rose-500/20 group-hover:scale-110 transition">
+                  <Heart className="w-4 h-4 fill-current" />
+                </div>
+              </div>
+              <p className="text-2xl sm:text-3xl font-black text-[#D91E18] tracking-tight">
                 {formatNumber(totalPublicLikes)}
               </p>
-              <p className="text-[11px] font-bold text-zinc-400 uppercase tracking-wide">
-                Story Likes
-              </p>
+              <p className="text-[10px] text-zinc-400 font-medium pt-0.5">Reader appreciations</p>
             </div>
           </div>
         </div>
@@ -827,10 +917,10 @@ export default function CreatorProfilePage({ params }: CreatorProfileProps) {
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id as typeof activeTab)}
-                className={`px-4 py-2.5 rounded-xl text-xs font-bold whitespace-nowrap transition flex items-center gap-2 ${
+                className={`px-4 py-2.5 rounded-xl text-xs font-bold whitespace-nowrap transition flex items-center gap-2 cursor-pointer ${
                   activeTab === tab.id
-                    ? "bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 shadow-md"
-                    : "bg-zinc-100 dark:bg-zinc-900 text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100"
+                    ? "bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 shadow-md shadow-zinc-950/20"
+                    : "bg-zinc-100 dark:bg-zinc-900/80 text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 border border-zinc-200/50 dark:border-zinc-800/60"
                 }`}
               >
                 <Icon className="w-3.5 h-3.5" />
@@ -844,29 +934,48 @@ export default function CreatorProfilePage({ params }: CreatorProfileProps) {
         {activeTab === "all" && (
           <div className="space-y-6">
             {totalWorks === 0 ? (
-              <div className="p-12 text-center rounded-3xl bg-zinc-50 dark:bg-zinc-900/40 border border-zinc-200 dark:border-zinc-800 space-y-3 max-w-md mx-auto">
-                <div className="w-12 h-12 rounded-2xl bg-rose-500/10 text-rose-500 flex items-center justify-center mx-auto">
-                  <BookOpen className="w-6 h-6" />
+              <div className="p-8 sm:p-12 text-center rounded-3xl bg-gradient-to-b from-zinc-50 to-white dark:from-zinc-900/60 dark:to-zinc-950 border border-zinc-200/80 dark:border-zinc-800/80 space-y-4 max-w-lg mx-auto shadow-sm">
+                <div className="relative w-16 h-16 rounded-3xl bg-gradient-to-tr from-rose-500/20 via-amber-500/20 to-indigo-500/20 border border-rose-500/30 flex items-center justify-center mx-auto text-rose-500 shadow-inner">
+                  <Sparkles className="w-8 h-8 animate-pulse text-[#D91E18]" />
                 </div>
-                <div className="space-y-1">
-                  <h3 className="font-bold text-sm text-zinc-800 dark:text-zinc-200">
-                    No Stories Published Yet
+                <div className="space-y-2">
+                  <h3 className="font-black text-lg text-zinc-900 dark:text-zinc-100">
+                    Fresh Storyteller on Yomika
                   </h3>
-                  <p className="text-xs text-zinc-500">
+                  <p className="text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed max-w-sm mx-auto">
                     {isSelf
-                      ? "Start your storytelling journey by creating your first novel or comic in Creator Studio."
-                      : "This creator hasn't published any public stories yet. Follow them to be notified upon release!"}
+                      ? "Your creator profile is ready! Publish your first serialized web novel or vertical webtoon to build your fanbase."
+                      : `${creator.name} is currently crafting original stories. Follow them to be the first to read when their first chapter drops!`}
                   </p>
                 </div>
-                {isSelf && (
-                  <Link
-                    href="/creator/upload"
-                    className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs shadow-md transition"
-                  >
-                    <PenTool className="w-3.5 h-3.5" />
-                    <span>Create New Story</span>
-                  </Link>
-                )}
+                <div className="pt-2 flex flex-wrap justify-center gap-3">
+                  {isSelf ? (
+                    <Link
+                      href="/creator/upload"
+                      className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-[#D91E18] hover:bg-[#B71813] text-white font-bold text-xs shadow-lg shadow-rose-600/30 transition transform hover:scale-105"
+                    >
+                      <PenTool className="w-4 h-4" />
+                      <span>Create New Series</span>
+                    </Link>
+                  ) : (
+                    <>
+                      <button
+                        onClick={handleFollowAction}
+                        className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-[#D91E18] hover:bg-[#B71813] text-white font-bold text-xs shadow-md shadow-rose-600/20 transition cursor-pointer"
+                      >
+                        <Bell className="w-3.5 h-3.5" />
+                        <span>{isFollowing ? "Notifications Enabled" : "Follow for Releases"}</span>
+                      </button>
+                      <Link
+                        href="/discover"
+                        className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 font-bold text-xs transition"
+                      >
+                        <BookOpen className="w-3.5 h-3.5" />
+                        <span>Browse Trending Stories</span>
+                      </Link>
+                    </>
+                  )}
+                </div>
               </div>
             ) : (
               <div className="space-y-8">
@@ -1078,16 +1187,19 @@ export default function CreatorProfilePage({ params }: CreatorProfileProps) {
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2.5">
                         <img
-                          src={fb.user.avatar}
-                          alt={fb.user.name}
+                          src={
+                            fb.user?.avatar ||
+                            "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300&auto=format&fit=crop&q=80"
+                          }
+                          alt={fb.user?.name || "User"}
                           className="w-8 h-8 rounded-full object-cover ring-1 ring-zinc-200 dark:ring-zinc-700"
                         />
                         <div>
                           <div className="flex items-center gap-1">
                             <span className="font-bold text-xs text-zinc-900 dark:text-zinc-100">
-                              {fb.user.name}
+                              {fb.user?.name || "Reader"}
                             </span>
-                            {fb.user.isVerified && (
+                            {fb.user?.isVerified && (
                               <CheckCircle2 className="w-3.5 h-3.5 text-rose-500" />
                             )}
                           </div>

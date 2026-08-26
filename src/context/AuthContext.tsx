@@ -34,6 +34,17 @@ interface AuthContextType {
   updateProfile: (updated: Partial<UserProfile>) => void;
 }
 
+export const MASTER_ADMIN_EMAIL = (
+  process.env.NEXT_PUBLIC_ADMIN_EMAIL || "megwansiabhishek7@gmail.com"
+)
+  .toLowerCase()
+  .trim();
+
+export function isMasterAdmin(email?: string | null): boolean {
+  if (!email) return false;
+  return email.toLowerCase().trim() === MASTER_ADMIN_EMAIL;
+}
+
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
@@ -61,6 +72,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       `user_${supaUser.id.slice(0, 6)}`;
     const username = rawUsername.toLowerCase().replace(/[^a-z0-9_]/g, "") || `user_${Date.now() % 10000}`;
 
+    const isAdminUser = isMasterAdmin(supaUser.email);
+    const resolvedRole: Role = isAdminUser
+      ? "ADMIN"
+      : (metadata.role as Role) === "ADMIN"
+      ? "CREATOR"
+      : (metadata.role as Role) || "CREATOR";
+
     let profile =
       dataStore.getUserById(supaUser.id) ||
       dataStore.getUserByUsername(username) ||
@@ -68,20 +86,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         ? dataStore.getUsers().find((u) => u.email.toLowerCase() === supaUser.email?.toLowerCase())
         : undefined);
 
-    if (!profile) {
+    if (profile) {
+      if (isAdminUser && profile.role !== "ADMIN") {
+        profile = { ...profile, role: "ADMIN", isVerified: true };
+        dataStore.updateUserProfile(profile.id, profile);
+      } else if (!isAdminUser && profile.role === "ADMIN") {
+        profile = { ...profile, role: "CREATOR" };
+        dataStore.updateUserProfile(profile.id, profile);
+      }
+    } else {
       profile = {
         id: supaUser.id,
         name: metadata.name || metadata.full_name || metadata.user_name || username,
         username,
         email: supaUser.email || "",
-        role: (metadata.role as Role) || "CREATOR",
+        role: resolvedRole,
         avatar:
           metadata.avatar_url ||
           metadata.picture ||
           `https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300&auto=format&fit=crop&q=80`,
-        bio: "Storyteller & reader on Yomika.",
+        bio: isAdminUser ? "Official Yomika Platform Administrator." : "Storyteller & reader on Yomika.",
         country: "Global",
-        isVerified: false,
+        isVerified: isAdminUser,
         isCreatorProfileComplete: false,
         isEmailVerified: Boolean(supaUser.email_confirmed_at || supaUser.confirmed_at),
         isAgeVerified: true,
@@ -240,16 +266,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         // If Supabase says unconfirmed, log in user
         if (error.message.toLowerCase().includes("confirm") || error.message.toLowerCase().includes("email not confirmed")) {
           const username = cleanEmail.split("@")[0];
+          const isAdminUser = isMasterAdmin(cleanEmail);
           const profile = localUser || {
             id: `usr-${Date.now()}`,
             name: username,
             username: username.replace(/[^a-z0-9_]/g, ""),
             email: cleanEmail,
-            role: "CREATOR" as Role,
+            role: (isAdminUser ? "ADMIN" : "CREATOR") as Role,
             avatar: `https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300`,
-            bio: "Creator on Yomika",
+            bio: isAdminUser ? "Official Yomika Platform Administrator." : "Creator on Yomika",
             country: "Global",
-            isVerified: false,
+            isVerified: isAdminUser,
             isCreatorProfileComplete: false,
             isEmailVerified: true,
             isAgeVerified: true,
@@ -261,6 +288,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             totalReads: 0,
             createdAt: new Date().toISOString(),
           };
+          if (isAdminUser) {
+            profile.role = "ADMIN";
+            profile.isVerified = true;
+          }
           dataStore.updateUserProfile(profile.id, profile);
           saveUser(profile);
           setIsLoading(false);
@@ -270,6 +301,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
         // If local user exists, log in
         if (localUser) {
+          if (isMasterAdmin(cleanEmail)) {
+            localUser.role = "ADMIN";
+            localUser.isVerified = true;
+            dataStore.updateUserProfile(localUser.id, localUser);
+          }
           saveUser(localUser);
           setIsLoading(false);
           handlePostAuthRedirect();
@@ -281,6 +317,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       if (data.user) {
+        const isAdminUser = isMasterAdmin(cleanEmail);
         let profile =
           dataStore.getUserById(data.user.id) ||
           dataStore.getUserByUsername(cleanEmail.split("@")[0]);
@@ -291,11 +328,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             name: cleanEmail.split("@")[0],
             username: cleanEmail.split("@")[0].replace(/[^a-z0-9_]/g, ""),
             email: cleanEmail,
-            role: "CREATOR",
+            role: isAdminUser ? "ADMIN" : "CREATOR",
             avatar: `https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300`,
-            bio: "Creator on Yomika",
+            bio: isAdminUser ? "Official Yomika Platform Administrator." : "Creator on Yomika",
             country: "Global",
-            isVerified: false,
+            isVerified: isAdminUser,
             isCreatorProfileComplete: false,
             isEmailVerified: true,
             isAgeVerified: true,
@@ -307,8 +344,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             totalReads: 0,
             createdAt: new Date().toISOString(),
           };
-          dataStore.updateUserProfile(profile.id, profile);
+        } else if (isAdminUser) {
+          profile.role = "ADMIN";
+          profile.isVerified = true;
         }
+        dataStore.updateUserProfile(profile.id, profile);
         saveUser(profile);
       }
 
@@ -334,6 +374,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       const cleanEmail = email.trim().toLowerCase();
       const cleanUsername = username.toLowerCase().replace(/[^a-z0-9_]/g, "");
+      const isAdminEmail = isMasterAdmin(cleanEmail);
+      const resolvedRole: Role = isAdminEmail ? "ADMIN" : role === "ADMIN" ? "CREATOR" : role;
 
       // 1. Check if username taken
       const existingUser = dataStore.getUserByUsername(cleanUsername);
@@ -352,7 +394,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             data: {
               name,
               username: cleanUsername,
-              role,
+              role: resolvedRole,
             },
           },
         });
@@ -375,11 +417,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         name,
         username: cleanUsername,
         email: cleanEmail,
-        role,
+        role: resolvedRole,
         avatar: `https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300&auto=format&fit=crop&q=80`,
-        bio: `${role === "CREATOR" ? "Creator & Author" : "Avid Reader"} on Yomika.`,
+        bio: isAdminEmail
+          ? "Official Yomika Platform Administrator."
+          : `${resolvedRole === "CREATOR" ? "Creator & Author" : "Avid Reader"} on Yomika.`,
         country: "Global",
-        isVerified: false,
+        isVerified: isAdminEmail,
         isCreatorProfileComplete: false,
         isEmailVerified: true,
         isAgeVerified: true,

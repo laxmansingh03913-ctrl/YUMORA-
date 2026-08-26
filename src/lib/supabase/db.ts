@@ -23,6 +23,63 @@ function ensureUuid(id?: string): string {
   return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-4${hex.slice(13, 16)}-a${hex.slice(17, 20)}-${hex.slice(20, 32)}`;
 }
 
+export function mapProfileFromDb(row: any): UserProfile | null {
+  if (!row || !row.id) return null;
+  return {
+    id: String(row.id),
+    name: row.name || "Storyteller",
+    username: row.username || `creator_${String(row.id).slice(0, 6)}`,
+    email: row.email || "",
+    role: row.role || "CREATOR",
+    avatar:
+      row.avatar ||
+      "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300&auto=format&fit=crop&q=80",
+    banner: row.banner || "",
+    bio: row.bio || "",
+    country: row.country || "Global",
+    website: row.website || "",
+    twitter: row.twitter || "",
+    preferredTypes: Array.isArray(row.preferred_types || row.preferredTypes)
+      ? row.preferred_types || row.preferredTypes
+      : [],
+    primaryGenres: Array.isArray(row.primary_genres || row.primaryGenres)
+      ? row.primary_genres || row.primaryGenres
+      : ["Fantasy", "Sci-Fi"],
+    agreedToCreatorTerms: Boolean(
+      row.agreed_to_creator_terms ?? row.agreedToCreatorTerms ?? true
+    ),
+    isCreatorProfileComplete: Boolean(
+      row.is_creator_profile_complete ?? row.isCreatorProfileComplete ?? true
+    ),
+    isEmailVerified: Boolean(row.is_email_verified ?? row.isEmailVerified ?? true),
+    isAgeVerified: Boolean(row.is_age_verified ?? row.isAgeVerified ?? true),
+    monetizationTier: row.monetization_tier || row.monetizationTier || "NONE",
+    monetizationStatus:
+      row.monetization_status || row.monetizationStatus || "NOT_APPLIED",
+    fraudAuditStatus:
+      row.fraud_audit_status || row.fraudAuditStatus || "CLEAN",
+    isVerified: Boolean(row.is_verified ?? row.isVerified),
+    followersCount:
+      typeof (row.followers_count ?? row.followersCount) === "number"
+        ? row.followers_count ?? row.followersCount
+        : 0,
+    followingCount:
+      typeof (row.following_count ?? row.followingCount) === "number"
+        ? row.following_count ?? row.followingCount
+        : 0,
+    totalReads:
+      typeof (row.total_reads ?? row.totalReads) === "number"
+        ? row.total_reads ?? row.totalReads
+        : 0,
+    coins: typeof row.coins === "number" ? row.coins : 0,
+    totalTipsReceived:
+      typeof (row.total_tips_received ?? row.totalTipsReceived) === "number"
+        ? row.total_tips_received ?? row.totalTipsReceived
+        : 0,
+    createdAt: row.created_at || row.createdAt || new Date().toISOString(),
+  };
+}
+
 async function ensureProfile(creatorId?: string, name?: string, username?: string): Promise<string> {
   const validId = ensureUuid(creatorId);
   try {
@@ -324,8 +381,8 @@ export const dbService = {
         .eq("id", userId)
         .maybeSingle();
 
-      if (error) return null;
-      return data as unknown as UserProfile;
+      if (error || !data) return null;
+      return mapProfileFromDb(data);
     } catch {
       return null;
     }
@@ -333,14 +390,16 @@ export const dbService = {
 
   async getProfileByUsername(username: string): Promise<UserProfile | null> {
     try {
+      if (!username) return null;
+      const clean = username.trim().replace(/^@/, "");
       const { data, error } = await supabase
         .from("profiles")
         .select("*")
-        .ilike("username", username.trim())
+        .ilike("username", clean)
         .maybeSingle();
 
       if (error || !data) return null;
-      return data as unknown as UserProfile;
+      return mapProfileFromDb(data);
     } catch {
       return null;
     }
@@ -354,7 +413,7 @@ export const dbService = {
         .order("created_at", { ascending: false });
 
       if (error || !data) return [];
-      return data as unknown as UserProfile[];
+      return data.map((r) => mapProfileFromDb(r)).filter((p): p is UserProfile => p !== null);
     } catch {
       return [];
     }

@@ -5,7 +5,10 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-export function formatNumber(num: number): string {
+export function formatNumber(num?: number | null): string {
+  if (num === null || num === undefined || typeof num !== "number" || isNaN(num)) {
+    return "0";
+  }
   if (num >= 1_000_000) {
     return (num / 1_000_000).toFixed(1).replace(/\.0$/, "") + "M";
   }
@@ -15,16 +18,18 @@ export function formatNumber(num: number): string {
   return num.toLocaleString();
 }
 
-export function formatDate(dateString: string): string {
+export function formatDate(dateString?: string | null): string {
+  if (!dateString) return "Recently";
   try {
     const date = new Date(dateString);
+    if (isNaN(date.getTime())) return "Recently";
     return new Intl.DateTimeFormat("en-US", {
       month: "short",
       day: "numeric",
       year: "numeric",
     }).format(date);
   } catch {
-    return dateString;
+    return "Recently";
   }
 }
 

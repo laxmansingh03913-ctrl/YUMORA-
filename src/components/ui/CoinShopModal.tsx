@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import confetti from "canvas-confetti";
 import {
   Coins,
@@ -13,6 +13,10 @@ import {
   Loader2,
   Crown,
   Gift,
+  Smartphone,
+  QrCode,
+  Building2,
+  AlertCircle,
 } from "lucide-react";
 import { dataStore, COIN_PACKAGES } from "@/lib/data/store";
 import { useAuth } from "@/context/AuthContext";
@@ -24,67 +28,217 @@ interface CoinShopModalProps {
   onCoinsUpdated?: (newBalance: number) => void;
 }
 
+// Extend window interface for Razorpay SDK
+declare global {
+  interface Window {
+    Razorpay?: unknown;
+  }
+}
+
 export function CoinShopModal({ isOpen, onClose, onCoinsUpdated }: CoinShopModalProps) {
-  const { user } = useAuth();
+  const { user, openAuthModal } = useAuth();
   const [selectedPack, setSelectedPack] = useState<CoinPackage>(COIN_PACKAGES[1] || COIN_PACKAGES[0]);
+  const [currency, setCurrency] = useState<"INR" | "USD">("INR");
   const [isProcessing, setIsProcessing] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+
+  // Dynamically load Razorpay SDK
+  useEffect(() => {
+    if (!isOpen) return;
+
+    if (!document.getElementById("razorpay-checkout-script")) {
+      const script = document.createElement("script");
+      script.id = "razorpay-checkout-script";
+      script.src = "https://checkout.razorpay.com/v1/checkout.js";
+      script.async = true;
+      document.body.appendChild(script);
+    }
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
   const currentCoins = user ? dataStore.getUserCoins(user.id) : 0;
+  const totalCoinsInPack = selectedPack.coins + (selectedPack.bonusCoins || 0);
 
-  const handlePurchase = async () => {
-    if (!user) return;
+  const handleRazorpayCheckout = async () => {
+    if (!user) {
+      onClose();
+      openAuthModal("login");
+      return;
+    }
+
     setIsProcessing(true);
-
-    // Simulate secure payment gateway transaction
-    await new Promise((resolve) => setTimeout(resolve, 800));
-
-    const totalCoinsToAdd = selectedPack.coins + (selectedPack.bonusCoins || 0);
-    const newBalance = dataStore.addCoins(user.id, totalCoinsToAdd);
-
-    // Record notification
-    dataStore.addNotification({
-      id: `notif-topup-${Date.now()}`,
-      userId: user.id,
-      creatorName: "Yumora Treasury",
-      creatorAvatar: "/hero-character.png",
-      title: `🪙 +${totalCoinsToAdd.toLocaleString()} Coins Added!`,
-      message: `Successfully purchased ${selectedPack.label} for $${selectedPack.priceUsd}. Your new balance is ${newBalance.toLocaleString()} Coins.`,
-      contentUrl: "/library",
-      type: "SYSTEM",
-      isRead: false,
-      createdAt: new Date().toISOString(),
-    });
-
-    setIsProcessing(false);
-    setSuccessMessage(`+${totalCoinsToAdd.toLocaleString()} Coins added to your wallet!`);
+    setErrorMessage(null);
 
     try {
-      confetti({
-        particleCount: 80,
-        spread: 60,
-        origin: { y: 0.6 },
+      // 1. Create Order via Backend API
+      const orderRes = await fetch("/api/payment/create-order", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          packageId: selectedPack.id,
+          amountInr: selectedPack.priceInr || 99,
+          userId: user.id,
+          userEmail: user.email,
+          userName: user.name,
+        }),
       });
-    } catch {
-      // Ignore in non-browser environments
-    }
 
-    if (onCoinsUpdated) {
-      onCoinsUpdated(newBalance);
-    }
+      const orderData = await orderRes.json();
 
-    setTimeout(() => {
-      setSuccessMessage(null);
-      onClose();
-    }, 1800);
+      if (!orderRes.ok || !orderData.success) {
+        throw new Error(orderData.error || "Failed to initialize payment gateway order.");
+      }
+
+      // 2. If Razorpay SDK is available and live mode is active
+      if (typeof window !== "undefined" && window.Razorpay && orderData.isLiveMode) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const RazorpayClass = window.Razorpay as any;
+
+        const options = {
+          key: orderData.keyId,
+          amount: orderData.amount,
+          currency: orderData.currency || "INR",
+          name: "Yomika",
+          description: `${selectedPack.label} (${totalCoinsInPack} Coins Top-up)`,
+          image: "https://youmika.site/hero-character.png",
+          order_id: orderData.orderId,
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          handler: async (response: any) => {
+            try {
+              // 3. Verify Payment via Backend API
+              const verifyRes = await fetch("/api/payment/verify", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  razorpay_order_id: response.razorpay_order_id,
+                  razorpay_payment_id: response.razorpay_payment_id,
+                  razorpay_signature: response.razorpay_signature,
+                  userId: user.id,
+                  userEmail: user.email,
+                  userName: user.name,
+                  packageId: selectedPack.id,
+                  packageName: selectedPack.label,
+                  coins: selectedPack.coins,
+                  bonusCoins: selectedPack.bonusCoins || 0,
+                  amountInr: selectedPack.priceInr,
+                }),
+              });
+
+              const verifyData = await verifyRes.json();
+
+              if (!verifyRes.ok || !verifyData.success) {
+                throw new Error(verifyData.error || "Payment verification failed.");
+              }
+
+              // Credit Coins & Celebrate
+              const newBalance = dataStore.addCoins(user.id, totalCoinsInPack);
+              dataStore.addNotification({
+                id: `notif-topup-${Date.now()}`,
+                userId: user.id,
+                creatorName: "Yomika Treasury",
+                creatorAvatar: "/hero-character.png",
+                title: `🪙 +${totalCoinsInPack.toLocaleString()} Coins Added!`,
+                message: `Successfully purchased ${selectedPack.label} for ₹${selectedPack.priceInr}. TxID: ${response.razorpay_payment_id}`,
+                contentUrl: "/library",
+                type: "SYSTEM",
+                isRead: false,
+                createdAt: new Date().toISOString(),
+              });
+
+              setIsProcessing(false);
+              setSuccessMessage(`+${totalCoinsInPack.toLocaleString()} Coins added to your wallet!`);
+
+              try {
+                confetti({
+                  particleCount: 100,
+                  spread: 70,
+                  origin: { y: 0.6 },
+                });
+              } catch {
+                // Ignore in non-browser env
+              }
+
+              if (onCoinsUpdated) {
+                onCoinsUpdated(newBalance);
+              }
+
+              setTimeout(() => {
+                setSuccessMessage(null);
+                onClose();
+              }, 2000);
+            } catch (err: unknown) {
+              const msg = err instanceof Error ? err.message : "Verification error";
+              setErrorMessage(msg);
+              setIsProcessing(false);
+            }
+          },
+          prefill: {
+            name: user.name,
+            email: user.email,
+          },
+          theme: {
+            color: "#D91E18",
+          },
+        };
+
+        const rzp = new RazorpayClass(options);
+        rzp.open();
+        setIsProcessing(false);
+        return;
+      }
+
+      // 4. Instant Simulator Mode (When testing or live keys pending)
+      await new Promise((resolve) => setTimeout(resolve, 800));
+
+      const newBalance = dataStore.addCoins(user.id, totalCoinsInPack);
+
+      dataStore.addNotification({
+        id: `notif-topup-${Date.now()}`,
+        userId: user.id,
+        creatorName: "Yomika Treasury",
+        creatorAvatar: "/hero-character.png",
+        title: `🪙 +${totalCoinsInPack.toLocaleString()} Coins Added!`,
+        message: `Successfully purchased ${selectedPack.label} for ₹${selectedPack.priceInr}. Your balance is ${newBalance.toLocaleString()} Coins.`,
+        contentUrl: "/library",
+        type: "SYSTEM",
+        isRead: false,
+        createdAt: new Date().toISOString(),
+      });
+
+      setIsProcessing(false);
+      setSuccessMessage(`+${totalCoinsInPack.toLocaleString()} Coins added to your wallet!`);
+
+      try {
+        confetti({
+          particleCount: 80,
+          spread: 60,
+          origin: { y: 0.6 },
+        });
+      } catch {
+        // Ignore
+      }
+
+      if (onCoinsUpdated) {
+        onCoinsUpdated(newBalance);
+      }
+
+      setTimeout(() => {
+        setSuccessMessage(null);
+        onClose();
+      }, 1800);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Payment failed";
+      setErrorMessage(msg);
+      setIsProcessing(false);
+    }
   };
 
   return (
     <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in">
       <div
-        className="max-w-lg w-full rounded-3xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 p-6 sm:p-7 space-y-6 shadow-2xl relative overflow-hidden"
+        className="max-w-lg w-full rounded-3xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 p-6 sm:p-7 space-y-5 shadow-2xl relative overflow-hidden max-h-[90vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Glow Header Accent */}
@@ -98,7 +252,7 @@ export function CoinShopModal({ isOpen, onClose, onCoinsUpdated }: CoinShopModal
             </div>
             <div>
               <h3 className="font-black text-base sm:text-lg text-zinc-900 dark:text-zinc-100 flex items-center gap-1.5">
-                <span>Yumora Coin Treasury</span>
+                <span>Yomika Coin Treasury</span>
                 <Sparkles className="w-4 h-4 text-amber-400" />
               </h3>
               <p className="text-xs text-zinc-500">
@@ -115,17 +269,43 @@ export function CoinShopModal({ isOpen, onClose, onCoinsUpdated }: CoinShopModal
           </button>
         </div>
 
-        {/* Current Wallet Balance Strip */}
-        <div className="p-3.5 rounded-2xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/40 flex items-center justify-between">
+        {/* Current Wallet Balance Strip & Currency Selector */}
+        <div className="flex items-center justify-between gap-3 p-3.5 rounded-2xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/40">
           <div className="flex items-center gap-2">
-            <Coins className="w-4 h-4 text-amber-600 dark:text-amber-400" />
-            <span className="text-xs font-bold text-amber-900 dark:text-amber-200">
-              Your Current Balance:
-            </span>
+            <Coins className="w-4 h-4 text-amber-600 dark:text-amber-400 flex-shrink-0" />
+            <div>
+              <p className="text-[11px] text-zinc-500 font-bold uppercase">Your Balance</p>
+              <p className="font-black text-sm text-amber-600 dark:text-amber-400 font-mono">
+                {currentCoins.toLocaleString()} Coins
+              </p>
+            </div>
           </div>
-          <span className="font-black text-sm text-amber-600 dark:text-amber-400 font-mono">
-            {currentCoins.toLocaleString()} Coins
-          </span>
+
+          {/* Currency Toggle */}
+          <div className="flex items-center gap-1 bg-white dark:bg-zinc-900 p-1 rounded-xl border border-amber-200 dark:border-zinc-800 text-xs font-bold">
+            <button
+              type="button"
+              onClick={() => setCurrency("INR")}
+              className={`px-2.5 py-1 rounded-lg transition cursor-pointer ${
+                currency === "INR"
+                  ? "bg-[#D91E18] text-white shadow-xs"
+                  : "text-zinc-500 hover:text-zinc-900 dark:hover:text-white"
+              }`}
+            >
+              ₹ INR (UPI)
+            </button>
+            <button
+              type="button"
+              onClick={() => setCurrency("USD")}
+              className={`px-2.5 py-1 rounded-lg transition cursor-pointer ${
+                currency === "USD"
+                  ? "bg-[#D91E18] text-white shadow-xs"
+                  : "text-zinc-500 hover:text-zinc-900 dark:hover:text-white"
+              }`}
+            >
+              $ USD
+            </button>
+          </div>
         </div>
 
         {/* Package Selector */}
@@ -173,10 +353,12 @@ export function CoinShopModal({ isOpen, onClose, onCoinsUpdated }: CoinShopModal
                   </div>
 
                   <div className="pt-3 border-t border-zinc-200/60 dark:border-zinc-700/60 mt-3 flex items-center justify-between text-xs">
-                    <span className="font-bold text-zinc-700 dark:text-zinc-300">
-                      ${pkg.priceUsd}
+                    <span className="font-black text-sm text-zinc-900 dark:text-white font-mono">
+                      {currency === "INR" ? `₹${pkg.priceInr}` : `$${pkg.priceUsd}`}
                     </span>
-                    <span className="text-[10px] text-zinc-400">₹{pkg.priceInr}</span>
+                    <span className="text-[10px] text-zinc-400">
+                      {currency === "INR" ? `$${pkg.priceUsd}` : `₹${pkg.priceInr}`}
+                    </span>
                   </div>
                 </button>
               );
@@ -184,50 +366,74 @@ export function CoinShopModal({ isOpen, onClose, onCoinsUpdated }: CoinShopModal
           </div>
         </div>
 
-        {/* Security & Benefits Badges */}
-        <div className="grid grid-cols-2 gap-2 text-[11px] text-zinc-500">
-          <div className="flex items-center gap-1.5">
-            <ShieldCheck className="w-3.5 h-3.5 text-emerald-500 flex-shrink-0" />
-            <span>100% Secure Checkout</span>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <Zap className="w-3.5 h-3.5 text-amber-500 flex-shrink-0" />
-            <span>Instant Coin Delivery</span>
+        {/* Accepted Payment Methods Strip */}
+        <div className="p-3 rounded-2xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 space-y-1.5">
+          <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">
+            Supported Payment Methods (Instant Delivery)
+          </p>
+          <div className="flex flex-wrap items-center gap-2 text-[11px] font-semibold text-zinc-600 dark:text-zinc-400">
+            <span className="flex items-center gap-1 px-2 py-1 rounded-lg bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800">
+              <Smartphone className="w-3 h-3 text-emerald-500" />
+              <span>UPI / GPay / PhonePe / Paytm</span>
+            </span>
+            <span className="flex items-center gap-1 px-2 py-1 rounded-lg bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800">
+              <CreditCard className="w-3 h-3 text-indigo-500" />
+              <span>Cards (RuPay, Visa, MC)</span>
+            </span>
+            <span className="flex items-center gap-1 px-2 py-1 rounded-lg bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800">
+              <Building2 className="w-3 h-3 text-amber-500" />
+              <span>NetBanking</span>
+            </span>
           </div>
         </div>
 
+        {/* Error Message Alert */}
+        {errorMessage && (
+          <div className="p-3 rounded-2xl bg-rose-500/10 border border-rose-500/30 text-rose-500 text-xs font-semibold flex items-center gap-2">
+            <AlertCircle className="w-4 h-4 flex-shrink-0" />
+            <span>{errorMessage}</span>
+          </div>
+        )}
+
         {/* Purchase Action Button */}
-        <div className="space-y-2 pt-2">
+        <div className="space-y-2 pt-1">
           {successMessage ? (
-            <div className="p-3 rounded-2xl bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 text-xs font-bold text-center flex items-center justify-center gap-2 animate-in zoom-in-95">
+            <div className="p-3.5 rounded-2xl bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 text-xs font-bold text-center flex items-center justify-center gap-2 animate-in zoom-in-95">
               <CheckCircle2 className="w-4 h-4" />
               <span>{successMessage}</span>
             </div>
           ) : (
             <button
-              onClick={handlePurchase}
+              onClick={handleRazorpayCheckout}
               disabled={isProcessing}
-              className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-amber-500 via-amber-600 to-rose-600 hover:opacity-95 disabled:opacity-50 text-white font-black text-sm shadow-lg shadow-amber-500/20 transition transform active:scale-[0.99] flex items-center justify-center gap-2 cursor-pointer"
+              className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-rose-600 via-rose-500 to-amber-600 hover:opacity-95 disabled:opacity-50 text-white font-black text-xs uppercase tracking-wider shadow-lg shadow-rose-600/25 transition transform active:scale-[0.99] flex items-center justify-center gap-2 cursor-pointer"
             >
               {isProcessing ? (
                 <>
                   <Loader2 className="w-4 h-4 animate-spin" />
-                  <span>Processing Payment...</span>
+                  <span>Connecting to Gateway...</span>
                 </>
               ) : (
                 <>
-                  <Coins className="w-4 h-4" />
+                  <Coins className="w-4 h-4 text-amber-200" />
                   <span>
-                    Get {selectedPack.coins + (selectedPack.bonusCoins || 0)} Coins for ${selectedPack.priceUsd}
+                    Pay {currency === "INR" ? `₹${selectedPack.priceInr}` : `$${selectedPack.priceUsd}`} for {totalCoinsInPack} Coins
                   </span>
                 </>
               )}
             </button>
           )}
 
-          <p className="text-[10px] text-center text-zinc-400">
-            Coins are virtual tokens used to support creators and unlock premium story perks.
-          </p>
+          <div className="flex items-center justify-between text-[10px] text-zinc-400 px-1">
+            <span className="flex items-center gap-1">
+              <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" />
+              <span>256-Bit Encrypted Payment</span>
+            </span>
+            <span className="flex items-center gap-1">
+              <Zap className="w-3.5 h-3.5 text-amber-500" />
+              <span>Instant Wallet Delivery</span>
+            </span>
+          </div>
         </div>
       </div>
     </div>

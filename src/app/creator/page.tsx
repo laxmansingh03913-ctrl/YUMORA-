@@ -46,7 +46,6 @@ import { useAuth } from "@/context/AuthContext";
 import { dataStore } from "@/lib/data/store";
 import { formatNumber, formatDate } from "@/lib/utils";
 import { Novel, Comic, MonetizationEligibility, MonetizationTier, PayoutRequest } from "@/lib/types";
-import { EmailNotificationTester } from "@/components/creator/EmailNotificationTester";
 import { PayoutSlipModal } from "@/components/creator/PayoutSlipModal";
 
 interface PayoutRecord {
@@ -427,18 +426,6 @@ export default function CreatorDashboardPage() {
         >
           <Wallet className="w-3.5 h-3.5 text-emerald-500" />
           <span>Earnings & Payouts</span>
-        </button>
-
-        <button
-          onClick={() => setActiveTab("notifications")}
-          className={`px-3.5 py-1.5 rounded-lg text-xs font-black transition flex items-center gap-1.5 ${
-            activeTab === "notifications"
-              ? "bg-[#D91E18] text-white shadow-xs"
-              : "bg-white dark:bg-zinc-900 border border-[#EAEAE5] dark:border-zinc-800 text-zinc-600 dark:text-zinc-400 hover:text-black dark:hover:text-white"
-          }`}
-        >
-          <Mail className="w-3.5 h-3.5 text-rose-500" />
-          <span>Email & Dispatcher</span>
         </button>
       </div>
 
@@ -1280,13 +1267,6 @@ export default function CreatorDashboardPage() {
           </div>
         );
       })()}
-
-      {/* TAB 4: EMAIL NOTIFICATIONS DISPATCHER */}
-      {activeTab === "notifications" && (
-        <div className="space-y-6">
-          <EmailNotificationTester />
-        </div>
-      )}
 
       {/* WITHDRAWAL CONFIRMATION MODAL */}
       {isWithdrawModalOpen && (

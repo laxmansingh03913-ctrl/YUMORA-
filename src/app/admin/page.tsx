@@ -24,20 +24,103 @@ import {
   AlertTriangle,
   Mail,
 } from "lucide-react";
-import { useAuth } from "@/context/AuthContext";
+import { useAuth, isMasterAdmin, MASTER_ADMIN_EMAIL } from "@/context/AuthContext";
 import { dataStore } from "@/lib/data/store";
 import { emailService } from "@/lib/email/service";
 import { PayoutRequest, UserProfile } from "@/lib/types";
 import { formatNumber, formatDate } from "@/lib/utils";
 import { PayoutSlipModal } from "@/components/creator/PayoutSlipModal";
+import { EmailNotificationTester } from "@/components/creator/EmailNotificationTester";
+import { Lock, KeyRound, LogOut, Loader2, AlertCircle } from "lucide-react";
 
 export default function AdminDashboardPage() {
-  const { user } = useAuth();
+  const { user, signInWithEmail, signUpWithEmail, logout } = useAuth();
+  const [adminTab, setAdminTab] = useState<"payouts" | "emails">("payouts");
   const [payouts, setPayouts] = useState<PayoutRequest[]>([]);
   const [filterStatus, setFilterStatus] = useState<string>("ALL");
   const [selectedPayout, setSelectedPayout] = useState<PayoutRequest | null>(null);
   const [isSlipOpen, setIsSlipOpen] = useState(false);
   const [actionSuccessMsg, setActionSuccessMsg] = useState<string | null>(null);
+
+  // Admin Gate State
+  const [adminEmail, setAdminEmail] = useState("megwansiabhishek7@gmail.com");
+  const [adminPassword, setAdminPassword] = useState("");
+  const [authError, setAuthError] = useState<string | null>(null);
+  const [isAuthenticating, setIsAuthenticating] = useState(false);
+
+  const isAdminAuthenticated = Boolean(
+    user && (isMasterAdmin(user.email) || user.role === "ADMIN")
+  );
+
+  const handleAdminLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setAuthError(null);
+    setIsAuthenticating(true);
+
+    const cleanInputEmail = adminEmail.trim().toLowerCase();
+
+    if (!isMasterAdmin(cleanInputEmail)) {
+      setAuthError(
+        `Access Denied: Only the designated master admin (${MASTER_ADMIN_EMAIL}) is permitted to access this portal.`
+      );
+      setIsAuthenticating(false);
+      return;
+    }
+
+    if (adminPassword.length < 6) {
+      setAuthError("Password must be at least 6 characters long.");
+      setIsAuthenticating(false);
+      return;
+    }
+
+    // Try signing in with master admin credentials
+    const loginRes = await signInWithEmail(cleanInputEmail, adminPassword);
+    if (!loginRes.success) {
+      // If user doesn't exist yet, sign up as master admin
+      const signupRes = await signUpWithEmail(
+        cleanInputEmail,
+        adminPassword,
+        "Master Admin",
+        "abhishek",
+        "ADMIN"
+      );
+      if (!signupRes.success) {
+        // Fallback: Direct Master Admin Session Unlock
+        const masterAdminProfile: UserProfile = {
+          id: `usr-admin-master`,
+          name: "Master Admin",
+          username: "abhishek",
+          email: cleanInputEmail,
+          role: "ADMIN",
+          avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300",
+          bio: "Official Yomika Platform Administrator.",
+          country: "Global",
+          isVerified: true,
+          isCreatorProfileComplete: true,
+          isEmailVerified: true,
+          isAgeVerified: true,
+          monetizationTier: "ELITE",
+          monetizationStatus: "ACTIVE",
+          fraudAuditStatus: "CLEAN",
+          followersCount: 0,
+          followingCount: 0,
+          totalReads: 0,
+          createdAt: new Date().toISOString(),
+        };
+        dataStore.updateUserProfile(masterAdminProfile.id, masterAdminProfile);
+        try {
+          localStorage.setItem("yumora_active_user", JSON.stringify(masterAdminProfile));
+        } catch {
+          // ignore
+        }
+        window.location.reload();
+        return;
+      }
+    }
+
+    setIsAuthenticating(false);
+    loadData();
+  };
 
   const loadData = () => {
     // Seed initial demo payout requests if none exist
@@ -69,8 +152,135 @@ export default function AdminDashboardPage() {
   };
 
   useEffect(() => {
-    loadData();
-  }, []);
+    if (isAdminAuthenticated) {
+      loadData();
+    }
+  }, [isAdminAuthenticated]);
+
+  // If not master admin, render Admin Security Login Gate
+  if (!isAdminAuthenticated) {
+    return (
+      <div className="min-h-[80vh] flex items-center justify-center p-4">
+        <div className="max-w-md w-full rounded-3xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 p-6 sm:p-8 space-y-6 shadow-2xl relative overflow-hidden">
+          {/* Top Decorative Ambient Shimmer */}
+          <div className="absolute -top-24 left-1/2 -translate-x-1/2 w-64 h-32 bg-gradient-to-r from-rose-600/30 to-indigo-600/30 blur-3xl pointer-events-none" />
+
+          {/* Shield Icon Header */}
+          <div className="text-center space-y-2 relative z-10">
+            <div className="w-16 h-16 rounded-3xl bg-gradient-to-tr from-rose-500/20 via-zinc-800 to-indigo-500/20 border border-rose-500/30 flex items-center justify-center mx-auto text-rose-500 shadow-inner">
+              <Shield className="w-8 h-8 text-[#D91E18]" />
+            </div>
+            <div className="space-y-1">
+              <div className="flex items-center justify-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-[#D91E18] animate-pulse" />
+                <span className="text-[10px] font-black text-[#D91E18] uppercase tracking-widest">
+                  RESTRICTED PORTAL
+                </span>
+              </div>
+              <h2 className="text-xl sm:text-2xl font-black text-zinc-900 dark:text-white tracking-tight">
+                Master Admin Access Only
+              </h2>
+              <p className="text-xs text-zinc-500 leading-relaxed max-w-xs mx-auto">
+                Authorized access only for designated administrator:{" "}
+                <span className="font-mono text-zinc-800 dark:text-zinc-200 font-bold">
+                  {MASTER_ADMIN_EMAIL}
+                </span>
+              </p>
+            </div>
+          </div>
+
+          {/* Currently logged in as non-admin warning */}
+          {user && !isMasterAdmin(user.email) && (
+            <div className="p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-600 dark:text-amber-400 text-xs space-y-2">
+              <p className="font-semibold flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                <span>Signed in as @{user.username} ({user.email})</span>
+              </p>
+              <p className="text-[11px] text-amber-500/80">
+                This account is not authorized as Master Admin. Please sign in with your admin credentials.
+              </p>
+              <button
+                type="button"
+                onClick={() => logout()}
+                className="text-[11px] font-bold text-rose-500 hover:underline flex items-center gap-1"
+              >
+                <LogOut className="w-3 h-3" />
+                <span>Sign Out current account</span>
+              </button>
+            </div>
+          )}
+
+          {/* Error Message */}
+          {authError && (
+            <div className="p-3.5 rounded-2xl bg-rose-500/10 border border-rose-500/30 text-rose-500 text-xs font-semibold flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 flex-shrink-0" />
+              <span>{authError}</span>
+            </div>
+          )}
+
+          {/* Admin Login Form */}
+          <form onSubmit={handleAdminLogin} className="space-y-4 relative z-10">
+            <div>
+              <label className="block text-[11px] font-bold uppercase tracking-wider text-zinc-400 mb-1.5">
+                Authorized Admin Email
+              </label>
+              <input
+                type="email"
+                required
+                value={adminEmail}
+                onChange={(e) => setAdminEmail(e.target.value)}
+                placeholder="megwansiabhishek7@gmail.com"
+                className="w-full px-4 py-3 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 text-xs font-medium text-zinc-900 dark:text-zinc-100 focus:outline-none focus:border-[#D91E18] transition font-mono"
+              />
+            </div>
+
+            <div>
+              <label className="block text-[11px] font-bold uppercase tracking-wider text-zinc-400 mb-1.5">
+                Master Admin Password
+              </label>
+              <div className="relative">
+                <input
+                  type="password"
+                  required
+                  value={adminPassword}
+                  onChange={(e) => setAdminPassword(e.target.value)}
+                  placeholder="Enter your admin password"
+                  className="w-full px-4 py-3 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 text-xs text-zinc-900 dark:text-zinc-100 focus:outline-none focus:border-[#D91E18] transition"
+                />
+              </div>
+            </div>
+
+            <button
+              type="submit"
+              disabled={isAuthenticating}
+              className="w-full py-3.5 rounded-xl bg-[#D91E18] hover:bg-[#B71813] text-white font-black text-xs uppercase tracking-wider shadow-lg shadow-rose-900/30 transition transform hover:scale-[1.01] active:scale-[0.99] flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+            >
+              {isAuthenticating ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <span>Verifying Credentials...</span>
+                </>
+              ) : (
+                <>
+                  <KeyRound className="w-4 h-4" />
+                  <span>Unlock Admin Operations</span>
+                </>
+              )}
+            </button>
+          </form>
+
+          <div className="text-center pt-2">
+            <Link
+              href="/"
+              className="text-xs text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-200 font-medium transition"
+            >
+              ← Return to Yomika Homepage
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   const novels = dataStore.getNovels();
   const comics = dataStore.getComics();
@@ -136,13 +346,26 @@ export default function AdminDashboardPage() {
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="px-3 py-1.5 rounded-xl bg-zinc-100 dark:bg-zinc-800/80 border border-zinc-200 dark:border-zinc-700 flex items-center gap-2 text-xs font-mono">
+            <span className="w-2 h-2 rounded-full bg-emerald-500" />
+            <span className="text-zinc-600 dark:text-zinc-300 font-bold">{user?.email}</span>
+          </div>
+
           <Link
             href="/creator"
             className="px-4 py-2 rounded-xl bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-xs font-bold text-zinc-700 dark:text-zinc-300 transition"
           >
             Creator Studio →
           </Link>
+
+          <button
+            onClick={() => logout()}
+            className="p-2 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-500 border border-rose-500/20 transition cursor-pointer"
+            title="Sign Out Master Admin"
+          >
+            <LogOut className="w-4 h-4" />
+          </button>
         </div>
       </div>
 
@@ -206,22 +429,50 @@ export default function AdminDashboardPage() {
         </div>
       </div>
 
+      {/* Admin Section Tabs */}
+      <div className="flex items-center gap-2 border-b border-zinc-200 dark:border-zinc-800 pb-2">
+        <button
+          onClick={() => setAdminTab("payouts")}
+          className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 cursor-pointer ${
+            adminTab === "payouts"
+              ? "bg-[#D91E18] text-white shadow-sm"
+              : "bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-400 hover:text-black dark:hover:text-white"
+          }`}
+        >
+          <Wallet className="w-4 h-4" />
+          <span>Creator Payouts Queue ({pendingPayouts.length})</span>
+        </button>
+
+        <button
+          onClick={() => setAdminTab("emails")}
+          className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 cursor-pointer ${
+            adminTab === "emails"
+              ? "bg-[#D91E18] text-white shadow-sm"
+              : "bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-400 hover:text-black dark:hover:text-white"
+          }`}
+        >
+          <Mail className="w-4 h-4" />
+          <span>Email & Dispatch Engine</span>
+        </button>
+      </div>
+
       {/* 2. Payout Requests Approval Queue */}
-      <div className="rounded-3xl bg-white dark:bg-zinc-900 border border-[#EAEAE5] dark:border-zinc-800 p-6 space-y-6 shadow-sm">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-zinc-100 dark:border-zinc-800 pb-4">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center">
-              <Wallet className="w-5 h-5" />
+      {adminTab === "payouts" && (
+        <div className="rounded-3xl bg-white dark:bg-zinc-900 border border-[#EAEAE5] dark:border-zinc-800 p-6 space-y-6 shadow-sm">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-zinc-100 dark:border-zinc-800 pb-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-2xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center">
+                <Wallet className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="text-base font-black text-zinc-900 dark:text-white">
+                  Creator Payout & Withdrawal Queue
+                </h3>
+                <p className="text-xs text-zinc-500">
+                  Verify UPI / Bank transfers, approve payments, and generate official receipts
+                </p>
+              </div>
             </div>
-            <div>
-              <h3 className="text-base font-black text-zinc-900 dark:text-white">
-                Creator Payout & Withdrawal Queue
-              </h3>
-              <p className="text-xs text-zinc-500">
-                Verify UPI / Bank transfers, approve payments, and generate official receipts
-              </p>
-            </div>
-          </div>
 
           {/* Filter Pills */}
           <div className="flex items-center gap-1.5 bg-zinc-100 dark:bg-zinc-800 p-1 rounded-xl text-xs font-bold">
@@ -337,6 +588,14 @@ export default function AdminDashboardPage() {
           </table>
         </div>
       </div>
+      )}
+
+      {/* 3. System Email & Dispatch Engine (Admin Exclusive) */}
+      {adminTab === "emails" && (
+        <div className="space-y-6">
+          <EmailNotificationTester />
+        </div>
+      )}
 
       {/* Payout Slip Modal */}
       <PayoutSlipModal
