@@ -149,9 +149,13 @@ export function Navbar() {
             </button>
 
             <Link href="/" className="flex items-center gap-2.5 group flex-shrink-0">
-              {/* Red Square Y. Logo */}
-              <div className="w-8 h-8 rounded-lg bg-[#D91E18] flex items-center justify-center font-black text-white text-base shadow-sm group-hover:scale-105 transition transform">
-                Y.
+              {/* Official Yomika Logo */}
+              <div className="w-8 h-8 rounded-lg overflow-hidden bg-zinc-950 flex items-center justify-center shadow-xs group-hover:scale-105 transition transform border border-zinc-800/80">
+                <img
+                  src="/logo.png"
+                  alt="Yomika Official Logo"
+                  className="w-full h-full object-cover"
+                />
               </div>
               <div className="flex flex-col">
                 <span className="font-black text-lg sm:text-xl tracking-tight text-[#111111] dark:text-white">

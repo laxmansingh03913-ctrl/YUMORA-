@@ -60,6 +60,11 @@ export const metadata: Metadata = {
     address: false,
     telephone: false,
   },
+  icons: {
+    icon: "/icon.png",
+    shortcut: "/icon.png",
+    apple: "/icon.png",
+  },
   openGraph: {
     title: "Yomika — Stories. Comics. Worlds.",
     description: "Discover original novels, manga, webtoons, and comics from independent creators around the world.",
@@ -69,9 +74,9 @@ export const metadata: Metadata = {
     type: "website",
     images: [
       {
-        url: "/hero-character.png",
+        url: "/og-image.jpg",
         width: 1200,
-        height: 630,
+        height: 1200,
         alt: "Yomika — Stories. Comics. Worlds.",
       },
     ],
@@ -80,7 +85,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "Yomika — Stories. Comics. Worlds.",
     description: "Discover original novels, manga, webtoons, and comics from independent creators around the world.",
-    images: ["/hero-character.png"],
+    images: ["/og-image.jpg"],
     creator: "@yomika_official",
   },
   robots: {
