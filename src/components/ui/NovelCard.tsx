@@ -16,7 +16,13 @@ interface NovelCardProps {
 export function NovelCard({ novel, variant = "standard", rank }: NovelCardProps) {
   const [isBookmarked, setIsBookmarked] = useState(() => dataStore.isBookmarked(novel.id));
   const [isLiked, setIsLiked] = useState(() => dataStore.isLiked(novel.id));
-  const [likesCount, setLikesCount] = useState(novel.likesCount);
+  const [likesCount, setLikesCount] = useState(novel.likesCount || 0);
+
+  const creator = novel.creator || {
+    name: "Creator",
+    username: "creator",
+    isVerified: true,
+  };
 
   const handleBookmark = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -78,16 +84,16 @@ export function NovelCard({ novel, variant = "standard", rank }: NovelCardProps)
 
           <div className="flex items-center justify-between mt-2 pt-2 border-t border-zinc-100 dark:border-zinc-800 text-xs">
             <span className="text-zinc-600 dark:text-zinc-400 font-medium truncate text-[11px]">
-              {novel.creator.name}
+              {creator.name}
             </span>
             <div className="flex items-center gap-2.5 text-zinc-500 text-[11px]">
               <span className="flex items-center gap-1 text-amber-500 font-bold">
                 <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
-                {novel.rating}
+                {novel.rating || 5.0}
               </span>
               <span className="flex items-center gap-1">
                 <Eye className="w-3 h-3 text-zinc-400" />
-                {formatNumber(novel.reads)}
+                {formatNumber(novel.reads || 0)}
               </span>
             </div>
           </div>
@@ -99,7 +105,7 @@ export function NovelCard({ novel, variant = "standard", rank }: NovelCardProps)
   return (
     <div className="group relative flex flex-col rounded-xl bg-white dark:bg-zinc-900 border border-[#EAEAE5] dark:border-zinc-800 hover:border-black dark:hover:border-white transition-all duration-200 overflow-hidden shadow-2xs hover-lift">
       {/* Cover Artwork Container */}
-      <Link href={`/novels/${novel.slug}`} className="relative aspect-[3/4] overflow-hidden bg-zinc-100 dark:bg-zinc-800">
+      <Link href={`/novels/${novel.slug || novel.id}`} className="relative aspect-[3/4] overflow-hidden bg-zinc-100 dark:bg-zinc-800">
         <img
           src={novel.coverUrl}
           alt={novel.title}
@@ -141,7 +147,7 @@ export function NovelCard({ novel, variant = "standard", rank }: NovelCardProps)
           </span>
           <div className="flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-black/60 backdrop-blur-xs text-amber-400 font-bold text-[11px]">
             <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
-            <span>{novel.rating}</span>
+            <span>{novel.rating || 5.0}</span>
           </div>
         </div>
       </Link>
@@ -149,22 +155,22 @@ export function NovelCard({ novel, variant = "standard", rank }: NovelCardProps)
       {/* Details Body */}
       <div className="p-3.5 flex-1 flex flex-col justify-between space-y-2.5">
         <div>
-          <Link href={`/novels/${novel.slug}`}>
+          <Link href={`/novels/${novel.slug || novel.id}`}>
             <h3 className="font-black text-sm text-[#111111] dark:text-white group-hover:text-[#D91E18] transition line-clamp-1">
               {novel.title}
             </h3>
           </Link>
           <div className="flex items-center justify-between mt-1 text-[11px] text-zinc-500 dark:text-zinc-400">
             <Link
-              href={`/creator/${novel.creator.username}`}
+              href={`/creator/${creator.username}`}
               className="hover:text-black dark:hover:text-white transition flex items-center gap-1 truncate"
             >
-              <span>{novel.creator.name}</span>
-              {novel.creator.isVerified && (
+              <span>{creator.name}</span>
+              {creator.isVerified && (
                 <CheckCircle2 className="w-3 h-3 text-[#D91E18] flex-shrink-0" />
               )}
             </Link>
-            <span>{novel.chaptersCount} Ch</span>
+            <span>{novel.chaptersCount || novel.chapters?.length || 1} Ch</span>
           </div>
         </div>
 

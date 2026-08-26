@@ -106,45 +106,45 @@ export default function DiscoverPage() {
 
   // Combine novels and comics into unified searchable works
   const allWorks = useMemo<UnifiedWork[]>(() => {
-    const novelItems: UnifiedWork[] = novels.map((n) => ({
-      id: n.id,
+    const novelItems: UnifiedWork[] = (novels || []).map((n) => ({
+      id: n?.id || `novel-${Math.random()}`,
       type: "NOVEL",
-      title: n.title,
-      creatorName: n.creator?.name || "Creator",
-      creatorUsername: n.creator?.username || "creator",
-      genre: n.genre,
-      secondaryGenre: n.secondaryGenre,
-      tags: n.tags || [],
-      description: n.description,
-      language: n.language,
-      status: n.status,
-      contentRating: n.contentRating,
-      isEditorPick: n.isEditorPick,
-      reads: n.reads || 0,
-      rating: n.rating || 5.0,
-      likesCount: n.likesCount || 0,
-      createdAt: n.createdAt,
+      title: n?.title || "Untitled Novel",
+      creatorName: n?.creator?.name || "Creator",
+      creatorUsername: n?.creator?.username || "creator",
+      genre: n?.genre || "Fantasy",
+      secondaryGenre: n?.secondaryGenre || "",
+      tags: Array.isArray(n?.tags) ? n.tags : [],
+      description: n?.description || "",
+      language: n?.language || "en",
+      status: n?.status || "ONGOING",
+      contentRating: n?.contentRating || "TEEN",
+      isEditorPick: !!n?.isEditorPick,
+      reads: n?.reads || 0,
+      rating: n?.rating || 5.0,
+      likesCount: n?.likesCount || 0,
+      createdAt: n?.createdAt || new Date().toISOString(),
       novelData: n,
     }));
 
-    const comicItems: UnifiedWork[] = comics.map((c) => ({
-      id: c.id,
+    const comicItems: UnifiedWork[] = (comics || []).map((c) => ({
+      id: c?.id || `comic-${Math.random()}`,
       type: "COMIC",
-      title: c.title,
-      creatorName: c.creator?.name || "Creator",
-      creatorUsername: c.creator?.username || "creator",
-      genre: c.genre,
-      secondaryGenre: c.secondaryGenre,
-      tags: c.tags || [],
-      description: c.description,
-      language: c.language,
-      status: c.status,
-      contentRating: c.contentRating,
-      isEditorPick: c.isEditorPick,
-      reads: c.reads || 0,
-      rating: c.rating || 5.0,
-      likesCount: c.likesCount || 0,
-      createdAt: c.createdAt,
+      title: c?.title || "Untitled Comic",
+      creatorName: c?.creator?.name || "Creator",
+      creatorUsername: c?.creator?.username || "creator",
+      genre: c?.genre || "Action",
+      secondaryGenre: c?.secondaryGenre || "",
+      tags: Array.isArray(c?.tags) ? c.tags : [],
+      description: c?.description || "",
+      language: c?.language || "en",
+      status: c?.status || "ONGOING",
+      contentRating: c?.contentRating || "TEEN",
+      isEditorPick: !!c?.isEditorPick,
+      reads: c?.reads || 0,
+      rating: c?.rating || 5.0,
+      likesCount: c?.likesCount || 0,
+      createdAt: c?.createdAt || new Date().toISOString(),
       comicData: c,
     }));
 
@@ -160,34 +160,37 @@ export default function DiscoverPage() {
         if (selectedMedium === "comics" && work.type !== "COMIC") return false;
 
         // Tab filtering
-        if (activeTab === "trending" && work.reads < 500) return false;
+        if (activeTab === "trending" && (work.reads || 0) < 500) return false;
         if (activeTab === "editors" && !work.isEditorPick) return false;
         if (activeTab === "completed" && work.status !== "COMPLETED") return false;
-        if (activeTab === "gems" && (work.reads > 150000 || work.rating < 4.8)) return false;
+        if (activeTab === "gems" && ((work.reads || 0) > 150000 || (work.rating || 5.0) < 4.8)) return false;
 
         // Search query
         if (searchQuery.trim()) {
           const q = searchQuery.toLowerCase();
-          const matchTitle = work.title.toLowerCase().includes(q);
-          const matchAuthor = work.creatorName.toLowerCase().includes(q);
-          const matchTag = work.tags.some((t) => t.toLowerCase().includes(q));
-          const matchDesc = work.description.toLowerCase().includes(q);
+          const matchTitle = (work.title || "").toLowerCase().includes(q);
+          const matchAuthor = (work.creatorName || "").toLowerCase().includes(q);
+          const matchTag = (work.tags || []).some((t) => (t || "").toLowerCase().includes(q));
+          const matchDesc = (work.description || "").toLowerCase().includes(q);
           if (!matchTitle && !matchAuthor && !matchTag && !matchDesc) return false;
         }
 
         // Genre
         if (selectedGenre !== "All Genres") {
           const g = selectedGenre.toLowerCase();
-          const matchGenre = work.genre.toLowerCase() === g;
-          const matchSecGenre = work.secondaryGenre?.toLowerCase() === g;
-          const matchTags = work.tags.some((t) => t.toLowerCase() === g);
+          const matchGenre = (work.genre || "").toLowerCase() === g;
+          const matchSecGenre = (work.secondaryGenre || "").toLowerCase() === g;
+          const matchTags = (work.tags || []).some((t) => (t || "").toLowerCase() === g);
           if (!matchGenre && !matchSecGenre && !matchTags) {
             return false;
           }
         }
 
         // Language
-        if (selectedLanguage !== "all" && work.language.toLowerCase() !== selectedLanguage.toLowerCase()) {
+        if (
+          selectedLanguage !== "all" &&
+          (work.language || "").toLowerCase() !== selectedLanguage.toLowerCase()
+        ) {
           return false;
         }
 
@@ -204,12 +207,12 @@ export default function DiscoverPage() {
         return true;
       })
       .sort((a, b) => {
-        if (sortBy === "trending") return (b.reads + 1) * b.rating - (a.reads + 1) * a.rating;
-        if (sortBy === "reads") return b.reads - a.reads;
-        if (sortBy === "rating") return b.rating - a.rating;
-        if (sortBy === "likes") return b.likesCount - a.likesCount;
+        if (sortBy === "trending") return ((b.reads || 0) + 1) * (b.rating || 5) - ((a.reads || 0) + 1) * (a.rating || 5);
+        if (sortBy === "reads") return (b.reads || 0) - (a.reads || 0);
+        if (sortBy === "rating") return (b.rating || 5) - (a.rating || 5);
+        if (sortBy === "likes") return (b.likesCount || 0) - (a.likesCount || 0);
         if (sortBy === "newest") {
-          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+          return new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime();
         }
         return 0;
       });

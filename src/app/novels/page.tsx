@@ -24,9 +24,9 @@ export default function NovelsPage() {
     if (search.trim()) {
       const q = search.toLowerCase();
       return (
-        novel.title.toLowerCase().includes(q) ||
-        novel.creator.name.toLowerCase().includes(q) ||
-        novel.tags.some((t) => t.toLowerCase().includes(q))
+        (novel.title || "").toLowerCase().includes(q) ||
+        (novel.creator?.name || "").toLowerCase().includes(q) ||
+        (novel.tags || []).some((t) => (t || "").toLowerCase().includes(q))
       );
     }
     return true;

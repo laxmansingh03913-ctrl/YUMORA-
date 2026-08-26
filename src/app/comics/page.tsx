@@ -19,9 +19,10 @@ export default function ComicsPage() {
     if (!search.trim()) return true;
     const q = search.toLowerCase();
     return (
-      c.title.toLowerCase().includes(q) ||
-      c.genre.toLowerCase().includes(q) ||
-      c.creator.name.toLowerCase().includes(q)
+      (c.title || "").toLowerCase().includes(q) ||
+      (c.genre || "").toLowerCase().includes(q) ||
+      (c.creator?.name || "").toLowerCase().includes(q) ||
+      (c.tags || []).some((t) => (t || "").toLowerCase().includes(q))
     );
   });
 
