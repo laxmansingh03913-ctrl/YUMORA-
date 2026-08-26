@@ -217,6 +217,8 @@ Ray coughed a mouthful of dark blood and grinned with cracked lips.
 [HP: Fully Restored | MP: 500/500]
 [Strength: 25 (+15) | Agility: 30 (+20) | Intelligence: 45]
 
+![Ray Vance Awakens the Primordial Shadow Monarch Power](https://images.unsplash.com/photo-1563089145-599997674d42?w=1000&auto=format&fit=crop&q=85)
+
 The Blood Chimera Alpha roared in fury as the divine aura blasted it backward against the cavern wall. It shook its horned skull, confused by the frail human now radiating an abyss of dark power.
 
 Ray stood up. His broken bones knitted back together in a burst of violet embers. The dull pain in his chest vanished, replaced by an intoxicating surge of raw magical pressure.

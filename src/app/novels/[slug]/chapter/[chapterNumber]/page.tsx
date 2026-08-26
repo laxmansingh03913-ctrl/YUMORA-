@@ -393,6 +393,61 @@ export default function ChapterReaderPage({ params }: ReaderPageProps) {
         >
           {paragraphs.map((paragraph, idx) => {
             const isSpeakingThis = isAudiobookOpen && activeAudioParagraphIdx === idx;
+            const imgMatch = paragraph.trim().match(/^!\[(.*?)\]\((.*?)\)$/);
+            const isSystemBox =
+              paragraph.trim().startsWith("[") &&
+              paragraph.includes("]") &&
+              (paragraph.includes("ALERT") ||
+                paragraph.includes("SYSTEM") ||
+                paragraph.includes("SKILL") ||
+                paragraph.includes("LEVEL") ||
+                paragraph.includes("QUEST") ||
+                paragraph.includes("WARNING") ||
+                paragraph.includes("EXTRACTION") ||
+                paragraph.includes("CORONATION") ||
+                paragraph.includes("MATCH") ||
+                paragraph.includes("Do you accept"));
+
+            if (imgMatch) {
+              const [, caption, src] = imgMatch;
+              return (
+                <div key={idx} className="my-8 space-y-2 text-center select-none not-prose">
+                  <div className="relative rounded-3xl overflow-hidden shadow-2xl border border-white/10 max-h-[600px] mx-auto group">
+                    <img
+                      src={src}
+                      alt={caption || "Light Novel Illustration"}
+                      className="w-full h-full object-cover max-h-[550px] transition duration-500 group-hover:scale-105"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent pointer-events-none" />
+                  </div>
+                  {caption && (
+                    <p className="text-xs text-zinc-400 italic font-sans tracking-wide">
+                      ✦ {caption} ✦
+                    </p>
+                  )}
+                </div>
+              );
+            }
+
+            if (isSystemBox) {
+              return (
+                <div
+                  key={idx}
+                  id={`novel-p-${idx}`}
+                  className="my-5 p-4 sm:p-5 rounded-2xl bg-indigo-950/40 dark:bg-indigo-950/60 border border-indigo-500/40 text-indigo-200 text-xs sm:text-sm font-mono shadow-lg shadow-indigo-950/30 space-y-1 backdrop-blur-xs relative overflow-hidden not-prose"
+                >
+                  <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/10 rounded-full blur-2xl pointer-events-none" />
+                  <div className="flex items-center gap-2 text-indigo-400 font-bold uppercase tracking-wider text-[10px] pb-1.5 border-b border-indigo-500/20">
+                    <span className="w-2 h-2 rounded-full bg-indigo-400 animate-pulse" />
+                    <span>SYSTEM NOTIFICATION</span>
+                  </div>
+                  <div className="pt-1.5 whitespace-pre-line leading-relaxed font-semibold">
+                    {paragraph}
+                  </div>
+                </div>
+              );
+            }
+
             return (
               <p
                 key={idx}
