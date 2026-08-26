@@ -20,6 +20,9 @@ import {
   Flame,
   Shield,
   X,
+  Info,
+  Layers,
+  FileText,
 } from "lucide-react";
 import { useSidebar } from "@/context/SidebarContext";
 import { useAuth } from "@/context/AuthContext";
@@ -51,6 +54,13 @@ export function Sidebar() {
   const CREATOR_NAV = [
     { name: "Studio Dashboard", href: "/creator", icon: PenTool },
     { name: "Upload Story", href: "/creator/upload", icon: Upload },
+  ];
+
+  const ABOUT_NAV = [
+    { name: "About Us", href: "/about", icon: Info },
+    { name: "Services", href: "/services", icon: Layers },
+    { name: "Privacy Policy", href: "/privacy", icon: Shield },
+    { name: "Terms & Conditions", href: "/terms", icon: FileText },
   ];
 
   const renderNavItem = (
@@ -182,6 +192,16 @@ export function Sidebar() {
             </p>
           )}
           {CREATOR_NAV.map((item) => renderNavItem(item))}
+        </div>
+
+        {/* 4. Company & Legal */}
+        <div className="space-y-1 pt-2 border-t border-zinc-200/80 dark:border-zinc-800/80">
+          {!isCollapsed && (
+            <p className="px-3 text-[10px] font-black uppercase tracking-wider text-zinc-400 dark:text-zinc-500 mb-1.5">
+              About & Legal
+            </p>
+          )}
+          {ABOUT_NAV.map((item) => renderNavItem(item))}
         </div>
       </div>
 
