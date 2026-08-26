@@ -524,6 +524,58 @@ export default function CreatorUploadWizardPage() {
         );
       }
 
+      // Light Novel Image Insert
+      const imgMatch = trimmed.match(/^!\[(.*?)\]\((.*?)\)$/);
+      if (imgMatch) {
+        const [, caption, src] = imgMatch;
+        return (
+          <div key={idx} className="my-6 space-y-2 text-center select-none not-prose">
+            <div className="relative rounded-2xl overflow-hidden shadow-xl border border-zinc-200 dark:border-zinc-800 max-h-[350px] mx-auto">
+              <img
+                src={src}
+                alt={caption || "Light Novel Illustration"}
+                className="w-full h-full object-cover max-h-[320px]"
+              />
+            </div>
+            {caption && (
+              <p className="text-[11px] text-zinc-400 italic font-sans">✦ {caption} ✦</p>
+            )}
+          </div>
+        );
+      }
+
+      // LitRPG System Box Insert
+      const isSystemBox =
+        trimmed.startsWith("[") &&
+        trimmed.includes("]") &&
+        (trimmed.includes("ALERT") ||
+          trimmed.includes("SYSTEM") ||
+          trimmed.includes("SKILL") ||
+          trimmed.includes("LEVEL") ||
+          trimmed.includes("QUEST") ||
+          trimmed.includes("WARNING") ||
+          trimmed.includes("EXTRACTION") ||
+          trimmed.includes("CORONATION") ||
+          trimmed.includes("MATCH") ||
+          trimmed.includes("Do you accept"));
+
+      if (isSystemBox) {
+        return (
+          <div
+            key={idx}
+            className="my-4 p-3.5 rounded-2xl bg-indigo-950/40 border border-indigo-500/40 text-indigo-200 text-xs font-mono shadow-md space-y-1"
+          >
+            <div className="flex items-center gap-1.5 text-indigo-400 font-bold uppercase tracking-wider text-[10px]">
+              <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 animate-pulse" />
+              <span>SYSTEM NOTIFICATION</span>
+            </div>
+            <div className="pt-0.5 whitespace-pre-line leading-relaxed font-semibold">
+              {trimmed}
+            </div>
+          </div>
+        );
+      }
+
       // Horizontal Rule / Scene Break
       if (trimmed === "---" || trimmed === "***" || trimmed === "* * *") {
         return (
@@ -1882,6 +1934,42 @@ export default function CreatorUploadWizardPage() {
                       >
                         <Minus className="w-3.5 h-3.5" />
                         <span className="text-[10px]">Divider</span>
+                      </button>
+
+                      <div className="w-px h-5 bg-zinc-200 dark:bg-zinc-800 mx-1" />
+
+                      {/* Insert Light Novel Art */}
+                      <button
+                        type="button"
+                        onClick={() =>
+                          insertMarkdown(
+                            "\n\n![Illustration: Epic Moment](",
+                            ")\n\n",
+                            "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=1000&auto=format&fit=crop&q=85"
+                          )
+                        }
+                        className="px-2.5 py-1.5 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 text-amber-500 dark:text-amber-400 font-bold text-xs flex items-center gap-1.5 transition border border-amber-500/30 cursor-pointer"
+                        title="Insert Light Novel Splash Illustration (![Caption](url))"
+                      >
+                        <ImageIcon className="w-3.5 h-3.5" />
+                        <span>Insert Artwork</span>
+                      </button>
+
+                      {/* Insert LitRPG System Window */}
+                      <button
+                        type="button"
+                        onClick={() =>
+                          insertMarkdown(
+                            "\n\n[SYSTEM NOTIFICATION: ",
+                            "]\n\n",
+                            "Awakening Complete | Host Level: 1 | Skill: Shadow Extraction"
+                          )
+                        }
+                        className="px-2.5 py-1.5 rounded-xl bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-500 dark:text-indigo-400 font-bold text-xs flex items-center gap-1.5 transition border border-indigo-500/30 cursor-pointer"
+                        title="Insert Holographic System Window ([ALERT: ...])"
+                      >
+                        <Sparkles className="w-3.5 h-3.5" />
+                        <span>System Box</span>
                       </button>
 
                       <div className="ml-auto flex items-center gap-2 text-[11px] font-bold text-zinc-400 pr-2">
