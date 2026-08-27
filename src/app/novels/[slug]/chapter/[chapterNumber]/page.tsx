@@ -38,7 +38,8 @@ import { useAuth } from "@/context/AuthContext";
 import { AudiobookPlayer } from "@/components/reader/AudiobookPlayer";
 import { AIAssistantModal } from "@/components/reader/AIAssistantModal";
 import DanmakuOverlay from "@/components/reader/DanmakuOverlay";
-import { Comment } from "@/lib/types";
+import { Comment, Chapter } from "@/lib/types";
+import { formatDate } from "@/lib/utils";
 
 interface ReaderPageProps {
   params: Promise<{
@@ -57,7 +58,8 @@ export default function ChapterReaderPage({ params }: ReaderPageProps) {
 
   const [mounted, setMounted] = useState(false);
   const [novel, setNovel] = useState(() => dataStore.getNovelBySlug(novelSlug));
-  const chapter = novel?.chapters.find((c) => c.chapterNumber === chapterNumber);
+  const chapters = Array.isArray(novel?.chapters) ? novel.chapters : [];
+  const chapter = chapters.find((c) => c.chapterNumber === chapterNumber);
 
   const { settings, updateSettings, saveProgress } = useReader();
   const { user } = useAuth();
@@ -89,7 +91,7 @@ export default function ChapterReaderPage({ params }: ReaderPageProps) {
     if (!novel) return;
     const lastLoaded = loadedChapters[loadedChapters.length - 1];
     if (!lastLoaded) return;
-    const next = novel.chapters.find((c) => c.chapterNumber === lastLoaded.chapterNumber + 1);
+    const next = chapters.find((c) => c.chapterNumber === lastLoaded.chapterNumber + 1);
     if (next && !loadedChapters.some((c) => c.chapterNumber === next.chapterNumber)) {
       setLoadedChapters((prev) => [...prev, next]);
     }
@@ -163,15 +165,38 @@ export default function ChapterReaderPage({ params }: ReaderPageProps) {
   }, [novel, chapterNumber, saveProgress]);
 
   useEffect(() => {
+    let isCurrent = true;
     setMounted(true);
     const found = dataStore.getNovelBySlug(novelSlug);
-    setNovel(found);
     if (found) {
+      setNovel(found);
       setIsBookmarked(dataStore.isBookmarked(found.id));
       setComments(dataStore.getComments(`${found.id}-ch-${chapterNumber}`));
       saveProgress(found.id, chapterNumber, 10);
     }
-  }, [novelSlug, chapterNumber]);
+
+    // Dynamic fallback to server API
+    fetch(`/api/novels/${encodeURIComponent(novelSlug)}`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (!isCurrent) return;
+        if (data.success && data.novel) {
+          setNovel(data.novel);
+          setIsBookmarked(dataStore.isBookmarked(data.novel.id));
+          setComments(dataStore.getComments(`${data.novel.id}-ch-${chapterNumber}`));
+          saveProgress(data.novel.id, chapterNumber, 10);
+        } else if (!found) {
+          setNovel(undefined);
+        }
+      })
+      .catch((err) => {
+        console.warn("[CHAPTER NOVEL FETCH NOTICE]", err);
+      });
+
+    return () => {
+      isCurrent = false;
+    };
+  }, [novelSlug, chapterNumber, saveProgress]);
 
   if (!novel || !chapter) {
     if (!mounted) {
@@ -211,8 +236,8 @@ export default function ChapterReaderPage({ params }: ReaderPageProps) {
     );
   }
 
-  const prevChapter = novel.chapters.find((c) => c.chapterNumber === chapterNumber - 1);
-  const nextChapter = novel.chapters.find((c) => c.chapterNumber === chapterNumber + 1);
+  const prevChapter = chapters.find((c) => c.chapterNumber === chapterNumber - 1);
+  const nextChapter = chapters.find((c) => c.chapterNumber === chapterNumber + 1);
 
   const handlePostComment = (e: React.FormEvent) => {
     e.preventDefault();
@@ -411,7 +436,7 @@ export default function ChapterReaderPage({ params }: ReaderPageProps) {
         {/* Continuous Multi-Chapter Story Prose */}
         <div className="space-y-12">
           {loadedChapters.map((ch, chIdx) => {
-            const chParagraphs = ch.content.split("\n\n").filter((p) => p.trim());
+            const chParagraphs = ch.content.split("\n\n").filter((p: string) => p.trim());
             const isFirstChapter = chIdx === 0;
 
             return (
@@ -436,7 +461,7 @@ export default function ChapterReaderPage({ params }: ReaderPageProps) {
                     lineHeight: settings.lineHeight,
                   }}
                 >
-                  {chParagraphs.map((paragraph, idx) => {
+                  {chParagraphs.map((paragraph: string, idx: number) => {
                     const globalParagraphIdx = chIdx * 100 + idx;
                     const isSpeakingThis =
                       isAudiobookOpen && activeAudioParagraphIdx === globalParagraphIdx;
@@ -528,7 +553,7 @@ export default function ChapterReaderPage({ params }: ReaderPageProps) {
           {/* Continuous Scroll: Load next chapter right below without page reload */}
           {(() => {
             const lastLoadedNum = loadedChapters[loadedChapters.length - 1]?.chapterNumber || chapterNumber;
-            const nextCh = novel.chapters.find((c) => c.chapterNumber === lastLoadedNum + 1);
+            const nextCh = chapters.find((c) => c.chapterNumber === lastLoadedNum + 1);
             if (!nextCh) return null;
 
             return (
@@ -545,7 +570,7 @@ export default function ChapterReaderPage({ params }: ReaderPageProps) {
           })()}
 
           <p className="text-xs opacity-60 max-w-sm mx-auto">
-            Enjoyed this chapter? Support {novel.creator.name} by leaving a reaction or sharing your thoughts below.
+            Enjoyed this chapter? Support {novel.creator?.name || "the author"} by leaving a reaction or sharing your thoughts below.
           </p>
           <div className="pt-1 flex items-center justify-center gap-3">
             <button
@@ -751,7 +776,7 @@ export default function ChapterReaderPage({ params }: ReaderPageProps) {
               </div>
 
               <div className="space-y-2 max-h-[75vh] overflow-y-auto pr-1">
-                {novel.chapters.map((c) => (
+                {chapters.map((c) => (
                   <button
                     key={c.id}
                     onClick={() => {
@@ -1025,10 +1050,10 @@ export default function ChapterReaderPage({ params }: ReaderPageProps) {
       {/* 9. AI AUDIOBOOK NARRATOR DOCK */}
       {isAudiobookOpen && (
         <AudiobookPlayer
-          paragraphs={paragraphs}
+          paragraphs={chapter.content.split("\n\n").filter((p: string) => p.trim())}
           chapterTitle={chapter.title}
           chapterNumber={chapter.chapterNumber}
-          authorName={novel.creator.name}
+          authorName={novel.creator?.name || "Original Author"}
           currentParagraphIdx={activeAudioParagraphIdx}
           onParagraphChange={handleAudioParagraphChange}
           onClose={() => setIsAudiobookOpen(false)}
@@ -1047,7 +1072,7 @@ export default function ChapterReaderPage({ params }: ReaderPageProps) {
         chapterTitle={chapter.title}
         chapterNumber={chapter.chapterNumber}
         novelTitle={novel.title}
-        authorName={novel.creator.name}
+        authorName={novel.creator?.name || "Original Author"}
         chapterContent={chapter.content}
       />
 

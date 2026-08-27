@@ -45,11 +45,13 @@ export default function AdminDashboardPage() {
   // Admin Gate State
   const [adminEmail, setAdminEmail] = useState("megwansiabhishek7@gmail.com");
   const [adminPassword, setAdminPassword] = useState("");
+  const [mfaCode, setMfaCode] = useState("");
   const [authError, setAuthError] = useState<string | null>(null);
   const [isAuthenticating, setIsAuthenticating] = useState(false);
+  const [adminSessionVerified, setAdminSessionVerified] = useState(false);
 
   const isAdminAuthenticated = Boolean(
-    user && (isMasterAdmin(user.email) || user.role === "ADMIN")
+    adminSessionVerified || (user && (isMasterAdmin(user.email) || user.role === "ADMIN"))
   );
 
   const handleAdminLogin = async (e: React.FormEvent) => {
@@ -59,59 +61,57 @@ export default function AdminDashboardPage() {
 
     const cleanInputEmail = adminEmail.trim().toLowerCase();
 
-    if (!isMasterAdmin(cleanInputEmail)) {
-      setAuthError(
-        `Access Denied: Only the designated master admin (${MASTER_ADMIN_EMAIL}) is permitted to access this portal.`
-      );
-      setIsAuthenticating(false);
-      return;
-    }
-
     if (adminPassword.length < 6) {
       setAuthError("Password must be at least 6 characters long.");
       setIsAuthenticating(false);
       return;
     }
 
-    // Authenticate with admin credentials
-    const loginRes = await signInWithEmail(cleanInputEmail, adminPassword);
-    if (!loginRes.success) {
-      setAuthError(loginRes.error || "Invalid administrator credentials. Access denied.");
-      setIsAuthenticating(false);
-      return;
-    }
+    // Authenticate Master Admin credentials via secure server-side endpoint
+    try {
+      const res = await fetch("/api/admin/auth/verify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: cleanInputEmail,
+          password: adminPassword,
+          mfaCode: mfaCode.trim() || undefined,
+        }),
+      });
 
-    setIsAuthenticating(false);
-    loadData();
+      const data = await res.json();
+
+      if (!res.ok || !data.success) {
+        setAuthError(data.error || "Invalid administrator credentials. Access denied.");
+        setIsAuthenticating(false);
+        return;
+      }
+
+      // Clear password from memory immediately
+      setAdminPassword("");
+      setMfaCode("");
+      setAdminSessionVerified(true);
+      setIsAuthenticating(false);
+      await loadData();
+    } catch (err: any) {
+      setAuthError(err.message || "Failed to reach authentication server.");
+      setIsAuthenticating(false);
+    }
   };
 
-  const loadData = () => {
-    // Seed initial demo payout requests if none exist
-    let requests = dataStore.getPayoutRequests();
-    if (requests.length === 0) {
-      const demo1 = dataStore.createPayoutRequest({
-        creatorId: "usr-creator-1",
-        creatorName: "Alexander Vance",
-        creatorEmail: "alexander@youmika.site",
-        amountInr: 12500,
-        amountUsd: 150,
-        method: "UPI",
-        details: "alexander@okhdfcbank",
-        accountHolderName: "Alexander Vance",
-      });
-      const demo2 = dataStore.createPayoutRequest({
-        creatorId: "usr-creator-2",
-        creatorName: "Elena Rostova",
-        creatorEmail: "elena@youmika.site",
-        amountInr: 42000,
-        amountUsd: 500,
-        method: "BANK",
-        details: "HDFC Bank (A/C: 501004928192, IFSC: HDFC0001234)",
-        accountHolderName: "Elena Rostova",
-      });
-      requests = [demo1, demo2];
+  const loadData = async () => {
+    try {
+      const res = await fetch("/api/admin/payouts");
+      const data = await res.json();
+      if (res.ok && data.success && Array.isArray(data.payouts)) {
+        setPayouts(data.payouts);
+      } else {
+        setPayouts([]);
+      }
+    } catch (err) {
+      console.warn("[ADMIN LOAD PAYOUTS NOTICE]", err);
+      setPayouts([]);
     }
-    setPayouts(requests);
   };
 
   useEffect(() => {
@@ -213,6 +213,23 @@ export default function AdminDashboardPage() {
               </div>
             </div>
 
+            <div>
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="block text-[11px] font-bold uppercase tracking-wider text-zinc-400">
+                  MFA / 2FA Security Code
+                </label>
+                <span className="text-[10px] text-zinc-500 font-medium">Optional / If enabled</span>
+              </div>
+              <input
+                type="text"
+                maxLength={6}
+                value={mfaCode}
+                onChange={(e) => setMfaCode(e.target.value)}
+                placeholder="6-digit authenticator code"
+                className="w-full px-4 py-3 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 text-xs text-zinc-900 dark:text-zinc-100 focus:outline-none focus:border-[#D91E18] transition font-mono tracking-widest"
+              />
+            </div>
+
             <button
               type="submit"
               disabled={isAuthenticating}
@@ -258,49 +275,49 @@ export default function AdminDashboardPage() {
 
   const handleApprovePayout = async (payout: PayoutRequest) => {
     const txRef = `TXN-YOM-${Date.now().toString().slice(-6)}`;
-    dataStore.updatePayoutRequestStatus(payout.id, "COMPLETED", txRef, "Approved by Admin");
-    
-    // Persist to server admin database
+
     try {
-      await fetch("/api/admin/payouts", {
+      const res = await fetch("/api/admin/payouts", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           payoutId: payout.id,
-          status: "PROCESSED",
+          status: "COMPLETED",
           transactionRef: txRef,
           note: "Approved by Platform Admin",
         }),
       });
-    } catch (e) {
-      console.warn("[ADMIN PAYOUT SYNC NOTICE]", e);
+
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || "Server rejected payout approval.");
+      }
+
+      await loadData();
+
+      // Auto-dispatch email confirmation to creator
+      await emailService.sendEmail({
+        toEmail: payout.creatorEmail,
+        recipientName: payout.creatorName,
+        type: "BANK_WITHDRAWAL",
+        data: {
+          amountInr: payout.amountInr,
+          payoutMethod: payout.method,
+          accountDetails: payout.details,
+          transactionId: txRef,
+        },
+      });
+
+      setActionSuccessMsg(`Payout of ₹${payout.amountInr.toLocaleString()} approved for ${payout.creatorName} and receipt emailed.`);
+      setTimeout(() => setActionSuccessMsg(null), 4500);
+    } catch (e: any) {
+      alert(e.message || "Failed to process payout approval.");
     }
-
-    loadData();
-
-    // Auto-dispatch email confirmation to creator
-    await emailService.sendEmail({
-      toEmail: payout.creatorEmail,
-      recipientName: payout.creatorName,
-      type: "BANK_WITHDRAWAL",
-      data: {
-        amountInr: payout.amountInr,
-        payoutMethod: payout.method,
-        accountDetails: payout.details,
-        transactionId: txRef,
-      },
-    });
-
-    setActionSuccessMsg(`Payout of ₹${payout.amountInr.toLocaleString()} approved for ${payout.creatorName} and receipt emailed.`);
-    setTimeout(() => setActionSuccessMsg(null), 4500);
   };
 
   const handleRejectPayout = async (payout: PayoutRequest) => {
-    dataStore.updatePayoutRequestStatus(payout.id, "REJECTED", undefined, "Bank account details verification failed");
-    
-    // Persist to server admin database
     try {
-      await fetch("/api/admin/payouts", {
+      const res = await fetch("/api/admin/payouts", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -309,13 +326,18 @@ export default function AdminDashboardPage() {
           note: "Bank account details verification failed",
         }),
       });
-    } catch (e) {
-      console.warn("[ADMIN PAYOUT REJECT SYNC NOTICE]", e);
-    }
 
-    loadData();
-    setActionSuccessMsg(`Payout request rejected for ${payout.creatorName}.`);
-    setTimeout(() => setActionSuccessMsg(null), 4500);
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || "Server rejected payout rejection.");
+      }
+
+      await loadData();
+      setActionSuccessMsg(`Payout request rejected for ${payout.creatorName}.`);
+      setTimeout(() => setActionSuccessMsg(null), 4500);
+    } catch (e: any) {
+      alert(e.message || "Failed to reject payout request.");
+    }
   };
 
   const filteredPayouts = payouts.filter((p) => {
@@ -429,11 +451,10 @@ export default function AdminDashboardPage() {
       <div className="flex items-center gap-2 border-b border-zinc-200 dark:border-zinc-800 pb-2">
         <button
           onClick={() => setAdminTab("payouts")}
-          className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 cursor-pointer ${
-            adminTab === "payouts"
+          className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 cursor-pointer ${adminTab === "payouts"
               ? "bg-[#D91E18] text-white shadow-sm"
               : "bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-400 hover:text-black dark:hover:text-white"
-          }`}
+            }`}
         >
           <Wallet className="w-4 h-4" />
           <span>Creator Payouts Queue ({pendingPayouts.length})</span>
@@ -441,11 +462,10 @@ export default function AdminDashboardPage() {
 
         <button
           onClick={() => setAdminTab("emails")}
-          className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 cursor-pointer ${
-            adminTab === "emails"
+          className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 cursor-pointer ${adminTab === "emails"
               ? "bg-[#D91E18] text-white shadow-sm"
               : "bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-400 hover:text-black dark:hover:text-white"
-          }`}
+            }`}
         >
           <Mail className="w-4 h-4" />
           <span>Email & Dispatch Engine</span>
@@ -470,120 +490,120 @@ export default function AdminDashboardPage() {
               </div>
             </div>
 
-          {/* Filter Pills */}
-          <div className="flex items-center gap-1.5 bg-zinc-100 dark:bg-zinc-800 p-1 rounded-xl text-xs font-bold">
-            {(["ALL", "PENDING", "COMPLETED", "REJECTED"] as const).map((s) => (
-              <button
-                key={s}
-                onClick={() => setFilterStatus(s)}
-                className={`px-3 py-1 rounded-lg transition ${
-                  filterStatus === s
-                    ? "bg-[#D91E18] text-white shadow-xs"
-                    : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white"
-                }`}
-              >
-                {s}
-              </button>
-            ))}
+            {/* Filter Pills */}
+            <div className="flex items-center gap-1.5 bg-zinc-100 dark:bg-zinc-800 p-1 rounded-xl text-xs font-bold">
+              {(["ALL", "PENDING", "COMPLETED", "REJECTED"] as const).map((s) => (
+                <button
+                  key={s}
+                  onClick={() => setFilterStatus(s)}
+                  className={`px-3 py-1 rounded-lg transition ${filterStatus === s
+                      ? "bg-[#D91E18] text-white shadow-xs"
+                      : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white"
+                    }`}
+                >
+                  {s}
+                </button>
+              ))}
+            </div>
           </div>
-        </div>
 
-        {/* Requests Table */}
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs border-collapse">
-            <thead>
-              <tr className="border-b border-zinc-200 dark:border-zinc-800 text-[10px] font-bold uppercase tracking-wider text-zinc-400">
-                <th className="pb-3">Creator / Beneficiary</th>
-                <th className="pb-3">Amount (INR / USD)</th>
-                <th className="pb-3">Payout Method & Details</th>
-                <th className="pb-3">Requested Date</th>
-                <th className="pb-3">Status</th>
-                <th className="pb-3 text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800/60">
-              {filteredPayouts.length === 0 ? (
-                <tr>
-                  <td colSpan={6} className="py-8 text-center text-zinc-500 font-medium">
-                    No payout requests found for this filter.
-                  </td>
+          {/* Requests Table */}
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs border-collapse">
+              <thead>
+                <tr className="border-b border-zinc-200 dark:border-zinc-800 text-[10px] font-bold uppercase tracking-wider text-zinc-400">
+                  <th className="pb-3">Creator / Beneficiary</th>
+                  <th className="pb-3">Amount (INR / USD)</th>
+                  <th className="pb-3">Payout Method & Details</th>
+                  <th className="pb-3">Requested Date</th>
+                  <th className="pb-3">Status</th>
+                  <th className="pb-3 text-right">Actions</th>
                 </tr>
-              ) : (
-                filteredPayouts.map((payout) => (
-                  <tr key={payout.id} className="hover:bg-zinc-50/50 dark:hover:bg-zinc-800/30 transition">
-                    <td className="py-3.5">
-                      <p className="font-bold text-zinc-900 dark:text-zinc-100">{payout.creatorName}</p>
-                      <p className="text-zinc-400 text-[11px]">{payout.creatorEmail}</p>
-                    </td>
-                    <td className="py-3.5">
-                      <p className="font-black text-sm text-emerald-600 dark:text-emerald-400 font-mono">
-                        ₹{payout.amountInr.toLocaleString("en-IN")}
-                      </p>
-                      <p className="text-[10px] text-zinc-400">${payout.amountUsd.toFixed(2)} USD</p>
-                    </td>
-                    <td className="py-3.5">
-                      <div className="flex items-center gap-1.5 font-bold text-zinc-700 dark:text-zinc-300">
-                        {payout.method === "UPI" ? (
-                          <Smartphone className="w-3.5 h-3.5 text-emerald-500" />
-                        ) : payout.method === "BANK" ? (
-                          <Building2 className="w-3.5 h-3.5 text-indigo-500" />
-                        ) : (
-                          <Globe className="w-3.5 h-3.5 text-blue-500" />
-                        )}
-                        <span>{payout.method}</span>
-                      </div>
-                      <p className="font-mono text-[11px] text-zinc-500 truncate max-w-xs">{payout.details}</p>
-                    </td>
-                    <td className="py-3.5 text-zinc-500">{formatDate(payout.requestedAt)}</td>
-                    <td className="py-3.5">
-                      <span
-                        className={`inline-block px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase ${
-                          payout.status === "COMPLETED"
-                            ? "bg-emerald-500/10 text-emerald-500"
-                            : payout.status === "PENDING"
-                            ? "bg-amber-500/10 text-amber-500"
-                            : "bg-rose-500/10 text-rose-500"
-                        }`}
-                      >
-                        {payout.status}
-                      </span>
-                    </td>
-                    <td className="py-3.5 text-right space-x-2">
-                      <button
-                        onClick={() => {
-                          setSelectedPayout(payout);
-                          setIsSlipOpen(true);
-                        }}
-                        className="p-1.5 rounded-lg border border-zinc-200 dark:border-zinc-700 text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white transition"
-                        title="View & Print Payout Slip"
-                      >
-                        <Printer className="w-3.5 h-3.5" />
-                      </button>
-
-                      {payout.status === "PENDING" && (
-                        <>
-                          <button
-                            onClick={() => handleApprovePayout(payout)}
-                            className="px-3 py-1.5 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-black text-xs transition shadow-xs cursor-pointer"
-                          >
-                            Approve & Transfer
-                          </button>
-                          <button
-                            onClick={() => handleRejectPayout(payout)}
-                            className="px-2.5 py-1.5 rounded-lg bg-rose-500/10 text-rose-500 hover:bg-rose-500/20 font-bold text-xs transition"
-                          >
-                            Reject
-                          </button>
-                        </>
-                      )}
+              </thead>
+              <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800/60">
+                {filteredPayouts.length === 0 ? (
+                  <tr>
+                    <td colSpan={6} className="py-8 text-center text-zinc-500 font-medium">
+                      {filterStatus === "PENDING" || filterStatus === "ALL" && payouts.length === 0
+                        ? "No pending payouts in queue."
+                        : "No payout requests found for this filter."}
                     </td>
                   </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+                ) : (
+                  filteredPayouts.map((payout) => (
+                    <tr key={payout.id} className="hover:bg-zinc-50/50 dark:hover:bg-zinc-800/30 transition">
+                      <td className="py-3.5">
+                        <p className="font-bold text-zinc-900 dark:text-zinc-100">{payout.creatorName}</p>
+                        <p className="text-zinc-400 text-[11px]">{payout.creatorEmail}</p>
+                      </td>
+                      <td className="py-3.5">
+                        <p className="font-black text-sm text-emerald-600 dark:text-emerald-400 font-mono">
+                          ₹{payout.amountInr.toLocaleString("en-IN")}
+                        </p>
+                        <p className="text-[10px] text-zinc-400">${payout.amountUsd.toFixed(2)} USD</p>
+                      </td>
+                      <td className="py-3.5">
+                        <div className="flex items-center gap-1.5 font-bold text-zinc-700 dark:text-zinc-300">
+                          {payout.method === "UPI" ? (
+                            <Smartphone className="w-3.5 h-3.5 text-emerald-500" />
+                          ) : payout.method === "BANK" ? (
+                            <Building2 className="w-3.5 h-3.5 text-indigo-500" />
+                          ) : (
+                            <Globe className="w-3.5 h-3.5 text-blue-500" />
+                          )}
+                          <span>{payout.method}</span>
+                        </div>
+                        <p className="font-mono text-[11px] text-zinc-500 truncate max-w-xs">{payout.details}</p>
+                      </td>
+                      <td className="py-3.5 text-zinc-500">{formatDate(payout.requestedAt)}</td>
+                      <td className="py-3.5">
+                        <span
+                          className={`inline-block px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase ${payout.status === "COMPLETED"
+                              ? "bg-emerald-500/10 text-emerald-500"
+                              : payout.status === "PENDING"
+                                ? "bg-amber-500/10 text-amber-500"
+                                : "bg-rose-500/10 text-rose-500"
+                            }`}
+                        >
+                          {payout.status}
+                        </span>
+                      </td>
+                      <td className="py-3.5 text-right space-x-2">
+                        <button
+                          onClick={() => {
+                            setSelectedPayout(payout);
+                            setIsSlipOpen(true);
+                          }}
+                          className="p-1.5 rounded-lg border border-zinc-200 dark:border-zinc-700 text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white transition"
+                          title="View & Print Payout Slip"
+                        >
+                          <Printer className="w-3.5 h-3.5" />
+                        </button>
+
+                        {payout.status === "PENDING" && (
+                          <>
+                            <button
+                              onClick={() => handleApprovePayout(payout)}
+                              className="px-3 py-1.5 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-black text-xs transition shadow-xs cursor-pointer"
+                            >
+                              Approve & Transfer
+                            </button>
+                            <button
+                              onClick={() => handleRejectPayout(payout)}
+                              className="px-2.5 py-1.5 rounded-lg bg-rose-500/10 text-rose-500 hover:bg-rose-500/20 font-bold text-xs transition"
+                            >
+                              Reject
+                            </button>
+                          </>
+                        )}
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
-      </div>
       )}
 
       {/* 3. System Email & Dispatch Engine (Admin Exclusive) */}

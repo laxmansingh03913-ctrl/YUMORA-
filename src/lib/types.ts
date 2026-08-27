@@ -4,7 +4,7 @@ export type ContentStatus = 'DRAFT' | 'SCHEDULED' | 'PUBLISHED' | 'ONGOING' | 'C
 
 export type ContentRating = 'EVERYONE' | 'TEEN' | 'MATURE';
 
-export type ContentType = 'NOVEL' | 'COMIC' | 'ANIMATION';
+export type ContentType = 'NOVEL' | 'COMIC' | 'ANIMATION' | 'COMMUNITY_POST';
 
 export type LanguageCode = 'en' | 'es' | 'fr' | 'de' | 'pt' | 'ja' | 'ko' | 'hi';
 

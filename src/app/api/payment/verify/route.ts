@@ -178,7 +178,7 @@ export async function POST(request: NextRequest) {
             coinsAmount: totalCoinsPurchased,
             senderName: "Youmika Treasury (Official Top-Up)",
             tipMessage: `Successfully purchased ${packageConfig.label} for ₹${packageConfig.priceInr}. Transaction ID: ${razorpay_payment_id}`,
-          },
+          } as any,
         })
         .catch((err) => console.warn("[PAYMENT RECEIPT EMAIL NOTICE]", err));
     }

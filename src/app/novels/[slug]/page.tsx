@@ -62,16 +62,42 @@ export default function NovelDetailPage({ params }: PageProps) {
   const readingProgress = novel ? dataStore.getReadingProgress(novel.id) : undefined;
 
   useEffect(() => {
+    let isCurrent = true;
     setMounted(true);
-    const found = dataStore.getNovelBySlug(resolvedParams.slug);
-    setNovel(found);
-    if (found) {
-      setIsBookmarked(dataStore.isBookmarked(found.id));
-      setIsLiked(dataStore.isLiked(found.id));
-      setLikesCount(found.likesCount);
-      setIsFollowingAuthor(dataStore.isFollowing(found.creatorId));
-      setComments(dataStore.getComments(found.id));
+
+    const localFound = dataStore.getNovelBySlug(resolvedParams.slug);
+    if (localFound) {
+      setNovel(localFound);
+      setIsBookmarked(dataStore.isBookmarked(localFound.id));
+      setIsLiked(dataStore.isLiked(localFound.id));
+      setLikesCount(localFound.likesCount || 0);
+      setIsFollowingAuthor(dataStore.isFollowing(localFound.creatorId));
+      setComments(dataStore.getComments(localFound.id));
     }
+
+    // Dynamically query server API to resolve database/seed/persistent novel
+    fetch(`/api/novels/${encodeURIComponent(resolvedParams.slug)}`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (!isCurrent) return;
+        if (data.success && data.novel) {
+          setNovel(data.novel);
+          setIsBookmarked(dataStore.isBookmarked(data.novel.id));
+          setIsLiked(dataStore.isLiked(data.novel.id));
+          setLikesCount(data.novel.likesCount || 0);
+          setIsFollowingAuthor(dataStore.isFollowing(data.novel.creatorId));
+          setComments(dataStore.getComments(data.novel.id));
+        } else if (!localFound) {
+          setNovel(undefined);
+        }
+      })
+      .catch((err) => {
+        console.warn("[NOVEL LOOKUP NOTICE]", err);
+      });
+
+    return () => {
+      isCurrent = false;
+    };
   }, [resolvedParams.slug]);
 
   if (!novel) {
@@ -176,6 +202,15 @@ export default function NovelDetailPage({ params }: PageProps) {
     setNewReviewText("");
   };
 
+  const creator = novel?.creator || {
+    id: novel?.creatorId || "creator",
+    name: "Original Author",
+    username: "author",
+    avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=85",
+    isVerified: true,
+  };
+
+  const chapters = Array.isArray(novel.chapters) ? novel.chapters : [];
   const nextChapterToRead = readingProgress ? readingProgress.chapterNumber : 1;
   const similarNovels = dataStore
     .getNovels()
@@ -439,7 +474,7 @@ export default function NovelDetailPage({ params }: PageProps) {
                 : "text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200"
             }`}
           >
-            Chapters ({novel.chapters.length})
+            Chapters ({chapters.length})
           </button>
           <button
             onClick={() => setActiveTab("reviews")}
@@ -472,7 +507,7 @@ export default function NovelDetailPage({ params }: PageProps) {
             </div>
 
             <div className="space-y-2.5">
-              {novel.chapters.map((chapter) => {
+              {chapters.map((chapter) => {
                 const isRead = readingProgress && readingProgress.chapterNumber >= chapter.chapterNumber;
                 return (
                   <button

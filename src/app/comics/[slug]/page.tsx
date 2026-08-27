@@ -42,6 +42,7 @@ import { TipCreatorModal } from "@/components/ui/TipCreatorModal";
 import { CoinShopModal } from "@/components/ui/CoinShopModal";
 import { MangaDubbingPlayer } from "@/components/reader/MangaDubbingPlayer";
 import DanmakuOverlay from "@/components/reader/DanmakuOverlay";
+import { Comment, Review } from "@/lib/types";
 
 interface ComicPageProps {
   params: Promise<{ slug: string }>;

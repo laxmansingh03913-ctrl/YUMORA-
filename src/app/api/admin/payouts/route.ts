@@ -1,52 +1,77 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAuthenticatedServerUser } from "@/lib/auth/server";
-import fs from "fs";
-import path from "path";
+import { prisma } from "@/lib/prisma";
+import { PayoutRequest } from "@/lib/types";
 
-const DB_FILE = path.join(process.cwd(), "src", "lib", "data", "server-db.json");
-
-function getDb(): Record<string, any> {
-  try {
-    if (!fs.existsSync(DB_FILE)) return {};
-    const data = fs.readFileSync(DB_FILE, "utf-8");
-    return JSON.parse(data || "{}");
-  } catch {
-    return {};
-  }
-}
-
-function saveDb(db: Record<string, any>) {
-  try {
-    fs.writeFileSync(DB_FILE, JSON.stringify(db, null, 2), "utf-8");
-  } catch (err) {
-    console.error("[ADMIN DB SAVE ERROR]", err);
-  }
+// Convert Prisma database row to Frontend PayoutRequest shape
+function mapPrismaPayoutToDto(row: any): PayoutRequest {
+  return {
+    id: row.id,
+    creatorId: row.userId,
+    creatorName: row.creatorName || row.user?.name || "Creator",
+    creatorEmail: row.creatorEmail || row.user?.email || "",
+    amountInr: row.amountInr,
+    amountUsd: typeof row.amountUsd === "number" ? row.amountUsd : Math.round((row.amountInr / 83) * 100) / 100,
+    method: (row.method as "UPI" | "BANK" | "PAYPAL") || "UPI",
+    details: row.details,
+    accountHolderName: row.accountHolderName || row.creatorName || "",
+    status: (row.status as "PENDING" | "APPROVED" | "COMPLETED" | "REJECTED") || "PENDING",
+    requestedAt: row.createdAt ? new Date(row.createdAt).toISOString() : new Date().toISOString(),
+    processedAt: row.processedAt ? new Date(row.processedAt).toISOString() : undefined,
+    transactionReference: row.referenceId || undefined,
+    notes: row.note || undefined,
+  };
 }
 
 export async function GET(req: NextRequest) {
   try {
+    // 1. Authorize: Server-side RBAC check
     const authUser = await getAuthenticatedServerUser(req);
     if (!authUser || authUser.role !== "ADMIN") {
       return NextResponse.json(
-        { error: "Forbidden: Administrator privileges required." },
+        { success: false, error: "Forbidden: Administrator privileges required to view payout records." },
         { status: 403 }
       );
     }
 
-    const db = getDb();
-    const payouts = Array.isArray(db.yumora_payout_requests) ? db.yumora_payout_requests : [];
-    return NextResponse.json({ success: true, payouts });
+    // 2. Fetch real payout requests from Prisma database
+    try {
+      const records = await prisma.payoutRequest.findMany({
+        include: {
+          user: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+              username: true,
+            },
+          },
+        },
+        orderBy: {
+          createdAt: "desc",
+        },
+      });
+
+      const payouts = records.map(mapPrismaPayoutToDto);
+      return NextResponse.json({ success: true, payouts, count: payouts.length });
+    } catch (dbErr: any) {
+      console.warn("[PAYOUTS PRISMA FETCH NOTICE]", dbErr?.message || dbErr);
+      // Clean fallback: If DB has no connection or empty, return empty list without mock data
+      return NextResponse.json({ success: true, payouts: [], count: 0 });
+    }
   } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    console.error("[GET /api/admin/payouts ERROR]", error);
+    return NextResponse.json({ success: false, error: "Failed to retrieve payout records." }, { status: 500 });
   }
 }
 
 export async function POST(req: NextRequest) {
   try {
+    // 1. Authorize: Server-side RBAC check
     const authUser = await getAuthenticatedServerUser(req);
     if (!authUser || authUser.role !== "ADMIN") {
       return NextResponse.json(
-        { error: "Forbidden: Administrator privileges required." },
+        { success: false, error: "Forbidden: Administrator privileges required to manage payouts." },
         { status: 403 }
       );
     }
@@ -54,47 +79,90 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const { payoutId, status, transactionRef, note } = body;
 
+    // 2. Validate input parameters
     if (!payoutId || !status) {
       return NextResponse.json(
-        { error: "Missing required fields (payoutId, status)" },
+        { success: false, error: "Missing required fields (payoutId, status)" },
         { status: 400 }
       );
     }
 
-    const validStatuses = ["APPROVED", "REJECTED", "PROCESSED", "PENDING"];
+    const validStatuses = ["COMPLETED", "APPROVED", "REJECTED", "PENDING"];
     if (!validStatuses.includes(status)) {
       return NextResponse.json(
-        { error: `Invalid status. Must be one of: ${validStatuses.join(", ")}` },
+        { success: false, error: `Invalid status. Must be one of: ${validStatuses.join(", ")}` },
         { status: 400 }
       );
     }
 
-    const db = getDb();
-    const payouts = Array.isArray(db.yumora_payout_requests) ? db.yumora_payout_requests : [];
-    const targetIdx = payouts.findIndex((p: any) => p && p.id === payoutId);
-
-    if (targetIdx < 0) {
-      return NextResponse.json({ error: "Payout request not found." }, { status: 404 });
+    // 3. Look up existing payout request in Database
+    let existingPayout: any = null;
+    try {
+      existingPayout = await prisma.payoutRequest.findUnique({
+        where: { id: payoutId },
+        include: { user: true },
+      });
+    } catch (dbFindErr) {
+      console.warn("[PRISMA FIND PAYOUT NOTICE]", dbFindErr);
     }
 
-    payouts[targetIdx] = {
-      ...payouts[targetIdx],
-      status,
-      transactionRef: transactionRef || payouts[targetIdx].transactionRef,
-      adminNote: note || payouts[targetIdx].adminNote,
-      processedAt: status === "PROCESSED" || status === "APPROVED" ? new Date().toISOString() : undefined,
-      updatedAt: new Date().toISOString(),
-    };
+    if (!existingPayout) {
+      return NextResponse.json(
+        { success: false, error: "Payout request not found in production database." },
+        { status: 404 }
+      );
+    }
 
-    db.yumora_payout_requests = payouts;
-    saveDb(db);
+    // 4. Idempotency & State Protection: Check if already processed
+    if (existingPayout.status !== "PENDING") {
+      return NextResponse.json(
+        {
+          success: false,
+          error: `Idempotency protection: This payout request has already been processed (Current status: ${existingPayout.status}).`,
+          currentStatus: existingPayout.status,
+        },
+        { status: 400 }
+      );
+    }
+
+    // 5. Atomic State Transition using Prisma Transaction
+    const resolvedStatus = status === "APPROVED" ? "COMPLETED" : status;
+    const processedAtDate = new Date();
+
+    const updatedRow = await prisma.$transaction(async (tx) => {
+      return await tx.payoutRequest.update({
+        where: { id: payoutId },
+        data: {
+          status: resolvedStatus,
+          referenceId: transactionRef || undefined,
+          note: note || (resolvedStatus === "COMPLETED" ? "Approved by Platform Admin" : "Rejected by Platform Admin"),
+          processedAt: processedAtDate,
+        },
+        include: {
+          user: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+              username: true,
+            },
+          },
+        },
+      });
+    });
+
+    const dto = mapPrismaPayoutToDto(updatedRow);
 
     return NextResponse.json({
       success: true,
-      updatedPayout: payouts[targetIdx],
-      message: `Payout request ${status.toLowerCase()} successfully.`,
+      updatedPayout: dto,
+      message: `Payout request of ₹${dto.amountInr.toLocaleString()} ${dto.status.toLowerCase()} successfully on server.`,
     });
   } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    console.error("[POST /api/admin/payouts ERROR]", error);
+    return NextResponse.json(
+      { success: false, error: error.message || "Failed to process payout request on server." },
+      { status: 500 }
+    );
   }
 }
