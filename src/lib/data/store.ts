@@ -125,6 +125,13 @@ class DataStore {
               if (n && n.id) this.memoryNovels.set(n.id, n);
             });
           }
+          if (data.yumora_users && Array.isArray(data.yumora_users)) {
+            const existingUsers = this.getItem<UserProfile[]>(STORAGE_KEYS.USERS || "yumora_users", []);
+            const userMap = new Map<string, UserProfile>();
+            existingUsers.forEach((u) => { if (u && u.id) userMap.set(u.id, u); });
+            data.yumora_users.forEach((u: UserProfile) => { if (u && u.id) userMap.set(u.id, u); });
+            this.setItem(STORAGE_KEYS.USERS || "yumora_users", Array.from(userMap.values()));
+          }
         }
       } catch (e) {
         // ignore
@@ -892,26 +899,34 @@ class DataStore {
 
   // Comments
   getComments(contentId: string): Comment[] {
+    if (!contentId) return [];
     const all = this.getItem<Comment[]>(STORAGE_KEYS.COMMENTS, []);
-    return all.filter((c) => c.contentId === contentId);
+    if (!Array.isArray(all)) return [];
+    return all.filter((c) => c && c.contentId === contentId);
   }
 
   addComment(comment: Comment): void {
+    if (!comment) return;
     const all = this.getItem<Comment[]>(STORAGE_KEYS.COMMENTS, []);
-    all.unshift(comment);
-    this.setItem(STORAGE_KEYS.COMMENTS, all);
+    const safeAll = Array.isArray(all) ? all : [];
+    safeAll.unshift(comment);
+    this.setItem(STORAGE_KEYS.COMMENTS, safeAll);
   }
 
   // Reviews
   getReviews(contentId: string): Review[] {
+    if (!contentId) return [];
     const all = this.getItem<Review[]>(STORAGE_KEYS.REVIEWS, []);
-    return all.filter((r) => r.contentId === contentId);
+    if (!Array.isArray(all)) return [];
+    return all.filter((r) => r && r.contentId === contentId);
   }
 
   addReview(review: Review): void {
+    if (!review) return;
     const all = this.getItem<Review[]>(STORAGE_KEYS.REVIEWS, []);
-    all.unshift(review);
-    this.setItem(STORAGE_KEYS.REVIEWS, all);
+    const safeAll = Array.isArray(all) ? all : [];
+    safeAll.unshift(review);
+    this.setItem(STORAGE_KEYS.REVIEWS, safeAll);
   }
 
   // Coin & Wallet Methods
@@ -1267,33 +1282,152 @@ class DataStore {
     }
   }
 
+  synthesizeProfileFromCreator(creator: any, fallbackId?: string, fallbackGenre?: string): UserProfile {
+    const id = String(creator?.id || fallbackId || `creator-${Date.now()}`);
+    const name = String(creator?.name || "Storyteller");
+    const username = String(creator?.username || `creator_${id.slice(0, 6)}`);
+    return {
+      id,
+      name,
+      username,
+      email: creator?.email || "",
+      role: (creator?.role as any) || "CREATOR",
+      avatar:
+        creator?.avatar ||
+        "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300&auto=format&fit=crop&q=80",
+      banner: creator?.banner || "",
+      bio: creator?.bio || "Storyteller on Youmika.",
+      country: creator?.country || "Global",
+      website: creator?.website || "",
+      twitter: creator?.twitter || "",
+      preferredTypes: Array.isArray(creator?.preferredTypes) ? creator.preferredTypes : [],
+      primaryGenres: Array.isArray(creator?.primaryGenres)
+        ? creator.primaryGenres
+        : [fallbackGenre || "Fantasy", "Action"],
+      isVerified: Boolean(creator?.isVerified),
+      isCreatorProfileComplete: true,
+      isEmailVerified: true,
+      isAgeVerified: true,
+      monetizationTier: "NONE",
+      monetizationStatus: "NOT_APPLIED",
+      fraudAuditStatus: "CLEAN",
+      followersCount: typeof creator?.followersCount === "number" ? creator.followersCount : 0,
+      followingCount: typeof creator?.followingCount === "number" ? creator.followingCount : 0,
+      totalReads: typeof creator?.totalReads === "number" ? creator.totalReads : 0,
+      createdAt: creator?.createdAt || new Date().toISOString(),
+    };
+  }
+
   // Users & Creator Profile Onboarding
   getUsers(): UserProfile[] {
     const customUsers = this.getItem<UserProfile[]>(STORAGE_KEYS.USERS || "yumora_users", []);
     const map = new Map<string, UserProfile>();
+
+    // 1. Seed Users
     SEED_USERS.forEach((u) => {
       if (u && u.id) map.set(u.id, u);
     });
+
+    // 2. Custom Users from localStorage
     if (Array.isArray(customUsers)) {
       customUsers.forEach((u) => {
         if (u && u.id) map.set(u.id, u);
       });
     }
+
+    // 3. Dynamic Creators from all published Comics & Novels
+    try {
+      this.getNovels().forEach((n) => {
+        if (n && n.creator && (n.creator.id || n.creatorId)) {
+          const cId = n.creator.id || n.creatorId;
+          if (!map.has(cId)) {
+            map.set(cId, this.synthesizeProfileFromCreator(n.creator, n.creatorId, n.genre));
+          }
+        }
+      });
+
+      this.getComics().forEach((c) => {
+        if (c && c.creator && (c.creator.id || c.creatorId)) {
+          const cId = c.creator.id || c.creatorId;
+          if (!map.has(cId)) {
+            map.set(cId, this.synthesizeProfileFromCreator(c.creator, c.creatorId, c.genre));
+          }
+        }
+      });
+    } catch {
+      // ignore
+    }
+
     return Array.from(map.values());
   }
 
   getUserById(id: string): UserProfile | undefined {
     if (!id) return undefined;
-    return this.getUsers().find((u) => u && u.id === id);
+    const cleanId = id.trim().toLowerCase();
+    
+    // 1. Check all users
+    const found = this.getUsers().find((u) => u && (u.id === id || u.id.toLowerCase() === cleanId));
+    if (found) return found;
+
+    // 2. Fallback: Search novels and comics directly
+    try {
+      for (const n of this.getNovels()) {
+        if ((n?.creator?.id && n.creator.id.toLowerCase() === cleanId) || (n?.creatorId && n.creatorId.toLowerCase() === cleanId)) {
+          return this.synthesizeProfileFromCreator(n.creator || { id, name: "Storyteller", username: id }, n.creatorId, n.genre);
+        }
+      }
+      for (const c of this.getComics()) {
+        if ((c?.creator?.id && c.creator.id.toLowerCase() === cleanId) || (c?.creatorId && c.creatorId.toLowerCase() === cleanId)) {
+          return this.synthesizeProfileFromCreator(c.creator || { id, name: "Storyteller", username: id }, c.creatorId, c.genre);
+        }
+      }
+    } catch {
+      // ignore
+    }
+
+    return undefined;
   }
 
   getUserByUsername(username: string): UserProfile | undefined {
     if (!username || typeof username !== "string") return undefined;
     const clean = username.trim().toLowerCase().replace(/^@/, "");
-    return this.getUsers().find((u) => {
+    if (!clean) return undefined;
+
+    // 1. Check all users
+    const found = this.getUsers().find((u) => {
       if (!u || !u.username || typeof u.username !== "string") return false;
       return u.username.trim().toLowerCase().replace(/^@/, "") === clean;
     });
+    if (found) return found;
+
+    // 2. Check if ID matches
+    const byId = this.getUserById(username);
+    if (byId) return byId;
+
+    // 3. Fallback: Search novels and comics directly for creator with matching username or creatorId
+    try {
+      for (const n of this.getNovels()) {
+        if (n?.creator?.username && n.creator.username.trim().toLowerCase().replace(/^@/, "") === clean) {
+          return this.synthesizeProfileFromCreator(n.creator, n.creatorId, n.genre);
+        }
+        if (n?.creatorId && n.creatorId.trim().toLowerCase() === clean) {
+          return this.synthesizeProfileFromCreator(n.creator || { id: n.creatorId, name: "Storyteller", username: clean }, n.creatorId, n.genre);
+        }
+      }
+
+      for (const c of this.getComics()) {
+        if (c?.creator?.username && c.creator.username.trim().toLowerCase().replace(/^@/, "") === clean) {
+          return this.synthesizeProfileFromCreator(c.creator, c.creatorId, c.genre);
+        }
+        if (c?.creatorId && c.creatorId.trim().toLowerCase() === clean) {
+          return this.synthesizeProfileFromCreator(c.creator || { id: c.creatorId, name: "Storyteller", username: clean }, c.creatorId, c.genre);
+        }
+      }
+    } catch {
+      // ignore
+    }
+
+    return undefined;
   }
 
   updateUserProfile(userId: string, updates: Partial<UserProfile>): UserProfile {

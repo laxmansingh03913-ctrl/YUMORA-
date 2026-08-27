@@ -1,34 +1,49 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getPackageById } from "@/lib/payment/packages";
+import { getAuthenticatedServerUser } from "@/lib/auth/server";
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { packageId, amountInr, userId, userEmail, userName } = body;
+    const { packageId } = body;
 
-    if (!amountInr || !userId) {
+    // 1. Validate Coin Package from trusted server-side catalog
+    const packageConfig = getPackageById(packageId);
+    if (!packageConfig) {
       return NextResponse.json(
-        { error: "Missing required fields (amountInr, userId)" },
+        { error: "Invalid coin package selected. Please select a valid package." },
         { status: 400 }
       );
     }
 
-    const keyId =
-      process.env.RAZORPAY_KEY_ID ||
-      process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID ||
-      "rzp_test_TULfWNnbwXN9k9";
+    // 2. Identify Authenticated User
+    const authUser = await getAuthenticatedServerUser(request);
+    const userId = authUser?.id || body.userId;
+    const userEmail = authUser?.email || body.userEmail || "";
+    const userName = authUser?.name || body.userName || "Yomika Storyteller";
+
+    if (!userId) {
+      return NextResponse.json(
+        { error: "Authentication required to initiate payment order." },
+        { status: 401 }
+      );
+    }
+
+    const keyId = process.env.RAZORPAY_KEY_ID || process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID;
     const keySecret = process.env.RAZORPAY_KEY_SECRET;
 
-    // Amount in paise (1 INR = 100 paise)
-    const amountInPaise = Math.round(Number(amountInr) * 100);
+    // Server-determined amount in paise (1 INR = 100 paise)
+    const amountInPaise = Math.round(packageConfig.priceInr * 100);
 
-    const isLiveSecretConfigured =
+    const isLiveConfigured =
       Boolean(keySecret) &&
       keySecret !== "your_razorpay_key_secret" &&
       keySecret !== "your_key_secret" &&
-      (keySecret?.length || 0) > 6;
+      Boolean(keyId) &&
+      (keyId?.startsWith("rzp_") || false);
 
-    // 1. If real Razorpay secret is present, create order on Razorpay servers
-    if (isLiveSecretConfigured && keyId.startsWith("rzp_")) {
+    // 3. Create Real Razorpay Order on Razorpay Servers
+    if (isLiveConfigured) {
       try {
         const authHeader = `Basic ${Buffer.from(`${keyId}:${keySecret}`).toString("base64")}`;
 
@@ -44,9 +59,12 @@ export async function POST(request: NextRequest) {
             receipt: `rcpt_${userId.slice(0, 8)}_${Date.now() % 100000}`,
             notes: {
               userId,
-              packageId: packageId || "custom",
-              userName: userName || "Yomika Reader",
-              userEmail: userEmail || "",
+              packageId: packageConfig.id,
+              packageName: packageConfig.label,
+              coins: packageConfig.coins,
+              bonusCoins: packageConfig.bonusCoins,
+              userEmail,
+              userName,
             },
           }),
         });
@@ -60,41 +78,49 @@ export async function POST(request: NextRequest) {
             amount: orderData.amount,
             currency: orderData.currency || "INR",
             keyId,
+            packageName: packageConfig.label,
+            totalCoins: packageConfig.coins + packageConfig.bonusCoins,
             isLiveMode: true,
-            isClientCheckout: false,
           });
         } else {
-          console.warn("[RAZORPAY BACKEND ORDER NOTICE]", orderData);
+          console.error("[RAZORPAY GATEWAY ERROR]", orderData);
+          return NextResponse.json(
+            { error: "Payment gateway error creating order. Please try again." },
+            { status: 502 }
+          );
         }
       } catch (apiErr) {
-        console.warn("[RAZORPAY API FETCH NOTICE]", apiErr);
+        console.error("[RAZORPAY API FETCH ERROR]", apiErr);
+        return NextResponse.json(
+          { error: "Unable to connect to payment gateway. Please check your network." },
+          { status: 503 }
+        );
       }
     }
 
-    // 2. Client-side Razorpay Checkout mode (uses Key ID directly)
-    if (keyId && keyId.startsWith("rzp_")) {
-      const simulatedOrderId = `order_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
-      return NextResponse.json({
-        success: true,
-        orderId: simulatedOrderId,
-        amount: amountInPaise,
-        currency: "INR",
-        keyId,
-        isLiveMode: true,
-        isClientCheckout: true,
-      });
+    // 4. In Production: If Razorpay keys are not configured, reject safely
+    if (process.env.NODE_ENV === "production") {
+      return NextResponse.json(
+        {
+          error:
+            "Live payment gateway is currently undergoing scheduled maintenance. Please try again shortly.",
+        },
+        { status: 503 }
+      );
     }
 
-    // 3. Simulated Fallback Mode
-    const simulatedOrderId = `order_sim_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+    // 5. Development Mode ONLY fallback
+    const devOrderId = `order_dev_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
     return NextResponse.json({
       success: true,
-      orderId: simulatedOrderId,
+      orderId: devOrderId,
       amount: amountInPaise,
       currency: "INR",
-      keyId: "rzp_test_TULfWNnbwXN9k9",
+      keyId: keyId || "rzp_test_dev",
+      packageName: packageConfig.label,
+      totalCoins: packageConfig.coins + packageConfig.bonusCoins,
       isLiveMode: false,
-      isClientCheckout: true,
+      notice: "Development test mode order generated.",
     });
   } catch (error: unknown) {
     const errorMsg = error instanceof Error ? error.message : "Internal payment server error";

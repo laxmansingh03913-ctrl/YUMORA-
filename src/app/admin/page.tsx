@@ -73,49 +73,12 @@ export default function AdminDashboardPage() {
       return;
     }
 
-    // Try signing in with master admin credentials
+    // Authenticate with admin credentials
     const loginRes = await signInWithEmail(cleanInputEmail, adminPassword);
     if (!loginRes.success) {
-      // If user doesn't exist yet, sign up as master admin
-      const signupRes = await signUpWithEmail(
-        cleanInputEmail,
-        adminPassword,
-        "Master Admin",
-        "abhishek",
-        "ADMIN"
-      );
-      if (!signupRes.success) {
-        // Fallback: Direct Master Admin Session Unlock
-        const masterAdminProfile: UserProfile = {
-          id: `usr-admin-master`,
-          name: "Master Admin",
-          username: "abhishek",
-          email: cleanInputEmail,
-          role: "ADMIN",
-          avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300",
-          bio: "Official Yomika Platform Administrator.",
-          country: "Global",
-          isVerified: true,
-          isCreatorProfileComplete: true,
-          isEmailVerified: true,
-          isAgeVerified: true,
-          monetizationTier: "ELITE",
-          monetizationStatus: "ACTIVE",
-          fraudAuditStatus: "CLEAN",
-          followersCount: 0,
-          followingCount: 0,
-          totalReads: 0,
-          createdAt: new Date().toISOString(),
-        };
-        dataStore.updateUserProfile(masterAdminProfile.id, masterAdminProfile);
-        try {
-          localStorage.setItem("yumora_active_user", JSON.stringify(masterAdminProfile));
-        } catch {
-          // ignore
-        }
-        window.location.reload();
-        return;
-      }
+      setAuthError(loginRes.error || "Invalid administrator credentials. Access denied.");
+      setIsAuthenticating(false);
+      return;
     }
 
     setIsAuthenticating(false);
@@ -296,6 +259,23 @@ export default function AdminDashboardPage() {
   const handleApprovePayout = async (payout: PayoutRequest) => {
     const txRef = `TXN-YOM-${Date.now().toString().slice(-6)}`;
     dataStore.updatePayoutRequestStatus(payout.id, "COMPLETED", txRef, "Approved by Admin");
+    
+    // Persist to server admin database
+    try {
+      await fetch("/api/admin/payouts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          payoutId: payout.id,
+          status: "PROCESSED",
+          transactionRef: txRef,
+          note: "Approved by Platform Admin",
+        }),
+      });
+    } catch (e) {
+      console.warn("[ADMIN PAYOUT SYNC NOTICE]", e);
+    }
+
     loadData();
 
     // Auto-dispatch email confirmation to creator
@@ -315,8 +295,24 @@ export default function AdminDashboardPage() {
     setTimeout(() => setActionSuccessMsg(null), 4500);
   };
 
-  const handleRejectPayout = (payout: PayoutRequest) => {
+  const handleRejectPayout = async (payout: PayoutRequest) => {
     dataStore.updatePayoutRequestStatus(payout.id, "REJECTED", undefined, "Bank account details verification failed");
+    
+    // Persist to server admin database
+    try {
+      await fetch("/api/admin/payouts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          payoutId: payout.id,
+          status: "REJECTED",
+          note: "Bank account details verification failed",
+        }),
+      });
+    } catch (e) {
+      console.warn("[ADMIN PAYOUT REJECT SYNC NOTICE]", e);
+    }
+
     loadData();
     setActionSuccessMsg(`Payout request rejected for ${payout.creatorName}.`);
     setTimeout(() => setActionSuccessMsg(null), 4500);

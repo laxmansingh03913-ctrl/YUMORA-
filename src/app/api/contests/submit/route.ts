@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getContestStatus } from "@/lib/utils/contest";
+import { getAuthenticatedServerUser } from "@/lib/auth/server";
 
 export async function POST(req: NextRequest) {
   try {
+    const authUser = await getAuthenticatedServerUser(req);
     const body = await req.json();
     const { contest, novelId, creatorId, chaptersCount } = body;
 
@@ -10,6 +12,14 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(
         { success: false, error: "Missing required submission fields." },
         { status: 400 }
+      );
+    }
+
+    // Authenticate and verify ownership
+    if (authUser && authUser.role !== "ADMIN" && authUser.id !== creatorId) {
+      return NextResponse.json(
+        { success: false, error: "Forbidden: You can only submit your own stories." },
+        { status: 403 }
       );
     }
 
@@ -66,7 +76,7 @@ export async function POST(req: NextRequest) {
       message: "Submission validated successfully on server.",
       validatedAt: new Date(serverCurrentTime).toISOString(),
     });
-  } catch (error) {
+  } catch (error: any) {
     return NextResponse.json(
       { success: false, error: "Internal server error during validation." },
       { status: 500 }

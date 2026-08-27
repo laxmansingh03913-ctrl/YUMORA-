@@ -92,13 +92,12 @@ export function CoinShopModal({ isOpen, onClose, onCoinsUpdated }: CoinShopModal
       // 1. Ensure Razorpay checkout script is loaded
       const isScriptLoaded = await loadRazorpayScript();
 
-      // 2. Call backend order generation API
+      // 2. Call backend order generation API (server validates package & price)
       const orderRes = await fetch("/api/payment/create-order", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           packageId: selectedPack.id,
-          amountInr: selectedPack.priceInr || 99,
           userId: user.id,
           userEmail: user.email,
           userName: user.name,
@@ -121,11 +120,11 @@ export function CoinShopModal({ isOpen, onClose, onCoinsUpdated }: CoinShopModal
           key: orderData.keyId || "rzp_test_TULfWNnbwXN9k9",
           amount: orderData.amount,
           currency: orderData.currency || "INR",
-          name: "Yomika Storytelling",
-          description: `${selectedPack.label} (${totalCoinsInPack} Coins Top-Up)`,
+          name: "Youmika Storytelling",
+          description: `${selectedPack.label} (${orderData.totalCoins || totalCoinsInPack} Coins Top-Up)`,
           image: "https://youmika.site/hero-character.png",
           prefill: {
-            name: user.name || "Yomika Reader",
+            name: user.name || "Youmika Reader",
             email: user.email || "",
           },
           theme: {
@@ -139,22 +138,18 @@ export function CoinShopModal({ isOpen, onClose, onCoinsUpdated }: CoinShopModal
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           handler: async (response: any) => {
             try {
-              // 4. Verify Payment via Backend API
+              // 4. Verify Payment Cryptographically via Backend API
               const verifyRes = await fetch("/api/payment/verify", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
                   razorpay_order_id: response.razorpay_order_id || orderData.orderId,
-                  razorpay_payment_id: response.razorpay_payment_id || `pay_${Date.now()}`,
-                  razorpay_signature: response.razorpay_signature || "verified",
+                  razorpay_payment_id: response.razorpay_payment_id,
+                  razorpay_signature: response.razorpay_signature,
+                  packageId: selectedPack.id,
                   userId: user.id,
                   userEmail: user.email,
                   userName: user.name,
-                  packageId: selectedPack.id,
-                  packageName: selectedPack.label,
-                  coins: selectedPack.coins,
-                  bonusCoins: selectedPack.bonusCoins || 0,
-                  amountInr: selectedPack.priceInr,
                 }),
               });
 
@@ -164,14 +159,16 @@ export function CoinShopModal({ isOpen, onClose, onCoinsUpdated }: CoinShopModal
                 throw new Error(verifyData.error || "Payment verification failed.");
               }
 
+              const verifiedCoins = verifyData.coinsAdded || totalCoinsInPack;
+
               // Credit Coins & Celebrate
-              const newBalance = dataStore.addCoins(user.id, totalCoinsInPack);
+              const newBalance = dataStore.addCoins(user.id, verifiedCoins);
               dataStore.addNotification({
                 id: `notif-topup-${Date.now()}`,
                 userId: user.id,
-                creatorName: "Yomika Treasury",
+                creatorName: "Youmika Treasury",
                 creatorAvatar: "/hero-character.png",
-                title: `🪙 +${totalCoinsInPack.toLocaleString()} Coins Added!`,
+                title: `🪙 +${verifiedCoins.toLocaleString()} Coins Added!`,
                 message: `Successfully purchased ${selectedPack.label} for ₹${selectedPack.priceInr}. TxID: ${response.razorpay_payment_id || "Live"}`,
                 contentUrl: "/library",
                 type: "SYSTEM",

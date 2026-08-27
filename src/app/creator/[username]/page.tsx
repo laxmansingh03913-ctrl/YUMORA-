@@ -72,26 +72,48 @@ interface CreatorProfileProps {
 
 export default function CreatorProfilePage({ params }: CreatorProfileProps) {
   const routeParams = useParams<{ username: string }>();
-  // Safely extract username from Next.js useParams or params prop
-  const rawParam =
-    routeParams?.username ||
-    (params && typeof (params as any)?.then !== "function" && (params as any)?.username) ||
-    "";
-  const username = decodeURIComponent(rawParam || "").trim().replace(/^@/, "");
+
+  // Safe Next.js 15 unwrapping of params and routeParams
+  let rawParam = "";
+  if (routeParams?.username) {
+    rawParam = Array.isArray(routeParams.username) ? routeParams.username[0] : routeParams.username;
+  } else if (params) {
+    if (typeof (params as any)?.then === "function") {
+      try {
+        const resolved = use(params as Promise<{ username: string }>);
+        rawParam = resolved?.username || "";
+      } catch {
+        rawParam = "";
+      }
+    } else {
+      rawParam = (params as any)?.username || "";
+    }
+  }
+
+  let username = "";
+  try {
+    username = decodeURIComponent(String(rawParam || "")).trim().replace(/^@/, "");
+  } catch {
+    username = String(rawParam || "").trim().replace(/^@/, "");
+  }
 
   const { user, isAuthenticated, openAuthModal, updateProfile } = useAuth();
 
   // Find creator from dataStore or fallback to authenticated user
   const [asyncCreator, setAsyncCreator] = useState<UserProfile | null>(() => {
     if (!username) return null;
-    const fromStore = dataStore.getUserByUsername(username) || dataStore.getUserById(username);
-    if (fromStore) return fromStore;
-    if (
-      user &&
-      ((user.username && user.username.toLowerCase() === username.toLowerCase()) ||
-        user.id === username)
-    ) {
-      return user;
+    try {
+      const fromStore = dataStore.getUserByUsername(username) || dataStore.getUserById(username);
+      if (fromStore) return fromStore;
+      if (
+        user &&
+        ((user.username && user.username.toLowerCase() === username.toLowerCase()) ||
+          user.id === username)
+      ) {
+        return user;
+      }
+    } catch {
+      // fallback
     }
     return null;
   });
@@ -108,13 +130,17 @@ export default function CreatorProfilePage({ params }: CreatorProfileProps) {
 
     const fetchCreatorProfile = async () => {
       // 1. Check if already in local store
-      const local = dataStore.getUserByUsername(username) || dataStore.getUserById(username);
-      if (local) {
-        if (isMounted) {
-          setAsyncCreator(local);
-          setIsLoadingProfile(false);
+      try {
+        const local = dataStore.getUserByUsername(username) || dataStore.getUserById(username);
+        if (local) {
+          if (isMounted) {
+            setAsyncCreator(local);
+            setIsLoadingProfile(false);
+          }
+          return;
         }
-        return;
+      } catch (e) {
+        console.warn("Local user lookup warning:", e);
       }
 
       // 2. Check current authenticated user
@@ -130,11 +156,35 @@ export default function CreatorProfilePage({ params }: CreatorProfileProps) {
         return;
       }
 
-      // 3. Query Supabase profiles table directly across all accounts / browsers
+      // 3. Query server API (/api/creator/${username})
+      try {
+        const res = await fetch(`/api/creator/${encodeURIComponent(username)}`);
+        if (res.ok) {
+          const json = await res.json();
+          if (json?.success && json?.creator && isMounted) {
+            try {
+              dataStore.updateUserProfile(json.creator.id, json.creator);
+            } catch {
+              // ignore
+            }
+            setAsyncCreator(json.creator);
+            setIsLoadingProfile(false);
+            return;
+          }
+        }
+      } catch (e) {
+        console.warn("API fetch creator warning:", e);
+      }
+
+      // 4. Query Supabase profiles table directly across all accounts / browsers
       try {
         const cloud = await dbService.getProfileByUsername(username);
         if (cloud && isMounted) {
-          dataStore.updateUserProfile(cloud.id, cloud);
+          try {
+            dataStore.updateUserProfile(cloud.id, cloud);
+          } catch {
+            // ignore
+          }
           setAsyncCreator(cloud);
         }
       } catch (e) {
@@ -181,17 +231,43 @@ export default function CreatorProfilePage({ params }: CreatorProfileProps) {
   const [editCountry, setEditCountry] = useState(creator?.country || "United States");
   const [editWebsite, setEditWebsite] = useState(creator?.website || "");
   const [editTwitter, setEditTwitter] = useState(creator?.twitter || "");
-  const [editGenres, setEditGenres] = useState<string[]>(
-    creator?.primaryGenres || ["Fantasy", "Sci-Fi"]
-  );
+
+  const safePrimaryGenres = useMemo<string[]>(() => {
+    if (Array.isArray(creator?.primaryGenres)) return creator.primaryGenres;
+    if (typeof creator?.primaryGenres === "string") {
+      return (creator.primaryGenres as string)
+        .split(",")
+        .map((g) => g.trim())
+        .filter(Boolean);
+    }
+    return ["Fantasy", "Sci-Fi"];
+  }, [creator?.primaryGenres]);
+
+  const safePreferredTypes = useMemo<string[]>(() => {
+    if (Array.isArray(creator?.preferredTypes)) return creator.preferredTypes;
+    if (typeof creator?.preferredTypes === "string") {
+      return (creator.preferredTypes as string)
+        .split(",")
+        .map((t) => t.trim())
+        .filter(Boolean);
+    }
+    return [];
+  }, [creator?.preferredTypes]);
+
+  const [editGenres, setEditGenres] = useState<string[]>(safePrimaryGenres);
 
   // Tabs: all, novels, webtoons, comics, about, feedback
   const [activeTab, setActiveTab] = useState<
     "all" | "novels" | "webtoons" | "comics" | "about" | "feedback"
   >("all");
-  const [creatorFeedback, setCreatorFeedback] = useState<Comment[]>(() =>
-    creator?.id ? dataStore.getComments(creator.id) : []
-  );
+  const [creatorFeedback, setCreatorFeedback] = useState<Comment[]>(() => {
+    if (!creator?.id) return [];
+    try {
+      return dataStore.getComments(creator.id) || [];
+    } catch {
+      return [];
+    }
+  });
   const [newFeedbackText, setNewFeedbackText] = useState("");
   const [isTipModalOpen, setIsTipModalOpen] = useState(false);
   const [isCoinShopOpen, setIsCoinShopOpen] = useState(false);
@@ -213,30 +289,39 @@ export default function CreatorProfilePage({ params }: CreatorProfileProps) {
   // Sync state when creator or user changes
   useEffect(() => {
     if (creator) {
-      setFollowersCount(
-        dataStore.getFollowerCount(creator.id) || creator.followersCount || 0
-      );
-      setFollowingCount(
-        creator.followingCount || dataStore.getFollowingCount(creator.id) || 0
-      );
+      try {
+        setFollowersCount(
+          dataStore.getFollowerCount(creator.id) || creator.followersCount || 0
+        );
+        setFollowingCount(
+          creator.followingCount || dataStore.getFollowingCount(creator.id) || 0
+        );
+      } catch {
+        setFollowersCount(creator.followersCount || 0);
+        setFollowingCount(creator.followingCount || 0);
+      }
       setEditName(creator.name || "");
       setEditBio(creator.bio || "");
       setEditCountry(creator.country || "United States");
       setEditWebsite(creator.website || "");
       setEditTwitter(creator.twitter || "");
-      setEditGenres(creator.primaryGenres || ["Fantasy", "Sci-Fi"]);
+      setEditGenres(safePrimaryGenres);
 
       if (user && !isSelf) {
-        const isUserFollowing = dataStore.isFollowingCreator(user.id, creator.id);
-        setIsFollowing(isUserFollowing);
-        const relation = dataStore.getFollowRelationship(user.id, creator.id);
-        if (relation) {
-          setNotificationsEnabled(relation.notificationsEnabled ?? true);
-          if (relation.preferences) setNotifPreferences(relation.preferences);
+        try {
+          const isUserFollowing = dataStore.isFollowingCreator(user.id, creator.id);
+          setIsFollowing(isUserFollowing);
+          const relation = dataStore.getFollowRelationship(user.id, creator.id);
+          if (relation) {
+            setNotificationsEnabled(relation.notificationsEnabled ?? true);
+            if (relation.preferences) setNotifPreferences(relation.preferences);
+          }
+        } catch {
+          // ignore
         }
       }
     }
-  }, [creator, user, isSelf]);
+  }, [creator, user, isSelf, safePrimaryGenres]);
 
   // Trigger Toast Notification
   const showToast = (msg: string) => {
@@ -256,18 +341,34 @@ export default function CreatorProfilePage({ params }: CreatorProfileProps) {
 
   // Safe Public Works List
   const creatorNovels = useMemo(() => {
-    if (!creator?.id) return [];
+    if (!creator?.id && !creator?.username) return [];
+    const cId = creator.id;
+    const cUsername = (creator.username || "").toLowerCase();
     return dataStore
       .getNovels()
-      .filter((n) => n && n.creatorId === creator.id && n.status !== "DRAFT");
-  }, [creator?.id]);
+      .filter((n) => {
+        if (!n || n.status === "DRAFT") return false;
+        if (n.creatorId === cId) return true;
+        if (n.creator?.id === cId) return true;
+        if (n.creator?.username && n.creator.username.toLowerCase() === cUsername) return true;
+        return false;
+      });
+  }, [creator?.id, creator?.username]);
 
   const creatorComics = useMemo(() => {
-    if (!creator?.id) return [];
+    if (!creator?.id && !creator?.username) return [];
+    const cId = creator.id;
+    const cUsername = (creator.username || "").toLowerCase();
     return dataStore
       .getComics()
-      .filter((c) => c && c.creatorId === creator.id && c.status !== "DRAFT");
-  }, [creator?.id]);
+      .filter((c) => {
+        if (!c || c.status === "DRAFT") return false;
+        if (c.creatorId === cId) return true;
+        if (c.creator?.id === cId) return true;
+        if (c.creator?.username && c.creator.username.toLowerCase() === cUsername) return true;
+        return false;
+      });
+  }, [creator?.id, creator?.username]);
 
   const webtoonsList = useMemo(() => {
     return creatorComics.filter(
@@ -1120,13 +1221,13 @@ export default function CreatorProfilePage({ params }: CreatorProfileProps) {
                 </p>
               </div>
 
-              {creator.primaryGenres && creator.primaryGenres.length > 0 && (
+              {safePrimaryGenres && safePrimaryGenres.length > 0 && (
                 <div className="pt-4 border-t border-zinc-100 dark:border-zinc-800 space-y-2">
                   <p className="text-xs font-bold text-zinc-400 uppercase tracking-wide">
                     Primary Storytelling Genres
                   </p>
                   <div className="flex flex-wrap gap-2">
-                    {creator.primaryGenres.map((g) => (
+                    {safePrimaryGenres.map((g) => (
                       <span
                         key={g}
                         className="px-3 py-1.5 rounded-xl text-xs font-semibold bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-900/40"
@@ -1138,13 +1239,13 @@ export default function CreatorProfilePage({ params }: CreatorProfileProps) {
                 </div>
               )}
 
-              {creator.preferredTypes && creator.preferredTypes.length > 0 && (
+              {safePreferredTypes && safePreferredTypes.length > 0 && (
                 <div className="pt-4 border-t border-zinc-100 dark:border-zinc-800 space-y-2">
                   <p className="text-xs font-bold text-zinc-400 uppercase tracking-wide">
                     Preferred Mediums & Formats
                   </p>
                   <div className="flex flex-wrap gap-2">
-                    {creator.preferredTypes.map((t) => (
+                    {safePreferredTypes.map((t) => (
                       <span
                         key={t}
                         className="px-3 py-1.5 rounded-xl text-xs font-semibold bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-900/40"
