@@ -144,8 +144,8 @@ export default function HomePage() {
       <section className="relative pt-6 sm:pt-10 pb-12 sm:pb-16 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto w-full">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-8 items-center relative">
           
-          {/* LEFT SIDE: Editorial Typography & Actions (5 cols for clean breathing room) */}
-          <div className="lg:col-span-5 space-y-6 z-20 relative">
+          {/* LEFT SIDE: Editorial Typography & Actions (Balanced width for 2-line layout) */}
+          <div className="lg:col-span-6 space-y-5 sm:space-y-6 z-20 relative max-w-xl lg:max-w-none">
             {/* Small brand badge */}
             <div className="flex items-center gap-3">
               <span className="w-6 h-6 border-2 border-[#D91E18] text-[#D91E18] text-[10px] font-black flex items-center justify-center rounded-xs bg-white dark:bg-zinc-900 shadow-xs">
@@ -161,19 +161,19 @@ export default function HomePage() {
               </div>
             </div>
 
-            {/* Large Dramatic Headline */}
-            <h1 className="text-4xl sm:text-5xl lg:text-6xl xl:text-[66px] font-black text-[#111111] dark:text-white tracking-tight leading-[1.04]">
-              STORIES WORTH <br />
+            {/* Large Dramatic Headline (Compact, 2-line natural layout) */}
+            <h1 className="text-3xl sm:text-4xl lg:text-[46px] xl:text-[52px] font-black text-[#111111] dark:text-white tracking-tight leading-[1.08] uppercase">
+              STORIES WORTH <br className="hidden sm:inline" />
               <span className="text-[#D91E18]">GETTING</span> LOST IN.
             </h1>
 
             {/* Supporting Description */}
-            <p className="text-sm sm:text-base text-[#555555] dark:text-zinc-400 max-w-xl leading-relaxed font-normal">
+            <p className="text-xs sm:text-sm lg:text-base text-[#555555] dark:text-zinc-400 max-w-lg leading-relaxed font-normal">
               Read original novels, discover independent creators, and share stories with readers around the world. From serial web novels to future webtoons and animations.
             </p>
 
             {/* Buttons */}
-            <div className="flex flex-wrap items-center gap-3.5 pt-2">
+            <div className="flex flex-wrap items-center gap-3.5 pt-1">
               <button
                 onClick={() => requireAuth("/discover")}
                 className="px-6 sm:px-8 py-3 rounded-lg bg-[#D91E18] hover:bg-[#B71813] text-white font-black text-xs sm:text-sm tracking-wider uppercase shadow-xs transition transform hover:scale-[1.02] active:scale-[0.98] flex items-center gap-2"
@@ -192,7 +192,7 @@ export default function HomePage() {
             </div>
 
             {/* Editorial Stats Row */}
-            <div className="pt-6 grid grid-cols-3 gap-4 border-t border-[#EAEAE5] dark:border-zinc-800 max-w-md">
+            <div className="pt-5 grid grid-cols-3 gap-4 border-t border-[#EAEAE5] dark:border-zinc-800 max-w-md">
               <div className="space-y-0.5">
                 <div className="flex items-center gap-1.5 text-xs sm:text-sm font-black text-[#111111] dark:text-white">
                   <span className="w-2 h-2 rounded-full bg-[#D91E18] animate-pulse" />
@@ -217,8 +217,8 @@ export default function HomePage() {
             </div>
           </div>
 
-          {/* RIGHT SIDE: Full-Bleed Organic Foreground Artwork (7 cols, Full Scale Fitting) */}
-          <div className="lg:col-span-7 relative flex items-center justify-center min-h-[550px] sm:min-h-[660px] lg:min-h-[780px] xl:min-h-[880px] pt-2 lg:pt-0 select-none overflow-visible">
+          {/* RIGHT SIDE: Full-Bleed Organic Foreground Artwork (6 cols, Preserved prominent size) */}
+          <div className="lg:col-span-6 relative flex items-center justify-center min-h-[520px] sm:min-h-[640px] lg:min-h-[760px] xl:min-h-[820px] pt-2 lg:pt-0 select-none overflow-visible">
             
             {/* Soft Ambient Brand Aura */}
             <div className="w-80 h-80 sm:w-[550px] sm:h-[550px] lg:w-[750px] lg:h-[750px] rounded-full bg-red-500/10 dark:bg-red-600/15 blur-3xl absolute top-1/2 -translate-y-1/2 right-1/2 translate-x-1/2 lg:right-[-60px] lg:translate-x-0 -z-10 animate-pulse-red pointer-events-none" />
