@@ -6,6 +6,7 @@ import { Star, BookOpen, Bookmark, Heart, Sparkles, Eye, CheckCircle2 } from "lu
 import { Novel, getStoryFormat } from "@/lib/types";
 import { formatNumber } from "@/lib/utils";
 import { dataStore } from "@/lib/data/store";
+import { useAuth } from "@/context/AuthContext";
 
 interface NovelCardProps {
   novel: Novel;
@@ -14,6 +15,7 @@ interface NovelCardProps {
 }
 
 export function NovelCard({ novel, variant = "standard", rank }: NovelCardProps) {
+  const { user } = useAuth();
   const [isBookmarked, setIsBookmarked] = useState(() => dataStore.isBookmarked(novel.id));
   const [isLiked, setIsLiked] = useState(() => dataStore.isLiked(novel.id));
   const [likesCount, setLikesCount] = useState(novel.likesCount || 0);
@@ -29,14 +31,14 @@ export function NovelCard({ novel, variant = "standard", rank }: NovelCardProps)
   const handleBookmark = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    const next = dataStore.toggleBookmark(novel.id);
+    const next = dataStore.toggleBookmark(novel.id, user?.id, "NOVEL");
     setIsBookmarked(next);
   };
 
   const handleLike = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    const next = dataStore.toggleLike(novel.id);
+    const next = dataStore.toggleLike(novel.id, user?.id, "NOVEL");
     setIsLiked(next);
     setLikesCount((prev) => (next ? prev + 1 : prev - 1));
   };

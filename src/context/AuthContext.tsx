@@ -56,14 +56,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(false);
   const [mounted, setMounted] = useState(false);
 
-  // Helper to extract or create profile from Supabase user session
-  const syncSupabaseProfile = useCallback((supaUser: {
+  // Helper to extract or fetch profile from Supabase database
+  const syncSupabaseProfile = useCallback(async (supaUser: {
     id: string;
     email?: string;
     user_metadata?: Record<string, unknown>;
     email_confirmed_at?: string;
     confirmed_at?: string;
-  }): UserProfile => {
+  }): Promise<UserProfile> => {
     const metadata = (supaUser.user_metadata || {}) as Record<string, string | undefined>;
     const rawUsername =
       metadata.username ||
@@ -79,22 +79,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       ? "CREATOR"
       : (metadata.role as Role) || "CREATOR";
 
-    let profile =
-      dataStore.getUserById(supaUser.id) ||
-      dataStore.getUserByUsername(username) ||
-      (supaUser.email
-        ? dataStore.getUsers().find((u) => u.email.toLowerCase() === supaUser.email?.toLowerCase())
-        : undefined);
+    // 1. Fetch live profile directly from Supabase PostgreSQL
+    let profile: UserProfile | null = null;
+    try {
+      profile = await dbService.getProfile(supaUser.id);
+    } catch (err) {
+      console.warn("Notice fetching Supabase profile:", err);
+    }
 
     if (profile) {
+      // Keep admin authorization in sync
       if (isAdminUser && profile.role !== "ADMIN") {
         profile = { ...profile, role: "ADMIN", isVerified: true };
-        dataStore.updateUserProfile(profile.id, profile);
-      } else if (!isAdminUser && profile.role === "ADMIN") {
-        profile = { ...profile, role: "CREATOR" };
-        dataStore.updateUserProfile(profile.id, profile);
+        await dbService.upsertProfile(profile);
       }
+      dataStore.updateUserProfile(profile.id, profile);
     } else {
+      // 2. Create authoritative profile in Supabase
       profile = {
         id: supaUser.id,
         name: metadata.name || metadata.full_name || metadata.user_name || username,
@@ -119,29 +120,53 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         totalReads: 0,
         createdAt: new Date().toISOString(),
       };
+      await dbService.upsertProfile(profile);
       dataStore.updateUserProfile(profile.id, profile);
-      dbService.upsertProfile(profile).catch(() => {});
     }
     return profile;
   }, []);
 
-  // Initialize Session
+  // Initialize Session authoritatively from Supabase Auth
   useEffect(() => {
-    const initAuth = async () => {
-      const savedUser = localStorage.getItem("yumora_active_user");
-      if (savedUser) {
-        try {
-          setUser(JSON.parse(savedUser));
-        } catch {
-          // ignore corrupted JSON
-        }
-      }
+    let isSubscribed = true;
 
-      // Check Supabase Auth Session
+    const initAuth = async () => {
       try {
         const { data } = await supabase.auth.getSession();
-        if (data.session?.user) {
-          const profile = syncSupabaseProfile(data.session.user);
+        if (data.session?.user && isSubscribed) {
+          const profile = await syncSupabaseProfile(data.session.user);
+          if (isSubscribed) {
+            setUser(profile);
+            try {
+              localStorage.setItem("yumora_active_user", JSON.stringify(profile));
+            } catch {
+              // ignore cache errors
+            }
+          }
+        } else if (isSubscribed) {
+          setUser(null);
+          try {
+            localStorage.removeItem("yumora_active_user");
+          } catch {
+            // ignore
+          }
+        }
+      } catch (err) {
+        console.warn("Supabase auth session sync notice:", err);
+      } finally {
+        if (isSubscribed) {
+          setMounted(true);
+        }
+      }
+    };
+
+    initAuth();
+
+    // Listen to authoritative Supabase Auth State Changes
+    const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (session?.user && (event === "SIGNED_IN" || event === "INITIAL_SESSION" || event === "TOKEN_REFRESHED" || event === "USER_UPDATED")) {
+        const profile = await syncSupabaseProfile(session.user);
+        if (isSubscribed) {
           setUser(profile);
           try {
             localStorage.setItem("yumora_active_user", JSON.stringify(profile));
@@ -149,36 +174,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             // ignore
           }
         }
-      } catch (err) {
-        console.warn("Supabase auth session sync notice:", err);
-      }
-
-      setMounted(true);
-    };
-
-    initAuth();
-
-    // Listen to Supabase Auth State Changes
-    const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (session?.user && (event === "SIGNED_IN" || event === "INITIAL_SESSION" || event === "TOKEN_REFRESHED" || event === "USER_UPDATED")) {
-        const profile = syncSupabaseProfile(session.user);
-        setUser(profile);
-        try {
-          localStorage.setItem("yumora_active_user", JSON.stringify(profile));
-        } catch {
-          // ignore
-        }
       } else if (event === "SIGNED_OUT") {
-        setUser(null);
-        try {
-          localStorage.removeItem("yumora_active_user");
-        } catch {
-          // ignore
+        if (isSubscribed) {
+          setUser(null);
+          try {
+            localStorage.removeItem("yumora_active_user");
+          } catch {
+            // ignore
+          }
         }
       }
     });
 
     return () => {
+      isSubscribed = false;
       authListener.subscription.unsubscribe();
     };
   }, [syncSupabaseProfile]);
@@ -253,103 +262,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       const cleanEmail = email.trim().toLowerCase();
 
-      // Check local data store for user
-      const localUser = dataStore.getUsers().find((u) => u.email.toLowerCase() === cleanEmail);
-
-      // Try Supabase Auth
+      // Authenticate directly with Supabase Auth
       const { data, error } = await supabase.auth.signInWithPassword({
         email: cleanEmail,
         password,
       });
 
       if (error) {
-        // If Supabase says unconfirmed, log in user
-        if (error.message.toLowerCase().includes("confirm") || error.message.toLowerCase().includes("email not confirmed")) {
-          const username = cleanEmail.split("@")[0];
-          const isAdminUser = isMasterAdmin(cleanEmail);
-          const profile = localUser || {
-            id: `usr-${Date.now()}`,
-            name: username,
-            username: username.replace(/[^a-z0-9_]/g, ""),
-            email: cleanEmail,
-            role: (isAdminUser ? "ADMIN" : "CREATOR") as Role,
-            avatar: `https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300`,
-            bio: isAdminUser ? "Official Yomika Platform Administrator." : "Creator on Yomika",
-            country: "Global",
-            isVerified: isAdminUser,
-            isCreatorProfileComplete: false,
-            isEmailVerified: true,
-            isAgeVerified: true,
-            monetizationTier: "NONE",
-            monetizationStatus: "NOT_APPLIED",
-            fraudAuditStatus: "CLEAN",
-            followersCount: 0,
-            followingCount: 0,
-            totalReads: 0,
-            createdAt: new Date().toISOString(),
-          };
-          if (isAdminUser) {
-            profile.role = "ADMIN";
-            profile.isVerified = true;
-          }
-          dataStore.updateUserProfile(profile.id, profile);
-          saveUser(profile);
-          setIsLoading(false);
-          handlePostAuthRedirect();
-          return { success: true };
-        }
-
-        // If local user exists, log in
-        if (localUser) {
-          if (isMasterAdmin(cleanEmail)) {
-            localUser.role = "ADMIN";
-            localUser.isVerified = true;
-            dataStore.updateUserProfile(localUser.id, localUser);
-          }
-          saveUser(localUser);
-          setIsLoading(false);
-          handlePostAuthRedirect();
-          return { success: true };
-        }
-
         setIsLoading(false);
         return { success: false, error: error.message };
       }
 
       if (data.user) {
-        const isAdminUser = isMasterAdmin(cleanEmail);
-        let profile =
-          dataStore.getUserById(data.user.id) ||
-          dataStore.getUserByUsername(cleanEmail.split("@")[0]);
-
-        if (!profile) {
-          profile = {
-            id: data.user.id,
-            name: cleanEmail.split("@")[0],
-            username: cleanEmail.split("@")[0].replace(/[^a-z0-9_]/g, ""),
-            email: cleanEmail,
-            role: isAdminUser ? "ADMIN" : "CREATOR",
-            avatar: `https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300`,
-            bio: isAdminUser ? "Official Yomika Platform Administrator." : "Creator on Yomika",
-            country: "Global",
-            isVerified: isAdminUser,
-            isCreatorProfileComplete: false,
-            isEmailVerified: true,
-            isAgeVerified: true,
-            monetizationTier: "NONE",
-            monetizationStatus: "NOT_APPLIED",
-            fraudAuditStatus: "CLEAN",
-            followersCount: 0,
-            followingCount: 0,
-            totalReads: 0,
-            createdAt: new Date().toISOString(),
-          };
-        } else if (isAdminUser) {
-          profile.role = "ADMIN";
-          profile.isVerified = true;
+        const profile = await syncSupabaseProfile(data.user);
+        setUser(profile);
+        try {
+          localStorage.setItem("yumora_active_user", JSON.stringify(profile));
+        } catch {
+          // ignore
         }
-        dataStore.updateUserProfile(profile.id, profile);
-        saveUser(profile);
       }
 
       setIsLoading(false);
@@ -377,67 +308,40 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const isAdminEmail = isMasterAdmin(cleanEmail);
       const resolvedRole: Role = isAdminEmail ? "ADMIN" : role === "ADMIN" ? "CREATOR" : role;
 
-      // 1. Check if username taken
-      const existingUser = dataStore.getUserByUsername(cleanUsername);
-      if (existingUser) {
+      // 1. Check if username taken in Supabase
+      const existingProfile = await dbService.getProfileByUsername(cleanUsername);
+      if (existingProfile) {
         setIsLoading(false);
         return { success: false, error: `Username @${cleanUsername} is already registered.` };
       }
 
-      // 2. Try Supabase Sign Up
-      let supaUserId: string | null = null;
-      try {
-        const { data, error } = await supabase.auth.signUp({
-          email: cleanEmail,
-          password,
-          options: {
-            data: {
-              name,
-              username: cleanUsername,
-              role: resolvedRole,
-            },
+      // 2. Perform Supabase Auth Sign Up
+      const { data, error } = await supabase.auth.signUp({
+        email: cleanEmail,
+        password,
+        options: {
+          data: {
+            name,
+            username: cleanUsername,
+            role: resolvedRole,
           },
-        });
+        },
+      });
 
-        if (error && error.message.includes("already registered")) {
-          setIsLoading(false);
-          return { success: false, error: "This email address is already registered. Please sign in." };
-        }
-
-        supaUserId = data.user?.id || null;
-      } catch (e) {
-        console.warn("Supabase signup notice:", e);
+      if (error) {
+        setIsLoading(false);
+        return { success: false, error: error.message };
       }
 
-      const newUserId = supaUserId || `usr-new-${Date.now()}`;
-
-      // 3. Register user profile in data store
-      const newProfile: UserProfile = {
-        id: newUserId,
-        name,
-        username: cleanUsername,
-        email: cleanEmail,
-        role: resolvedRole,
-        avatar: `https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300&auto=format&fit=crop&q=80`,
-        bio: isAdminEmail
-          ? "Official Yomika Platform Administrator."
-          : `${resolvedRole === "CREATOR" ? "Creator & Author" : "Avid Reader"} on Yomika.`,
-        country: "Global",
-        isVerified: isAdminEmail,
-        isCreatorProfileComplete: false,
-        isEmailVerified: true,
-        isAgeVerified: true,
-        monetizationTier: "NONE",
-        monetizationStatus: "NOT_APPLIED",
-        fraudAuditStatus: "CLEAN",
-        followersCount: 0,
-        followingCount: 0,
-        totalReads: 0,
-        createdAt: new Date().toISOString(),
-      };
-
-      dataStore.updateUserProfile(newProfile.id, newProfile);
-      saveUser(newProfile);
+      if (data.user) {
+        const profile = await syncSupabaseProfile(data.user);
+        setUser(profile);
+        try {
+          localStorage.setItem("yumora_active_user", JSON.stringify(profile));
+        } catch {
+          // ignore
+        }
+      }
 
       setIsLoading(false);
       handlePostAuthRedirect();
@@ -477,14 +381,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } catch {
       // ignore
     }
-    saveUser(null);
+    setUser(null);
+    try {
+      localStorage.removeItem("yumora_active_user");
+    } catch {
+      // ignore
+    }
   };
 
-  const updateProfile = (updated: Partial<UserProfile>) => {
+  const updateProfile = async (updated: Partial<UserProfile>) => {
     if (!user) return;
-    const newProfile = dataStore.updateUserProfile(user.id, updated);
-    saveUser(newProfile);
-    dbService.upsertProfile(newProfile).catch(() => {});
+    const merged: UserProfile = { ...user, ...updated };
+    setUser(merged);
+    try {
+      localStorage.setItem("yumora_active_user", JSON.stringify(merged));
+    } catch {
+      // ignore
+    }
+    dataStore.updateUserProfile(user.id, updated);
+    await dbService.upsertProfile(merged);
   };
 
   return (

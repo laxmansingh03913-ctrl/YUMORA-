@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Loader2, AlertCircle, CheckCircle2, ArrowRight } from "lucide-react";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase/client";
+import { dbService } from "@/lib/supabase/db";
 import { dataStore } from "@/lib/data/store";
 import { UserProfile, Role } from "@/lib/types";
 import { sanitizeRedirectPath } from "@/lib/auth-config";
@@ -57,7 +58,7 @@ function CallbackHandler() {
           throw sessionError;
         }
 
-        const handleUserSession = (session: { user: any }) => {
+        const handleUserSession = async (session: { user: any }) => {
           const supaUser = session.user;
           const metadata = (supaUser.user_metadata || {}) as Record<string, string | undefined>;
           const rawUsername =
@@ -67,13 +68,8 @@ function CallbackHandler() {
             `user_${supaUser.id.slice(0, 6)}`;
           const username = rawUsername.toLowerCase().replace(/[^a-z0-9_]/g, "") || `user_${Date.now() % 10000}`;
 
-          // Establish local user session & profile
-          let profile =
-            dataStore.getUserById(supaUser.id) ||
-            dataStore.getUserByUsername(username) ||
-            (supaUser.email
-              ? dataStore.getUsers().find((u) => u.email.toLowerCase() === supaUser.email?.toLowerCase())
-              : undefined);
+          // Establish real Supabase profile
+          let profile = await dbService.getProfile(supaUser.id);
 
           if (!profile) {
             profile = {
@@ -97,8 +93,9 @@ function CallbackHandler() {
               totalReads: 0,
               createdAt: new Date().toISOString(),
             };
-            dataStore.updateUserProfile(profile.id, profile);
+            await dbService.upsertProfile(profile);
           }
+          dataStore.updateUserProfile(profile.id, profile);
 
           try {
             localStorage.setItem("yumora_active_user", JSON.stringify(profile));

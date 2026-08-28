@@ -144,7 +144,7 @@ body {
   box-shadow: 0 0 25px -5px rgba(217, 30, 24, 0.15);
 }
 
-/* Skeleton Shimmer */
+/* Skeleton Shimmer & Micro-Animations */
 @keyframes shimmer {
   0% {
     background-position: -200% 0;
@@ -152,6 +152,32 @@ body {
   100% {
     background-position: 200% 0;
   }
+}
+
+@keyframes floatSlow {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+}
+
+@keyframes pulseRedGlow {
+  0%, 100% {
+    box-shadow: 0 0 15px rgba(217, 30, 24, 0.15);
+  }
+  50% {
+    box-shadow: 0 0 30px rgba(217, 30, 24, 0.35);
+  }
+}
+
+.animate-float-slow {
+  animation: floatSlow 4.5s ease-in-out infinite;
+}
+
+.animate-pulse-red {
+  animation: pulseRedGlow 3s ease-in-out infinite;
 }
 
 .animate-shimmer {

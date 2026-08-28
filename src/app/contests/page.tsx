@@ -22,6 +22,12 @@ import {
   Zap,
   AlertTriangle,
   PenTool,
+  FileText,
+  Layers,
+  Palette,
+  Compass,
+  MessageSquare,
+  Gift,
 } from "lucide-react";
 import { dataStore } from "@/lib/data/store";
 import { useAuth } from "@/context/AuthContext";
@@ -37,6 +43,8 @@ const SEEDED_CONTENDERS = [
     title: "Shadow's Ascent",
     slug: "shadows-ascent",
     author: "@ryu_writer",
+    authorName: "Arion Vale",
+    avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
     coverUrl: "https://images.unsplash.com/photo-1563089145-599997674d42?w=600&auto=format&fit=crop&q=80",
     genre: "Action / Martial Arts",
     chaptersCount: 14,
@@ -48,6 +56,8 @@ const SEEDED_CONTENDERS = [
     title: "The Last Star",
     slug: "bound-by-blood",
     author: "@solar_kai",
+    authorName: "DystopiaX",
+    avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80",
     coverUrl: "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=600&auto=format&fit=crop&q=80",
     genre: "Sci-Fi / Cyberpunk",
     chaptersCount: 12,
@@ -59,6 +69,8 @@ const SEEDED_CONTENDERS = [
     title: "Path of the Wind",
     slug: "path-of-the-wind",
     author: "@kenji_tales",
+    authorName: "Eldrith",
+    avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=80",
     coverUrl: "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=600&auto=format&fit=crop&q=80",
     genre: "Wuxia / Fantasy",
     chaptersCount: 9,
@@ -70,6 +82,8 @@ const SEEDED_CONTENDERS = [
     title: "Blood Moon Chronicles",
     slug: "letters-unsent",
     author: "@elena_dark",
+    authorName: "StarGazer",
+    avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&auto=format&fit=crop&q=80",
     coverUrl: "https://images.unsplash.com/photo-1534447677768-be436bb09401?w=600&auto=format&fit=crop&q=80",
     genre: "Dark Fantasy",
     chaptersCount: 8,
@@ -81,6 +95,8 @@ const SEEDED_CONTENDERS = [
     title: "Re:Awakening 2099",
     slug: "re-awakening",
     author: "@neo_story",
+    authorName: "MysticPen",
+    avatar: "https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?w=150&auto=format&fit=crop&q=80",
     coverUrl: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=600&auto=format&fit=crop&q=80",
     genre: "Sci-Fi / Mecha",
     chaptersCount: 6,
@@ -89,12 +105,60 @@ const SEEDED_CONTENDERS = [
   },
 ];
 
+const TOURNAMENT_CATEGORIES = [
+  {
+    title: "WEB NOVEL",
+    desc: "Long-form written stories in chapters.",
+    icon: BookOpen,
+    color: "#3B82F6",
+    bgLight: "bg-blue-50/70 border-blue-200/60 dark:bg-blue-950/20 dark:border-blue-900/30",
+    textClass: "text-blue-600 dark:text-blue-400",
+    link: "/discover?category=web-novel",
+  },
+  {
+    title: "LIGHT NOVEL",
+    desc: "Fiction for young adult readers.",
+    icon: FileText,
+    color: "#10B981",
+    bgLight: "bg-emerald-50/70 border-emerald-200/60 dark:bg-emerald-950/20 dark:border-emerald-900/30",
+    textClass: "text-emerald-600 dark:text-emerald-400",
+    link: "/discover?category=light-novel",
+  },
+  {
+    title: "MANGA",
+    desc: "Black & white manga stories.",
+    icon: Layers,
+    color: "#8B5CF6",
+    bgLight: "bg-purple-50/70 border-purple-200/60 dark:bg-purple-950/20 dark:border-purple-900/30",
+    textClass: "text-purple-600 dark:text-purple-400",
+    link: "/discover?category=manga",
+  },
+  {
+    title: "WEBTOON",
+    desc: "Vertical, scrollable comic stories.",
+    icon: Palette,
+    color: "#F59E0B",
+    bgLight: "bg-amber-50/70 border-amber-200/60 dark:bg-amber-950/20 dark:border-amber-900/30",
+    textClass: "text-amber-600 dark:text-amber-400",
+    link: "/discover?category=webtoon",
+  },
+  {
+    title: "COMIC",
+    desc: "All style comics and graphic novels.",
+    icon: Sparkles,
+    color: "#EF4444",
+    bgLight: "bg-red-50/70 border-red-200/60 dark:bg-red-950/20 dark:border-red-900/30",
+    textClass: "text-red-600 dark:text-red-400",
+    link: "/discover?category=comic",
+  },
+];
+
 export default function ContestsPage() {
   const { user, requireAuth } = useAuth();
   const [contest, setContest] = useState<Contest>(() => dataStore.getActiveContest());
   const [novels, setNovels] = useState(() => dataStore.getNovels());
 
-  // Real-time live countdown hook (updates every 1000ms automatically)
+  // Real-time live countdown hook
   const countdown = useContestCountdown(contest);
 
   const [votes, setVotes] = useState<Record<string, number>>({});
@@ -135,6 +199,8 @@ export default function ContestsPage() {
       title: n.title,
       slug: n.slug,
       author: `@${n.creator.username || n.creator.name.toLowerCase().replace(/\s+/g, "_")}`,
+      authorName: n.creator.name || "Creator",
+      avatar: n.creator.avatar,
       coverUrl: n.coverUrl,
       genre: n.genre,
       chaptersCount: n.chaptersCount || 3,
@@ -186,139 +252,117 @@ export default function ContestsPage() {
     }, 2500);
   };
 
+  const authorAvatars = [
+    { name: "Arion Vale", avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80" },
+    { name: "DystopiaX", avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80" },
+    { name: "Eldrith", avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=80" },
+    { name: "StarGazer", avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&auto=format&fit=crop&q=80" },
+    { name: "MysticPen", avatar: "https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?w=150&auto=format&fit=crop&q=80" },
+  ];
+
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-12 bg-[#FAFAF7] dark:bg-[#121214] min-h-screen text-[#111111] dark:text-zinc-100">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-10 bg-[#FAFAF7] dark:bg-[#121214] min-h-screen text-[#111111] dark:text-zinc-100 font-sans">
       
       {/* ========================================================================= */}
-      {/* 1. HERO: DYNAMIC MANGA TOURNAMENT POSTER */}
+      {/* 1. HERO SECTION: CLEAN, PROFESSIONAL YOMIKA CONTEST BANNER */}
       {/* ========================================================================= */}
-      <div className="relative rounded-2xl overflow-hidden bg-white dark:bg-zinc-900 border-2 border-[#111111] dark:border-zinc-700 p-6 sm:p-10 lg:p-12 shadow-xl">
+      <div className="relative rounded-2xl overflow-hidden bg-white dark:bg-zinc-900 border border-[#EAEAE5] dark:border-zinc-800 p-6 sm:p-10 lg:p-12 shadow-sm">
         <div className="relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
           
-          {/* Left Column: Tournament Details & Live Countdown */}
-          <div className="lg:col-span-7 space-y-5">
-            <div className="flex flex-wrap items-center gap-2.5">
-              <span className="px-3 py-1 rounded-xs text-[11px] font-black bg-[#D91E18] text-white uppercase tracking-widest shadow-xs">
-                CONTEST #{contest.contestNumber || "08"} • 月例物語大賞
+          {/* Left Column: Contest Title & Stats */}
+          <div className="lg:col-span-7 space-y-6">
+            
+            <div className="space-y-2">
+              <span className="text-xs font-black tracking-widest uppercase text-[#D91E18]">
+                YOMIKA MONTHLY CHALLENGE
               </span>
               
-              {/* Dynamic Live Countdown Pill */}
-              <span
-                className={`px-2.5 py-1 rounded-xs text-[11px] font-black uppercase tracking-wider flex items-center gap-1.5 ${
-                  countdown.status === "LIVE"
-                    ? "bg-[#111111] text-white"
-                    : countdown.status === "SCHEDULED"
-                    ? "bg-indigo-900 text-indigo-100"
-                    : countdown.status === "DRAFT"
-                    ? "bg-amber-800 text-amber-100"
-                    : "bg-zinc-800 text-zinc-300"
-                }`}
-              >
-                <Clock className={`w-3.5 h-3.5 ${countdown.status === "LIVE" ? "text-[#D91E18] animate-pulse" : ""}`} />
-                <span>{countdown.formattedRemaining}</span>
-              </span>
+              <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight text-[#111111] dark:text-white leading-[1.08] uppercase">
+                {contest.title || "SCI-FI & FANTASY STORY BATTLE"}
+              </h1>
+
+              {/* Tournament Divider */}
+              <div className="flex items-center gap-3 pt-1">
+                <span className="w-8 h-[2px] bg-[#D91E18]" />
+                <span className="text-xs sm:text-sm font-black tracking-widest text-[#D91E18] uppercase">
+                  TOURNAMENT #{contest.contestNumber || "08"}
+                </span>
+                <span className="w-8 h-[2px] bg-[#D91E18]" />
+              </div>
             </div>
 
-            <h1 className="text-3xl sm:text-4xl lg:text-5xl xl:text-6xl font-black tracking-tight leading-[1.05] text-[#111111] dark:text-white">
-              {contest.title}
-              {contest.subtitle && (
-                <span className="text-xl sm:text-2xl lg:text-3xl font-extrabold text-[#555555] dark:text-zinc-400 block mt-1">
-                  {contest.subtitle}
-                </span>
-              )}
-            </h1>
-
-            <p className="text-xs sm:text-sm text-[#555555] dark:text-zinc-400 leading-relaxed max-w-xl font-medium">
-              {contest.description}
+            <p className="text-xs sm:text-sm text-zinc-600 dark:text-zinc-400 font-medium leading-relaxed max-w-xl">
+              {contest.description || "Where imagination meets competition. Write your best story. Compete with creators. Win glory, recognition and exciting rewards."}
             </p>
 
-            {/* Giant Prize Callout & Live Deadline */}
-            <div className="space-y-2 pt-2">
-              <div className="flex flex-wrap items-baseline gap-3">
-                <div className="px-4 py-2 rounded-lg bg-[#D91E18] text-white shadow-md inline-flex items-center gap-2">
-                  <Trophy className="w-5 h-5" />
-                  <span className="text-xl sm:text-2xl font-black tracking-tight">{contest.prizePool}</span>
-                  <span className="text-[10px] font-bold uppercase tracking-widest text-red-100">TOTAL PRIZE POOL</span>
+            {/* 3 Metric Badges in a Row */}
+            <div className="grid grid-cols-3 gap-3 sm:gap-4 pt-1 max-w-lg">
+              <div className="flex items-center gap-2.5 sm:gap-3">
+                <div className="w-8 h-8 rounded-lg bg-red-50 dark:bg-red-950/50 text-[#D91E18] flex items-center justify-center flex-shrink-0">
+                  <Trophy className="w-4 h-4" />
                 </div>
-                <span className="text-xs font-bold text-[#555555] dark:text-zinc-400">
-                  ● {contest.submissionCount || allEntries.length} Authors Entered
-                </span>
+                <div>
+                  <p className="text-xs sm:text-sm font-black text-[#111111] dark:text-white">
+                    {contest.prizePool || "$850 USD"}
+                  </p>
+                  <p className="text-[10px] text-zinc-400 font-bold uppercase tracking-tight">Total Prize Pool</p>
+                </div>
               </div>
 
-              {/* Dynamic Deadline formatted according to Admin configured timezone */}
-              <p className="text-xs text-zinc-500 font-bold">
-                📅 Deadline: <span className="text-[#111111] dark:text-white">{formatContestDeadline(contest.endDate, contest.timezone)}</span>
-              </p>
+              <div className="flex items-center gap-2.5 sm:gap-3">
+                <div className="w-8 h-8 rounded-lg bg-red-50 dark:bg-red-950/50 text-[#D91E18] flex items-center justify-center flex-shrink-0">
+                  <Users className="w-4 h-4" />
+                </div>
+                <div>
+                  <p className="text-xs sm:text-sm font-black text-[#111111] dark:text-white">
+                    {contest.submissionCount || allEntries.length || 14}
+                  </p>
+                  <p className="text-[10px] text-zinc-400 font-bold uppercase tracking-tight">Authors Entered</p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2.5 sm:gap-3">
+                <div className="w-8 h-8 rounded-lg bg-red-50 dark:bg-red-950/50 text-[#D91E18] flex items-center justify-center flex-shrink-0">
+                  <Calendar className="w-4 h-4" />
+                </div>
+                <div>
+                  <p className="text-xs sm:text-sm font-black text-[#111111] dark:text-white">
+                    {formatContestDeadline(contest.endDate, contest.timezone).split(" ")[0]} {formatContestDeadline(contest.endDate, contest.timezone).split(" ")[1]}
+                  </p>
+                  <p className="text-[10px] text-zinc-400 font-bold uppercase tracking-tight">Submission Deadline</p>
+                </div>
+              </div>
             </div>
 
-            {/* Dynamic Submission CTA Button */}
+            {/* Clickable CTA Button */}
             <div className="pt-2">
-              {countdown.status === "LIVE" ? (
-                <button
-                  onClick={() => {
-                    if (requireAuth("/contests")) {
-                      setIsSubmitModalOpen(true);
-                    }
-                  }}
-                  className="px-8 py-3.5 rounded-lg bg-[#D91E18] hover:bg-[#B71813] text-white font-black text-xs sm:text-sm uppercase tracking-wider shadow-lg transition transform hover:scale-[1.02] active:scale-[0.98] flex items-center gap-2"
-                >
-                  <Sparkles className="w-4 h-4" />
-                  <span>ENTER TOURNAMENT NOW →</span>
-                </button>
-              ) : countdown.status === "SCHEDULED" ? (
-                <button
-                  disabled
-                  className="px-8 py-3.5 rounded-lg bg-indigo-900/60 border border-indigo-700 text-indigo-200 font-black text-xs sm:text-sm uppercase tracking-wider cursor-not-allowed flex items-center gap-2 opacity-80"
-                >
-                  <Clock className="w-4 h-4" />
-                  <span>SUBMISSIONS NOT OPEN (STARTS SOON)</span>
-                </button>
-              ) : countdown.status === "DRAFT" ? (
-                <button
-                  disabled
-                  className="px-8 py-3.5 rounded-lg bg-amber-100 dark:bg-amber-950/60 border border-amber-300 text-amber-800 dark:text-amber-300 font-black text-xs sm:text-sm uppercase tracking-wider cursor-not-allowed flex items-center gap-2 opacity-80"
-                >
-                  <span>DRAFT MODE (UNPUBLISHED)</span>
-                </button>
-              ) : (
-                <button
-                  disabled
-                  className="px-8 py-3.5 rounded-lg bg-zinc-300 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400 font-black text-xs sm:text-sm uppercase tracking-wider cursor-not-allowed flex items-center gap-2 opacity-80"
-                >
-                  <span>SUBMISSIONS CLOSED (CONTEST ENDED)</span>
-                </button>
-              )}
+              <button
+                onClick={() => {
+                  if (requireAuth("/contests")) {
+                    setIsSubmitModalOpen(true);
+                  }
+                }}
+                className="group px-8 py-3.5 rounded-lg bg-[#D91E18] hover:bg-[#B71813] text-white font-black text-xs sm:text-sm uppercase tracking-wider shadow-md hover:shadow-red-600/25 transition-all duration-300 transform hover:-translate-y-0.5 active:translate-y-0 inline-flex items-center gap-2"
+              >
+                <span>ENTER TOURNAMENT NOW</span>
+                <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition duration-200" />
+              </button>
             </div>
+
           </div>
 
-          {/* Right Column: Dramatic Poster Artwork Composition */}
-          <div className="lg:col-span-5 relative flex items-center justify-center min-h-[320px] sm:min-h-[380px]">
-            {/* Japanese Red Sun */}
-            <div className="w-64 h-64 sm:w-80 sm:h-80 rounded-full bg-[#D91E18] absolute top-1/2 -translate-y-1/2 right-4 -z-10 shadow-2xl shadow-red-600/20" />
-
-            {/* Ink Ring Motif */}
-            <div className="w-72 h-72 sm:w-88 sm:h-88 rounded-full border-2 border-dashed border-[#111111] dark:border-zinc-500 absolute top-1/2 -translate-y-1/2 right-0 -z-10 opacity-30" />
-
-            {/* Character Artwork */}
-            <div className="relative w-full h-[320px] sm:h-[380px] flex items-end justify-center select-none pointer-events-none">
+          {/* Right Column: Original Yomika Contest Trophy Artwork with Float Animation */}
+          <div className="lg:col-span-5 relative flex items-center justify-center">
+            <div className="relative w-full aspect-[4/3] rounded-2xl overflow-hidden bg-zinc-100 dark:bg-zinc-800 shadow-md border border-[#EAEAE5] dark:border-zinc-800 group animate-float-slow animate-pulse-red">
               <img
-                src={contest.heroCoverUrl || "/hero-character.png"}
-                alt="Tournament Battle Hero"
-                className="w-full h-full object-contain object-bottom drop-shadow-[0_20px_30px_rgba(0,0,0,0.35)]"
+                src="/contest-trophy.jpg"
+                alt="Yomika Tournament Trophy"
+                className="w-full h-full object-cover group-hover:scale-105 transition duration-700 ease-out"
                 onError={(e) => {
                   (e.target as HTMLImageElement).src = "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=800&auto=format&fit=crop&q=90";
                 }}
               />
-            </div>
-
-            {/* Vertical Kanji Banner */}
-            <div className="absolute right-0 top-2 bottom-6 hidden sm:flex flex-col items-center justify-between text-zinc-400 select-none pointer-events-none z-10">
-              <span className="text-[11px] font-bold [writing-mode:vertical-rl] tracking-widest text-[#111111] dark:text-zinc-200 drop-shadow-xs">
-                頂点を目指せ、物語の戦士たち。
-              </span>
-              <span className="w-6 h-6 border-2 border-[#D91E18] text-[#D91E18] text-[10px] font-black flex items-center justify-center rounded-xs bg-white/90 dark:bg-zinc-900/90 shadow-xs">
-                覇者
-              </span>
+              <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent pointer-events-none" />
             </div>
           </div>
 
@@ -326,107 +370,227 @@ export default function ContestsPage() {
       </div>
 
       {/* ========================================================================= */}
-      {/* 2. PRIZE BREAKDOWN (Manga Battle Rewards) */}
-      {/* ========================================================================= */}
-      <div className="space-y-4">
-        <div className="flex items-center gap-3 border-b border-[#EAEAE5] dark:border-zinc-800 pb-2">
-          <span className="w-1.5 h-5 bg-[#D91E18] rounded-2xs" />
-          <h2 className="text-lg sm:text-xl font-black text-[#111111] dark:text-white uppercase tracking-tight">
-            TOURNAMENT PRIZES & GLORY • 賞金と特典
-          </h2>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {contest.prizeStructure.map((prize, idx) => {
-            const isGrand = idx === 0;
-            return (
-              <div
-                key={prize.place}
-                className={`p-5 rounded-xl bg-white dark:bg-zinc-900 border-2 ${
-                  isGrand ? "border-[#D91E18] shadow-md" : "border-[#EAEAE5] dark:border-zinc-800"
-                } relative shadow-2xs space-y-2 hover:translate-y-[-2px] transition`}
-              >
-                <div className="flex items-center justify-between">
-                  <span
-                    className={`px-2 py-0.5 rounded-xs text-[10px] font-black uppercase text-white ${
-                      isGrand ? "bg-[#D91E18]" : idx === 1 ? "bg-zinc-800" : "bg-amber-700"
-                    }`}
-                  >
-                    {prize.place}
-                  </span>
-                  <Trophy className={`w-5 h-5 ${isGrand ? "text-[#D91E18]" : "text-zinc-400"}`} />
-                </div>
-                <p className={`text-3xl font-black ${isGrand ? "text-[#D91E18]" : "text-[#111111] dark:text-white"} pt-1`}>
-                  {prize.reward}
-                </p>
-                <h3 className="font-black text-sm text-[#111111] dark:text-white uppercase">{prize.place}</h3>
-                <p className="text-xs text-[#555555] dark:text-zinc-400 font-medium leading-relaxed">
-                  {prize.desc}
-                </p>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* ========================================================================= */}
-      {/* 3. SCORING MATRIX & JUDGING CRITERIA (Manga Progress Meter) */}
+      {/* 2. ROW 1: HOW IT WORKS & AUTHORS ENTERED */}
       {/* ========================================================================= */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         
-        {/* Left: Visual Progress Bar Matrix */}
-        <div className="lg:col-span-7 p-6 rounded-xl bg-white dark:bg-zinc-900 border border-[#EAEAE5] dark:border-zinc-800 space-y-5 shadow-2xs">
-          <div className="flex items-center gap-2 border-b border-[#EAEAE5] dark:border-zinc-800 pb-2">
-            <span className="w-1.5 h-4 bg-[#D91E18] rounded-2xs" />
-            <h3 className="text-sm font-black text-[#111111] dark:text-white uppercase">
-              HOW YOUR STORY WILL BE JUDGED • 審査配点
-            </h3>
+        {/* Left Card: HOW IT WORKS (7 cols) */}
+        <div className="lg:col-span-7 p-6 rounded-2xl bg-white dark:bg-zinc-900 border border-[#EAEAE5] dark:border-zinc-800 shadow-2xs space-y-6">
+          <div className="flex items-center gap-2">
+            <span className="w-3 h-0.5 bg-[#D91E18]" />
+            <h2 className="text-xs font-black text-[#111111] dark:text-white uppercase tracking-widest">
+              HOW IT WORKS
+            </h2>
           </div>
 
-          <div className="space-y-4">
-            {contest.judgingCriteria.map((crit) => (
-              <div key={crit.title} className="space-y-1.5">
-                <div className="flex justify-between text-xs font-black text-[#111111] dark:text-white">
-                  <span>{crit.title}</span>
-                  <span className="text-[#D91E18]">{crit.weight}</span>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 relative">
+            
+            {/* Step 01 */}
+            <div className="p-2 rounded-xl hover:bg-zinc-50 dark:hover:bg-zinc-800/40 transition-all duration-300 space-y-2 group">
+              <div className="flex items-center justify-between">
+                <div className="w-10 h-10 rounded-xl bg-red-50 dark:bg-red-950/40 text-[#D91E18] flex items-center justify-center group-hover:scale-110 group-hover:bg-[#D91E18] group-hover:text-white transition duration-300">
+                  <PenTool className="w-4 h-4" />
                 </div>
-                
-                {/* Manga Bar Visual */}
-                <div className="w-full h-2.5 bg-zinc-100 dark:bg-zinc-800 rounded-xs overflow-hidden flex">
-                  <div
-                    className="h-full bg-[#D91E18] transition-all duration-1000"
-                    style={{ width: crit.weight }}
-                  />
-                </div>
-                <p className="text-[11px] text-[#555555] dark:text-zinc-400">{crit.desc}</p>
+                <span className="text-xs font-black text-zinc-400">01</span>
               </div>
-            ))}
+              <h3 className="text-xs font-black text-[#111111] dark:text-white leading-snug">
+                Create or Choose Your Story
+              </h3>
+              <p className="text-[11px] text-zinc-500 font-medium leading-relaxed">
+                Write a new story or pick an existing one.
+              </p>
+            </div>
+
+            {/* Step 02 */}
+            <div className="p-2 rounded-xl hover:bg-zinc-50 dark:hover:bg-zinc-800/40 transition-all duration-300 space-y-2 group">
+              <div className="flex items-center justify-between">
+                <div className="w-10 h-10 rounded-xl bg-red-50 dark:bg-red-950/40 text-[#D91E18] flex items-center justify-center group-hover:scale-110 group-hover:bg-[#D91E18] group-hover:text-white transition duration-300">
+                  <BookOpen className="w-4 h-4" />
+                </div>
+                <span className="text-xs font-black text-zinc-400">02</span>
+              </div>
+              <h3 className="text-xs font-black text-[#111111] dark:text-white leading-snug">
+                Submit Your Entry
+              </h3>
+              <p className="text-[11px] text-zinc-500 font-medium leading-relaxed">
+                Fill the details and submit your story.
+              </p>
+            </div>
+
+            {/* Step 03 */}
+            <div className="p-2 rounded-xl hover:bg-zinc-50 dark:hover:bg-zinc-800/40 transition-all duration-300 space-y-2 group">
+              <div className="flex items-center justify-between">
+                <div className="w-10 h-10 rounded-xl bg-red-50 dark:bg-red-950/40 text-[#D91E18] flex items-center justify-center group-hover:scale-110 group-hover:bg-[#D91E18] group-hover:text-white transition duration-300">
+                  <Users className="w-4 h-4" />
+                </div>
+                <span className="text-xs font-black text-zinc-400">03</span>
+              </div>
+              <h3 className="text-xs font-black text-[#111111] dark:text-white leading-snug">
+                Community & Judges Review
+              </h3>
+              <p className="text-[11px] text-zinc-500 font-medium leading-relaxed">
+                Stories are reviewed fairly on multiple criteria.
+              </p>
+            </div>
+
+            {/* Step 04 */}
+            <div className="p-2 rounded-xl hover:bg-zinc-50 dark:hover:bg-zinc-800/40 transition-all duration-300 space-y-2 group">
+              <div className="flex items-center justify-between">
+                <div className="w-10 h-10 rounded-xl bg-red-50 dark:bg-red-950/40 text-[#D91E18] flex items-center justify-center group-hover:scale-110 group-hover:bg-[#D91E18] group-hover:text-white transition duration-300">
+                  <Trophy className="w-4 h-4" />
+                </div>
+                <span className="text-xs font-black text-zinc-400">04</span>
+              </div>
+              <h3 className="text-xs font-black text-[#111111] dark:text-white leading-snug">
+                Winners Announced
+              </h3>
+              <p className="text-[11px] text-zinc-500 font-medium leading-relaxed">
+                Top stories win amazing prizes and recognition.
+              </p>
+            </div>
+
           </div>
         </div>
 
-        {/* Right: Tournament Rules & Requirements */}
-        <div className="lg:col-span-5 p-6 rounded-xl bg-white dark:bg-zinc-900 border border-[#EAEAE5] dark:border-zinc-800 space-y-4 shadow-2xs">
-          <div className="flex items-center gap-2 border-b border-[#EAEAE5] dark:border-zinc-800 pb-2">
-            <span className="w-1.5 h-4 bg-[#D91E18] rounded-2xs" />
-            <h3 className="text-sm font-black text-[#111111] dark:text-white uppercase">
-              ENTRY ELIGIBILITY • 参加資格
-            </h3>
+        {/* Right Card: AUTHORS ENTERED (5 cols) */}
+        <div className="lg:col-span-5 p-6 rounded-2xl bg-white dark:bg-zinc-900 border border-[#EAEAE5] dark:border-zinc-800 shadow-2xs space-y-5 flex flex-col justify-between">
+          <div className="flex items-center justify-between">
+            <h2 className="text-xs font-black text-[#111111] dark:text-white uppercase tracking-widest">
+              {contest.submissionCount || allEntries.length || 14} AUTHORS ENTERED
+            </h2>
+            <Link href="/community" className="text-xs font-black text-[#D91E18] hover:underline inline-flex items-center gap-1 group">
+              <span>VIEW ALL</span>
+              <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition duration-200" />
+            </Link>
           </div>
 
-          <ul className="space-y-3 text-xs text-[#555555] dark:text-zinc-300">
-            {contest.rules.map((rule, idx) => (
-              <li key={idx} className="flex items-start gap-2.5">
-                <span className="w-4 h-4 rounded-xs bg-red-100 dark:bg-red-950/60 text-[#D91E18] flex items-center justify-center font-black text-[10px] mt-0.5 flex-shrink-0">
-                  ✓
+          <div className="flex items-center justify-between gap-2 overflow-x-auto py-2">
+            {authorAvatars.map((author) => (
+              <div key={author.name} className="flex flex-col items-center gap-1.5 flex-shrink-0 group">
+                <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-white dark:border-zinc-800 shadow-sm bg-zinc-200 group-hover:scale-110 group-hover:border-[#D91E18] transition duration-300">
+                  <img src={author.avatar} alt={author.name} className="w-full h-full object-cover" />
+                </div>
+                <span className="text-[10px] font-bold text-zinc-600 dark:text-zinc-400 max-w-[50px] truncate text-center">
+                  {author.name}
                 </span>
-                <span className="font-medium leading-relaxed">{rule}</span>
-              </li>
+              </div>
             ))}
-          </ul>
 
-          <div className="pt-2 border-t border-[#EAEAE5] dark:border-zinc-800">
-            <div className="p-3 rounded-lg bg-zinc-50 dark:bg-zinc-800 text-[11px] text-[#555555] dark:text-zinc-400 leading-relaxed font-medium">
-              💡 <strong>Creator Tip:</strong> Early chapter hooks and engaging world concepts score highest during reader evaluation cycles.
+            {/* +9 More Pill */}
+            <div className="flex flex-col items-center gap-1.5 flex-shrink-0 group cursor-pointer">
+              <div className="w-12 h-12 rounded-full border-2 border-dashed border-zinc-300 dark:border-zinc-700 flex items-center justify-center text-xs font-black text-zinc-600 dark:text-zinc-400 bg-zinc-50 dark:bg-zinc-800/50 group-hover:scale-110 group-hover:border-[#D91E18] group-hover:text-[#D91E18] transition duration-300">
+                +9
+              </div>
+              <span className="text-[10px] font-bold text-zinc-400">More</span>
+            </div>
+          </div>
+
+          <p className="text-[11px] text-zinc-400 font-medium pt-1">
+            Join other creators in the monthly creative storytelling challenge.
+          </p>
+        </div>
+
+      </div>
+
+      {/* ========================================================================= */}
+      {/* 3. ROW 2: TOURNAMENT CATEGORIES, PRIZE POOL & JUDGING CRITERIA */}
+      {/* ========================================================================= */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        
+        {/* TOURNAMENT CATEGORIES (6 cols) */}
+        <div className="lg:col-span-6 p-6 rounded-2xl bg-white dark:bg-zinc-900 border border-[#EAEAE5] dark:border-zinc-800 shadow-2xs space-y-4">
+          <div className="flex items-center gap-2">
+            <span className="w-3 h-0.5 bg-[#D91E18]" />
+            <h2 className="text-xs font-black text-[#111111] dark:text-white uppercase tracking-widest">
+              TOURNAMENT CATEGORIES
+            </h2>
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+            {TOURNAMENT_CATEGORIES.map((cat) => {
+              const Icon = cat.icon;
+              return (
+                <div
+                  key={cat.title}
+                  className={`p-3.5 rounded-xl border ${cat.bgLight} space-y-2 flex flex-col justify-between hover-lift glow-card group transition`}
+                >
+                  <div className="space-y-1.5">
+                    <Icon className={`w-5 h-5 ${cat.textClass} group-hover:scale-110 transition duration-300`} />
+                    <h3 className="text-xs font-black text-[#111111] dark:text-white uppercase">
+                      {cat.title}
+                    </h3>
+                    <p className="text-[10px] text-zinc-500 font-medium leading-snug">
+                      {cat.desc}
+                    </p>
+                  </div>
+                  <Link href={cat.link} className={`text-[10px] font-bold ${cat.textClass} hover:underline inline-flex items-center gap-0.5 group/link`}>
+                    <span>Learn more</span>
+                    <span className="group-hover/link:translate-x-0.5 transition">→</span>
+                  </Link>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* PRIZE POOL (3 cols) */}
+        <div className="lg:col-span-3 p-6 rounded-2xl bg-white dark:bg-zinc-900 border border-[#EAEAE5] dark:border-zinc-800 shadow-2xs space-y-4 flex flex-col justify-between">
+          <h2 className="text-xs font-black text-[#111111] dark:text-white uppercase tracking-widest text-center">
+            PRIZE POOL — {contest.prizePool || "$850 USD"}
+          </h2>
+
+          <div className="grid grid-cols-3 gap-2 text-center py-1">
+            <div className="space-y-1">
+              <div className="text-amber-500 flex justify-center"><Trophy className="w-6 h-6" /></div>
+              <p className="text-[10px] font-bold text-zinc-400 uppercase">1st Place</p>
+              <p className="text-sm sm:text-base font-black text-[#111111] dark:text-white">$500</p>
+            </div>
+            <div className="space-y-1">
+              <div className="text-zinc-400 flex justify-center"><Trophy className="w-6 h-6" /></div>
+              <p className="text-[10px] font-bold text-zinc-400 uppercase">2nd Place</p>
+              <p className="text-sm sm:text-base font-black text-[#111111] dark:text-white">$250</p>
+            </div>
+            <div className="space-y-1">
+              <div className="text-amber-700 flex justify-center"><Trophy className="w-6 h-6" /></div>
+              <p className="text-[10px] font-bold text-zinc-400 uppercase">3rd Place</p>
+              <p className="text-sm sm:text-base font-black text-[#111111] dark:text-white">$100</p>
+            </div>
+          </div>
+
+          <div className="p-2.5 rounded-lg bg-zinc-50 dark:bg-zinc-800/60 border border-zinc-200/60 dark:border-zinc-700/60 text-center">
+            <span className="text-[11px] font-bold text-zinc-600 dark:text-zinc-300 flex items-center justify-center gap-1.5">
+              <Gift className="w-3.5 h-3.5 text-[#D91E18]" />
+              <span>Special Mentions & Features</span>
+            </span>
+          </div>
+        </div>
+
+        {/* JUDGING CRITERIA (3 cols) */}
+        <div className="lg:col-span-3 p-6 rounded-2xl bg-white dark:bg-zinc-900 border border-[#EAEAE5] dark:border-zinc-800 shadow-2xs space-y-4">
+          <h2 className="text-xs font-black text-[#111111] dark:text-white uppercase tracking-widest">
+            JUDGING CRITERIA
+          </h2>
+
+          <div className="space-y-2.5 text-xs">
+            <div className="flex items-center gap-2 text-zinc-700 dark:text-zinc-300 font-bold">
+              <Sparkles className="w-3.5 h-3.5 text-[#D91E18]" />
+              <span>Story & Originality</span>
+            </div>
+            <div className="flex items-center gap-2 text-zinc-700 dark:text-zinc-300 font-bold">
+              <PenTool className="w-3.5 h-3.5 text-[#D91E18]" />
+              <span>Writing Quality</span>
+            </div>
+            <div className="flex items-center gap-2 text-zinc-700 dark:text-zinc-300 font-bold">
+              <Users className="w-3.5 h-3.5 text-[#D91E18]" />
+              <span>Characters</span>
+            </div>
+            <div className="flex items-center gap-2 text-zinc-700 dark:text-zinc-300 font-bold">
+              <Compass className="w-3.5 h-3.5 text-[#D91E18]" />
+              <span>World Building</span>
+            </div>
+            <div className="flex items-center gap-2 text-zinc-700 dark:text-zinc-300 font-bold">
+              <MessageSquare className="w-3.5 h-3.5 text-[#D91E18]" />
+              <span>Reader Engagement</span>
             </div>
           </div>
         </div>
@@ -434,14 +598,14 @@ export default function ContestsPage() {
       </div>
 
       {/* ========================================================================= */}
-      {/* 4. LEADERBOARD: TOP CONTENDERS (頂上決戦) */}
+      {/* 4. LEADERBOARD: TOP 3 PODIUM */}
       {/* ========================================================================= */}
       <div className="space-y-4">
         <div className="flex items-center justify-between border-b border-[#EAEAE5] dark:border-zinc-800 pb-3">
           <div className="flex items-center gap-3">
-            <span className="w-1.5 h-6 bg-[#D91E18] rounded-2xs" />
-            <h2 className="text-lg sm:text-xl font-black text-[#111111] dark:text-white uppercase">
-              TOP CONTENDERS • 頂上決戦 (TOP 3 PODIUM)
+            <span className="w-1.5 h-5 bg-[#D91E18] rounded-2xs" />
+            <h2 className="text-base sm:text-lg font-black text-[#111111] dark:text-white uppercase">
+              TOP CONTENDERS • TOURNAMENT LEADERBOARD
             </h2>
           </div>
           <span className="text-xs font-bold text-[#D91E18]">
@@ -461,10 +625,10 @@ export default function ContestsPage() {
                 key={entry.id}
                 className={`p-4 rounded-xl bg-white dark:bg-zinc-900 border-2 ${
                   isFirst
-                    ? "border-[#D91E18] shadow-lg"
+                    ? "border-[#D91E18] shadow-md"
                     : isSecond
-                    ? "border-zinc-400 shadow-sm"
-                    : "border-amber-600 shadow-sm"
+                    ? "border-zinc-300 dark:border-zinc-700 shadow-2xs"
+                    : "border-amber-600 shadow-2xs"
                 } flex flex-col justify-between space-y-4 relative group`}
               >
                 {/* Podium Rank Badge */}
@@ -527,14 +691,14 @@ export default function ContestsPage() {
       </div>
 
       {/* ========================================================================= */}
-      {/* 5. CURRENT ENTRIES (128 STORIES ENTERED) */}
+      {/* 5. CURRENT ENTRIES LIST */}
       {/* ========================================================================= */}
       <div className="space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-[#EAEAE5] dark:border-zinc-800 pb-3">
           <div className="flex items-center gap-3">
-            <span className="w-1.5 h-6 bg-[#111111] dark:bg-white rounded-2xs" />
-            <h2 className="text-lg sm:text-xl font-black text-[#111111] dark:text-white uppercase">
-              CURRENT ENTRIES ({allEntries.length} STORIES ENTERED • 参加作品)
+            <span className="w-1.5 h-5 bg-[#111111] dark:bg-white rounded-2xs" />
+            <h2 className="text-base sm:text-lg font-black text-[#111111] dark:text-white uppercase">
+              CURRENT ENTRIES ({allEntries.length} STORIES ENTERED)
             </h2>
           </div>
           <span className="text-xs text-[#555555] dark:text-zinc-400 font-medium">
@@ -542,7 +706,6 @@ export default function ContestsPage() {
           </span>
         </div>
 
-        {/* Large Horizontal Entry Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {allEntries.map((entry, index) => {
             const currentVotes = votes[entry.id] || entry.votes;
@@ -555,12 +718,10 @@ export default function ContestsPage() {
                 className="p-4 rounded-xl bg-white dark:bg-zinc-900 border border-[#EAEAE5] dark:border-zinc-800 flex items-center justify-between gap-4 shadow-2xs hover:border-[#111111] dark:hover:border-white transition group"
               >
                 <div className="flex items-center gap-3.5 min-w-0">
-                  {/* Rank Stamp */}
                   <span className="text-lg sm:text-xl font-black text-[#D91E18] w-8 text-center flex-shrink-0 font-serif">
                     {rankFormatted}
                   </span>
 
-                  {/* Cover */}
                   <div className="w-16 h-20 rounded-lg overflow-hidden bg-zinc-100 flex-shrink-0">
                     <img
                       src={entry.coverUrl}
@@ -569,7 +730,6 @@ export default function ContestsPage() {
                     />
                   </div>
 
-                  {/* Story Meta */}
                   <div className="space-y-0.5 min-w-0">
                     <Link href={`/novels/${entry.slug}`}>
                       <h4 className="font-black text-sm sm:text-base text-[#111111] dark:text-white hover:text-[#D91E18] transition line-clamp-1">
@@ -583,7 +743,6 @@ export default function ContestsPage() {
                   </div>
                 </div>
 
-                {/* Vote Action */}
                 <div className="flex flex-col items-end gap-1.5 flex-shrink-0">
                   <span className="text-xs font-black text-[#D91E18]">
                     {currentVotes} votes
@@ -607,7 +766,38 @@ export default function ContestsPage() {
       </div>
 
       {/* ========================================================================= */}
-      {/* 6. 3-STEP INTERACTIVE SUBMISSION MODAL (✦ ENTER THE TOURNAMENT) */}
+      {/* 6. BOTTOM MOTIVATION CTA BANNER */}
+      {/* ========================================================================= */}
+      <div className="p-6 sm:p-8 rounded-2xl bg-white dark:bg-zinc-900 border border-[#EAEAE5] dark:border-zinc-800 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-6">
+        <div className="flex items-center gap-4">
+          <div className="w-12 h-12 rounded-xl bg-red-50 dark:bg-red-950/50 text-[#D91E18] flex items-center justify-center flex-shrink-0">
+            <Trophy className="w-6 h-6" />
+          </div>
+          <div>
+            <h3 className="text-base sm:text-lg font-black uppercase tracking-tight text-[#111111] dark:text-white">
+              YOUR STORY. YOUR WORLD. YOUR VICTORY.
+            </h3>
+            <p className="text-xs sm:text-sm text-zinc-500 font-medium">
+              Every great story begins with a brave creator.
+            </p>
+          </div>
+        </div>
+
+        <button
+          onClick={() => {
+            if (requireAuth("/contests")) {
+              setIsSubmitModalOpen(true);
+            }
+          }}
+          className="group px-8 py-3.5 rounded-lg bg-[#D91E18] hover:bg-[#B71813] text-white font-black text-xs sm:text-sm uppercase tracking-wider shadow-md hover:shadow-red-600/25 transition-all duration-300 transform hover:-translate-y-0.5 active:translate-y-0 inline-flex items-center gap-2 flex-shrink-0"
+        >
+          <span>ENTER TOURNAMENT NOW</span>
+          <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition duration-200" />
+        </button>
+      </div>
+
+      {/* ========================================================================= */}
+      {/* 7. 3-STEP SUBMISSION MODAL */}
       {/* ========================================================================= */}
       {isSubmitModalOpen && (
         <div
@@ -618,7 +808,6 @@ export default function ContestsPage() {
             className="w-full max-w-lg bg-white dark:bg-zinc-900 border-2 border-[#111111] dark:border-zinc-700 rounded-2xl p-6 sm:p-8 text-[#111111] dark:text-zinc-100 shadow-2xl space-y-5"
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Modal Header */}
             <div className="flex items-center justify-between pb-3 border-b border-[#EAEAE5] dark:border-zinc-800">
               <div className="flex items-center gap-2">
                 <span className="w-6 h-6 rounded-xs bg-[#D91E18] text-white flex items-center justify-center font-black text-xs">
@@ -636,7 +825,6 @@ export default function ContestsPage() {
               </button>
             </div>
 
-            {/* 3-Step Progress Indicator */}
             <div className="grid grid-cols-3 gap-2 text-center text-[10px] font-black uppercase">
               <div className={`p-1.5 rounded-md border ${submissionStep >= 1 ? "bg-[#D91E18] text-white border-[#D91E18]" : "bg-zinc-100 border-zinc-200 text-zinc-400"}`}>
                 01 — SELECT
@@ -670,7 +858,6 @@ export default function ContestsPage() {
               </div>
             ) : (
               <form onSubmit={handleEntrySubmit} className="space-y-4">
-                {/* STEP 1: Story Selection */}
                 {submissionStep === 1 && (
                   <div className="space-y-3">
                     <label className="block text-xs font-black text-[#111111] dark:text-white uppercase">
@@ -691,7 +878,6 @@ export default function ContestsPage() {
                           ))}
                         </select>
 
-                        {/* Live Preview Card */}
                         {selectedStory && (
                           <div className="p-3.5 rounded-lg bg-zinc-50 dark:bg-zinc-950 border border-[#EAEAE5] dark:border-zinc-800 flex items-center gap-3">
                             <div className="w-14 h-18 rounded-md overflow-hidden bg-zinc-200 flex-shrink-0">
@@ -751,7 +937,6 @@ export default function ContestsPage() {
                   </div>
                 )}
 
-                {/* STEP 2: Review & Verification */}
                 {submissionStep === 2 && (
                   <div className="space-y-3.5">
                     <h4 className="text-xs font-black text-[#111111] dark:text-white uppercase">

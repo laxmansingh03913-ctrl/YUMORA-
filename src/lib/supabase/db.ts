@@ -3,7 +3,7 @@
  */
 
 import { supabase } from "./client";
-import { Novel, Comic, ComicEpisode, Chapter, UserProfile, Comment, Contest } from "../types";
+import { Novel, Comic, ComicEpisode, Chapter, UserProfile, Comment, Contest, ReadingProgress, PayoutRequest } from "../types";
 
 function ensureUuid(id?: string): string {
   if (!id) {
@@ -132,6 +132,8 @@ export const dbService = {
         secondaryGenre: row.secondary_genre,
         tags: Array.isArray(row.tags) ? row.tags : [],
         language: row.language || "en",
+        format: row.format || (row.sub_type === "ILLUSTRATED_NOVEL" ? "ILLUSTRATED" : "STANDARD"),
+        subType: row.sub_type || (row.format === "ILLUSTRATED" ? "ILLUSTRATED_NOVEL" : "WEB_NOVEL"),
         status: row.status || "ONGOING",
         contentRating: row.content_rating || "TEEN",
         contentWarning: row.content_warning,
@@ -194,6 +196,8 @@ export const dbService = {
         secondaryGenre: row.secondary_genre,
         tags: Array.isArray(row.tags) ? row.tags : [],
         language: row.language || "en",
+        format: row.format || (row.sub_type === "ILLUSTRATED_NOVEL" ? "ILLUSTRATED" : "STANDARD"),
+        subType: row.sub_type || (row.format === "ILLUSTRATED" ? "ILLUSTRATED_NOVEL" : "WEB_NOVEL"),
         status: row.status || "ONGOING",
         contentRating: row.content_rating || "TEEN",
         contentWarning: row.content_warning,
@@ -236,41 +240,65 @@ export const dbService = {
       );
       const validNovelId = ensureUuid(novel.id);
 
-      const { data, error } = await supabase
+      const isLightNovel =
+        novel.subType === "ILLUSTRATED_NOVEL" ||
+        novel.format === "ILLUSTRATED" ||
+        (novel.tags || []).some((t) => t.toLowerCase().includes("light novel"));
+
+      const finalSubType = isLightNovel ? "ILLUSTRATED_NOVEL" : "WEB_NOVEL";
+      const finalFormat = isLightNovel ? "ILLUSTRATED" : "STANDARD";
+      const finalTags = Array.from(
+        new Set([...(novel.tags || []), ...(isLightNovel ? ["Light Novel"] : [])])
+      );
+
+      const payload: Record<string, any> = {
+        id: validNovelId,
+        creator_id: validCreatorId,
+        title: novel.title,
+        slug: novel.slug,
+        description: novel.description,
+        cover_url: novel.coverUrl,
+        banner_url: novel.bannerUrl,
+        genre: novel.genre,
+        secondary_genre: novel.secondaryGenre,
+        tags: finalTags,
+        language: novel.language || "en",
+        format: finalFormat,
+        sub_type: finalSubType,
+        status: novel.status || "ONGOING",
+        content_rating: novel.contentRating || "TEEN",
+        content_warning: novel.contentWarning,
+        views: novel.views || 1,
+        reads: novel.reads || 1,
+        likes_count: novel.likesCount || 0,
+        bookmarks_count: novel.bookmarksCount || 0,
+        rating: novel.rating || 5.0,
+        total_ratings: novel.totalRatings || 1,
+        is_featured: novel.isFeatured || false,
+        is_editor_pick: novel.isEditorPick || false,
+        is_premium: novel.isPremium || false,
+        chapters_count: novel.chaptersCount || novel.chapters?.length || 1,
+      };
+
+      // Upsert into Supabase novels table
+      let { data, error } = await supabase
         .from("novels")
-        .upsert(
-          [
-            {
-              id: validNovelId,
-              creator_id: validCreatorId,
-              title: novel.title,
-              slug: novel.slug,
-              description: novel.description,
-              cover_url: novel.coverUrl,
-              banner_url: novel.bannerUrl,
-              genre: novel.genre,
-              secondary_genre: novel.secondaryGenre,
-              tags: novel.tags || [],
-              language: novel.language || "en",
-              status: novel.status || "ONGOING",
-              content_rating: novel.contentRating || "TEEN",
-              content_warning: novel.contentWarning,
-              views: novel.views || 1,
-              reads: novel.reads || 1,
-              likes_count: novel.likesCount || 0,
-              bookmarks_count: novel.bookmarksCount || 0,
-              rating: novel.rating || 5.0,
-              total_ratings: novel.totalRatings || 1,
-              is_featured: novel.isFeatured || false,
-              is_editor_pick: novel.isEditorPick || false,
-              is_premium: novel.isPremium || false,
-              chapters_count: novel.chaptersCount || novel.chapters?.length || 1,
-            },
-          ],
-          { onConflict: "id" }
-        )
+        .upsert([payload], { onConflict: "id" })
         .select()
         .single();
+
+      // If columns format/sub_type don't exist yet, retry without them (tags keep classification)
+      if (error && (error.message.includes("column") || error.code === "42703")) {
+        delete payload.format;
+        delete payload.sub_type;
+        const retry = await supabase
+          .from("novels")
+          .upsert([payload], { onConflict: "id" })
+          .select()
+          .single();
+        data = retry.data;
+        error = retry.error;
+      }
 
       if (error) {
         console.error("Supabase insert novel error:", error.message);
@@ -749,6 +777,384 @@ export const dbService = {
       })) as Contest[];
     } catch {
       return [];
+    }
+  },
+
+  // 6. User Activity: Bookmarks
+  async getUserBookmarks(userId: string): Promise<string[]> {
+    try {
+      if (!userId) return [];
+      const validUserId = ensureUuid(userId);
+      const { data, error } = await supabase
+        .from("bookmarks")
+        .select("novel_id, comic_id")
+        .eq("user_id", validUserId);
+
+      if (error || !data) return [];
+      return data
+        .map((r: any) => r.novel_id || r.comic_id)
+        .filter(Boolean);
+    } catch {
+      return [];
+    }
+  },
+
+  async toggleBookmark(userId: string, targetId: string, type: "NOVEL" | "COMIC"): Promise<boolean> {
+    try {
+      if (!userId || !targetId) return false;
+      const validUserId = ensureUuid(userId);
+      const validTargetId = ensureUuid(targetId);
+
+      const field = type === "NOVEL" ? "novel_id" : "comic_id";
+      const { data: existing } = await supabase
+        .from("bookmarks")
+        .select("id")
+        .eq("user_id", validUserId)
+        .eq(field, validTargetId)
+        .maybeSingle();
+
+      if (existing) {
+        await supabase.from("bookmarks").delete().eq("id", existing.id);
+        return false;
+      } else {
+        await supabase.from("bookmarks").insert([
+          {
+            user_id: validUserId,
+            [field]: validTargetId,
+          },
+        ]);
+        return true;
+      }
+    } catch {
+      return false;
+    }
+  },
+
+  // 7. User Activity: Likes
+  async getUserLikes(userId: string): Promise<string[]> {
+    try {
+      if (!userId) return [];
+      const validUserId = ensureUuid(userId);
+      const { data, error } = await supabase
+        .from("likes")
+        .select("target_id")
+        .eq("user_id", validUserId);
+
+      if (error || !data) return [];
+      return data.map((r: any) => r.target_id).filter(Boolean);
+    } catch {
+      return [];
+    }
+  },
+
+  async toggleLike(userId: string, targetId: string, targetType: string): Promise<boolean> {
+    try {
+      if (!userId || !targetId) return false;
+      const validUserId = ensureUuid(userId);
+      const validTargetId = ensureUuid(targetId);
+
+      const { data: existing } = await supabase
+        .from("likes")
+        .select("id")
+        .eq("user_id", validUserId)
+        .eq("target_id", validTargetId)
+        .maybeSingle();
+
+      if (existing) {
+        await supabase.from("likes").delete().eq("id", existing.id);
+        return false;
+      } else {
+        await supabase.from("likes").insert([
+          {
+            user_id: validUserId,
+            target_id: validTargetId,
+            target_type: targetType || "STORY",
+          },
+        ]);
+        return true;
+      }
+    } catch {
+      return false;
+    }
+  },
+
+  // 8. User Activity: Follows
+  async getUserFollows(userId: string): Promise<string[]> {
+    try {
+      if (!userId) return [];
+      const validUserId = ensureUuid(userId);
+      const { data, error } = await supabase
+        .from("follows")
+        .select("following_id")
+        .eq("follower_id", validUserId);
+
+      if (error || !data) return [];
+      return data.map((r: any) => r.following_id).filter(Boolean);
+    } catch {
+      return [];
+    }
+  },
+
+  async toggleFollow(followerId: string, followingId: string): Promise<boolean> {
+    try {
+      if (!followerId || !followingId || followerId === followingId) return false;
+      const validFollower = ensureUuid(followerId);
+      const validFollowing = ensureUuid(followingId);
+
+      const { data: existing } = await supabase
+        .from("follows")
+        .select("id")
+        .eq("follower_id", validFollower)
+        .eq("following_id", validFollowing)
+        .maybeSingle();
+
+      if (existing) {
+        await supabase.from("follows").delete().eq("id", existing.id);
+        return false;
+      } else {
+        await supabase.from("follows").insert([
+          {
+            follower_id: validFollower,
+            following_id: validFollowing,
+          },
+        ]);
+        return true;
+      }
+    } catch {
+      return false;
+    }
+  },
+
+  // 9. Reading Progress
+  async getReadingProgress(userId: string, contentId: string): Promise<ReadingProgress | null> {
+    try {
+      if (!userId || !contentId) return null;
+      const validUserId = ensureUuid(userId);
+      const validContentId = ensureUuid(contentId);
+
+      const { data, error } = await supabase
+        .from("reading_progress")
+        .select("*")
+        .eq("user_id", validUserId)
+        .eq("content_id", validContentId)
+        .maybeSingle();
+
+      if (error || !data) return null;
+      return {
+        id: data.id,
+        userId: data.user_id,
+        contentId: data.content_id,
+        contentType: data.content_type || "NOVEL",
+        chapterNumber: data.chapter_number,
+        episodeNumber: data.episode_number,
+        scrollOffset: data.scroll_offset || 0,
+        pageIndex: data.page_index || 0,
+        progressPercentage: data.progress_percentage || 0,
+        lastReadAt: data.last_read_at || data.updated_at || new Date().toISOString(),
+      };
+    } catch {
+      return null;
+    }
+  },
+
+  async saveReadingProgress(progress: Partial<ReadingProgress>): Promise<boolean> {
+    try {
+      if (!progress.userId || !progress.contentId) return false;
+      const validUserId = ensureUuid(progress.userId);
+      const validContentId = ensureUuid(progress.contentId);
+
+      const { error } = await supabase
+        .from("reading_progress")
+        .upsert(
+          [
+            {
+              user_id: validUserId,
+              content_id: validContentId,
+              content_type: progress.contentType || "NOVEL",
+              chapter_number: progress.chapterNumber,
+              episode_number: progress.episodeNumber,
+              scroll_offset: progress.scrollOffset || 0,
+              page_index: progress.pageIndex || 0,
+              last_read_at: new Date().toISOString(),
+            },
+          ],
+          { onConflict: "user_id,content_id" }
+        );
+
+      return !error;
+    } catch {
+      return false;
+    }
+  },
+
+  // 10. Authoritative Coin Wallet & Transactions
+  async getWalletBalance(userId: string): Promise<number> {
+    try {
+      if (!userId) return 0;
+      const validUserId = ensureUuid(userId);
+
+      const { data, error } = await supabase
+        .from("coin_wallets")
+        .select("balance")
+        .eq("user_id", validUserId)
+        .maybeSingle();
+
+      if (error || !data) return 0;
+      return typeof data.balance === "number" ? data.balance : 0;
+    } catch {
+      return 0;
+    }
+  },
+
+  async recordCoinTransaction(tx: {
+    userId: string;
+    amount: number;
+    type: string;
+    description: string;
+    referenceId?: string;
+  }): Promise<boolean> {
+    try {
+      if (!tx.userId || !tx.amount) return false;
+      const validUserId = ensureUuid(tx.userId);
+
+      // 1. Fetch current wallet balance
+      const currentBalance = await this.getWalletBalance(validUserId);
+      const newBalance = Math.max(0, currentBalance + tx.amount);
+
+      // 2. Upsert updated wallet balance
+      await supabase
+        .from("coin_wallets")
+        .upsert(
+          [
+            {
+              user_id: validUserId,
+              balance: newBalance,
+              updated_at: new Date().toISOString(),
+            },
+          ],
+          { onConflict: "user_id" }
+        );
+
+      // 3. Log to audit ledger
+      await supabase.from("coin_transactions").insert([
+        {
+          user_id: validUserId,
+          amount: tx.amount,
+          type: tx.type,
+          description: tx.description,
+          reference_id: tx.referenceId,
+          created_at: new Date().toISOString(),
+        },
+      ]);
+
+      return true;
+    } catch {
+      return false;
+    }
+  },
+
+  async sendTip(
+    fromUserId: string,
+    toCreatorId: string,
+    amount: number,
+    contentTitle?: string,
+    message?: string
+  ): Promise<{ success: boolean; error?: string; remainingCoins?: number }> {
+    try {
+      if (!fromUserId || !toCreatorId || amount <= 0) {
+        return { success: false, error: "Invalid tip parameters." };
+      }
+
+      const validFromUser = ensureUuid(fromUserId);
+      const validToCreator = ensureUuid(toCreatorId);
+
+      const senderBalance = await this.getWalletBalance(validFromUser);
+      if (senderBalance < amount) {
+        return {
+          success: false,
+          error: `Insufficient coins balance. You have ${senderBalance} coins.`,
+        };
+      }
+
+      // Deduct from sender
+      await this.recordCoinTransaction({
+        userId: validFromUser,
+        amount: -amount,
+        type: "TIP_SENT",
+        description: `Tipped ${amount} coins to creator on ${contentTitle || "story"}`,
+      });
+
+      // Credit to creator
+      await this.recordCoinTransaction({
+        userId: validToCreator,
+        amount: amount,
+        type: "TIP_RECEIVED",
+        description: `Received ${amount} coins tip from reader: ${message || "Support"}`,
+      });
+
+      const remaining = senderBalance - amount;
+      return { success: true, remainingCoins: remaining };
+    } catch (e: any) {
+      return { success: false, error: e?.message || "Failed to complete coin tip." };
+    }
+  },
+
+  // 11. Authoritative Payout Requests
+  async getPayoutRequests(creatorId?: string): Promise<PayoutRequest[]> {
+    try {
+      let query = supabase
+        .from("payout_requests")
+        .select("*, user:profiles(id, name, email, username)");
+
+      if (creatorId) {
+        query = query.eq("user_id", ensureUuid(creatorId));
+      }
+
+      const { data, error } = await query.order("created_at", { ascending: false });
+      if (error || !data) return [];
+
+      return data.map((r: any) => ({
+        id: r.id,
+        creatorId: r.user_id,
+        creatorName: r.user?.name || "Creator",
+        creatorEmail: r.user?.email || "",
+        amountInr: r.amount_inr,
+        amountUsd: r.amount_usd || Math.round((r.amount_inr / 83) * 100) / 100,
+        method: r.method || "UPI",
+        details: r.details,
+        accountHolderName: r.account_holder_name || r.user?.name || "",
+        status: r.status || "PENDING",
+        requestedAt: r.created_at || new Date().toISOString(),
+        processedAt: r.processed_at,
+        transactionReference: r.reference_id,
+        notes: r.note,
+      }));
+    } catch {
+      return [];
+    }
+  },
+
+  async createPayoutRequest(req: Partial<PayoutRequest>): Promise<boolean> {
+    try {
+      if (!req.creatorId || !req.amountInr) return false;
+      const validUserId = ensureUuid(req.creatorId);
+
+      const { error } = await supabase.from("payout_requests").insert([
+        {
+          user_id: validUserId,
+          amount_inr: req.amountInr,
+          amount_usd: req.amountUsd || Math.round((req.amountInr / 83) * 100) / 100,
+          method: req.method || "UPI",
+          details: req.details,
+          account_holder_name: req.accountHolderName || "",
+          status: "PENDING",
+          created_at: new Date().toISOString(),
+        },
+      ]);
+
+      return !error;
+    } catch {
+      return false;
     }
   },
 

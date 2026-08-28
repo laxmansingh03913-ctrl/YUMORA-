@@ -190,12 +190,12 @@ export default function ComicDetailPage({ params }: ComicPageProps) {
   const pages = activeEpisode?.imageUrls || [];
 
   const handleBookmarkToggle = () => {
-    const next = dataStore.toggleBookmark(comic.id);
+    const next = dataStore.toggleBookmark(comic.id, user?.id, "COMIC");
     setIsBookmarked(next);
   };
 
   const handleLikeToggle = () => {
-    const next = dataStore.toggleLike(comic.id);
+    const next = dataStore.toggleLike(comic.id, user?.id, "COMIC");
     setIsLiked(next);
     setLikesCount((prev) => (next ? prev + 1 : prev - 1));
   };

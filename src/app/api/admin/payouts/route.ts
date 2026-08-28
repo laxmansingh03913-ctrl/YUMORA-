@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAuthenticatedServerUser } from "@/lib/auth/server";
 import { prisma } from "@/lib/prisma";
+import { dbService } from "@/lib/supabase/db";
 import { PayoutRequest } from "@/lib/types";
 
 // Convert Prisma database row to Frontend PayoutRequest shape
@@ -34,29 +35,38 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    // 2. Fetch real payout requests from Prisma database
+    // 2. Fetch real payout requests from Database
     try {
-      const records = await prisma.payoutRequest.findMany({
-        include: {
-          user: {
-            select: {
-              id: true,
-              name: true,
-              email: true,
-              username: true,
+      const payouts = await dbService.getPayoutRequests();
+      if (payouts && payouts.length > 0) {
+        return NextResponse.json({ success: true, payouts, count: payouts.length });
+      }
+
+      // Try Prisma if available
+      try {
+        const records = await prisma.payoutRequest.findMany({
+          include: {
+            user: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+                username: true,
+              },
             },
           },
-        },
-        orderBy: {
-          createdAt: "desc",
-        },
-      });
+          orderBy: {
+            createdAt: "desc",
+          },
+        });
 
-      const payouts = records.map(mapPrismaPayoutToDto);
-      return NextResponse.json({ success: true, payouts, count: payouts.length });
+        const prismaPayouts = records.map(mapPrismaPayoutToDto);
+        return NextResponse.json({ success: true, payouts: prismaPayouts, count: prismaPayouts.length });
+      } catch {
+        return NextResponse.json({ success: true, payouts: [], count: 0 });
+      }
     } catch (dbErr: any) {
-      console.warn("[PAYOUTS PRISMA FETCH NOTICE]", dbErr?.message || dbErr);
-      // Clean fallback: If DB has no connection or empty, return empty list without mock data
+      console.warn("[PAYOUTS FETCH NOTICE]", dbErr?.message || dbErr);
       return NextResponse.json({ success: true, payouts: [], count: 0 });
     }
   } catch (error: any) {

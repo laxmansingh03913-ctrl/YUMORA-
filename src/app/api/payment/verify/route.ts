@@ -3,47 +3,29 @@ import crypto from "crypto";
 import { getPackageById } from "@/lib/payment/packages";
 import { getAuthenticatedServerUser } from "@/lib/auth/server";
 import { emailService } from "@/lib/email/service";
-import fs from "fs";
-import path from "path";
-
-const DB_FILE = path.join(process.cwd(), "src", "lib", "data", "server-db.json");
+import { dbService } from "@/lib/supabase/db";
 
 // In-memory processed payment cache to prevent rapid concurrent double-spends
 const processedPayments = new Set<string>();
 
-function checkAndRecordPayment(paymentId: string, transaction: any): boolean {
+async function checkAndRecordPayment(paymentId: string, transaction: any): Promise<boolean> {
   if (processedPayments.has(paymentId)) {
     return false;
   }
   processedPayments.add(paymentId);
 
-  // Persist to server database if available
   try {
-    if (fs.existsSync(DB_FILE)) {
-      const data = fs.readFileSync(DB_FILE, "utf-8");
-      const db = JSON.parse(data || "{}");
-      const transactions = Array.isArray(db.yumora_transactions) ? db.yumora_transactions : [];
-
-      // Check if already in DB
-      const exists = transactions.some((t: any) => t && t.paymentId === paymentId);
-      if (exists) {
-        return false;
-      }
-
-      transactions.push(transaction);
-      db.yumora_transactions = transactions;
-
-      // Update user coins on server
-      if (transaction.userId && transaction.coinsAdded) {
-        if (!db.yumora_user_coins) db.yumora_user_coins = {};
-        db.yumora_user_coins[transaction.userId] =
-          (db.yumora_user_coins[transaction.userId] || 0) + transaction.coinsAdded;
-      }
-
-      fs.writeFileSync(DB_FILE, JSON.stringify(db, null, 2), "utf-8");
+    if (transaction.userId && transaction.coinsAdded) {
+      await dbService.recordCoinTransaction({
+        userId: transaction.userId,
+        amount: transaction.coinsAdded,
+        type: "COIN_PURCHASE",
+        description: `Purchased ${transaction.packageName} (${transaction.coinsAdded} coins) for ₹${transaction.amountInr}`,
+        referenceId: paymentId,
+      });
     }
   } catch (err) {
-    console.error("[TRANSACTION PERSISTENCE WARNING]", err);
+    console.error("[TRANSACTION PERSISTENCE NOTICE]", err);
   }
 
   return true;
@@ -155,7 +137,7 @@ export async function POST(request: NextRequest) {
       verifiedAt: new Date().toISOString(),
     };
 
-    const isFirstTimeProcessing = checkAndRecordPayment(razorpay_payment_id, transactionRecord);
+    const isFirstTimeProcessing = await checkAndRecordPayment(razorpay_payment_id, transactionRecord);
 
     if (!isFirstTimeProcessing) {
       return NextResponse.json(

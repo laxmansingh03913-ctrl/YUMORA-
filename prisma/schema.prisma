@@ -114,6 +114,8 @@ model Novel {
   secondaryGenre String?
   tags          String[]
   language      String        @default("en")
+  format        String?       @default("STANDARD")
+  subType       String?       @default("WEB_NOVEL")
   status        ContentStatus @default(ONGOING)
   contentRating ContentRating @default(EVERYONE)
   views         Int           @default(0)

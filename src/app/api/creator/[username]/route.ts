@@ -68,7 +68,19 @@ export async function GET(
       return NextResponse.json({ success: false, error: "Username is required" }, { status: 400 });
     }
 
-    // 1. Check Server DB Users
+    // 1. Query Supabase Database (Authoritative Source of Truth)
+    try {
+      const cloud =
+        (await dbService.getProfileByUsername(cleanUsername)) ||
+        (await dbService.getProfile(cleanUsername));
+      if (cloud) {
+        return NextResponse.json({ success: true, creator: cloud });
+      }
+    } catch (e) {
+      console.warn("Supabase creator lookup notice:", e);
+    }
+
+    // 2. Check Server DB Users
     const db = getServerDb();
     const serverUsers: UserProfile[] = Array.isArray(db.yumora_users) ? db.yumora_users : [];
     const fromServerUsers = serverUsers.find(
@@ -79,17 +91,6 @@ export async function GET(
     );
     if (fromServerUsers) {
       return NextResponse.json({ success: true, creator: fromServerUsers });
-    }
-
-    // 2. Check Seed Users
-    const fromSeed = SEED_USERS.find(
-      (u) =>
-        u &&
-        ((u.username && u.username.trim().toLowerCase().replace(/^@/, "") === cleanUsername) ||
-          (u.id && u.id.trim().toLowerCase() === cleanUsername))
-    );
-    if (fromSeed) {
-      return NextResponse.json({ success: true, creator: fromSeed });
     }
 
     // 3. Check Server DB Comics creators
@@ -132,14 +133,15 @@ export async function GET(
       }
     }
 
-    // 5. Query Supabase Database
-    try {
-      const cloud = await dbService.getProfileByUsername(cleanUsername);
-      if (cloud) {
-        return NextResponse.json({ success: true, creator: cloud });
-      }
-    } catch {
-      // ignore
+    // 5. Check Seed Users as fallback
+    const fromSeed = SEED_USERS.find(
+      (u) =>
+        u &&
+        ((u.username && u.username.trim().toLowerCase().replace(/^@/, "") === cleanUsername) ||
+          (u.id && u.id.trim().toLowerCase() === cleanUsername))
+    );
+    if (fromSeed) {
+      return NextResponse.json({ success: true, creator: fromSeed });
     }
 
     return NextResponse.json(

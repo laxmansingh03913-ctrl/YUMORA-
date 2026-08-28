@@ -383,7 +383,7 @@ class DataStore {
     return this.getItem<string[]>(STORAGE_KEYS.BOOKMARKS, []);
   }
 
-  toggleBookmark(contentId: string): boolean {
+  toggleBookmark(contentId: string, userId?: string, type: "NOVEL" | "COMIC" = "NOVEL"): boolean {
     const bookmarks = this.getBookmarks();
     const index = bookmarks.indexOf(contentId);
     let isBookmarked = false;
@@ -395,6 +395,11 @@ class DataStore {
       isBookmarked = true;
     }
     this.setItem(STORAGE_KEYS.BOOKMARKS, bookmarks);
+
+    // Sync to Supabase PostgreSQL database if user is logged in
+    if (userId) {
+      dbService.toggleBookmark(userId, contentId, type).catch(() => {});
+    }
     return isBookmarked;
   }
 
@@ -407,7 +412,7 @@ class DataStore {
     return this.getItem<string[]>(STORAGE_KEYS.LIKES, []);
   }
 
-  toggleLike(contentId: string): boolean {
+  toggleLike(contentId: string, userId?: string, targetType: string = "STORY"): boolean {
     const likes = this.getLikes();
     const index = likes.indexOf(contentId);
     let isLiked = false;
@@ -419,6 +424,11 @@ class DataStore {
       isLiked = true;
     }
     this.setItem(STORAGE_KEYS.LIKES, likes);
+
+    // Sync to Supabase PostgreSQL database if user is logged in
+    if (userId) {
+      dbService.toggleLike(userId, contentId, targetType).catch(() => {});
+    }
     return isLiked;
   }
 
@@ -878,6 +888,10 @@ class DataStore {
     const map = this.getReadingProgressMap();
     map[progress.contentId] = progress;
     this.setItem(STORAGE_KEYS.READING_PROGRESS, map);
+
+    if (progress.userId) {
+      dbService.saveReadingProgress(progress).catch(() => {});
+    }
   }
 
   getReadingProgress(contentId: string): ReadingProgress | undefined {
@@ -911,6 +925,15 @@ class DataStore {
     const safeAll = Array.isArray(all) ? all : [];
     safeAll.unshift(comment);
     this.setItem(STORAGE_KEYS.COMMENTS, safeAll);
+
+    if (comment.userId) {
+      dbService.addComment({
+        userId: comment.userId,
+        content: comment.text,
+        novelId: comment.contentType === "NOVEL" ? comment.contentId : undefined,
+        comicId: comment.contentType === "COMIC" ? comment.contentId : undefined,
+      }).catch(() => {});
+    }
   }
 
   // Reviews
@@ -933,16 +956,26 @@ class DataStore {
   getUserCoins(userId: string): number {
     const map = this.getItem<Record<string, number>>(STORAGE_KEYS.COINS, {});
     if (map[userId] === undefined) {
-      // Default starter coins balance for active users
-      map[userId] = 350;
+      map[userId] = 0;
       this.setItem(STORAGE_KEYS.COINS, map);
+
+      // Async sync from authoritative Supabase wallet
+      if (userId) {
+        dbService.getWalletBalance(userId).then((balance) => {
+          if (balance !== undefined) {
+            const currentMap = this.getItem<Record<string, number>>(STORAGE_KEYS.COINS, {});
+            currentMap[userId] = balance;
+            this.setItem(STORAGE_KEYS.COINS, currentMap);
+          }
+        }).catch(() => {});
+      }
     }
-    return map[userId];
+    return map[userId] || 0;
   }
 
   addCoins(userId: string, amount: number): number {
     const map = this.getItem<Record<string, number>>(STORAGE_KEYS.COINS, {});
-    const current = map[userId] ?? 350;
+    const current = map[userId] ?? 0;
     const updated = Math.max(0, current + amount);
     map[userId] = updated;
     this.setItem(STORAGE_KEYS.COINS, map);
@@ -956,7 +989,7 @@ class DataStore {
       return { success: false, error: `Insufficient Coins balance. You have ${currentCoins} coins.` };
     }
 
-    // Deduct coins from sender
+    // Deduct coins from sender locally
     const remaining = this.addCoins(tip.fromUserId, -tip.amount);
 
     // Save tip transaction
@@ -966,6 +999,11 @@ class DataStore {
 
     // Credit coins & tips count to creator
     this.addCoins(tip.toCreatorId, tip.amount);
+
+    // Synchronize directly with Supabase coin_wallets & coin_transactions
+    dbService
+      .sendTip(tip.fromUserId, tip.toCreatorId, tip.amount, tip.contentTitle, tip.message)
+      .catch((err) => console.warn("Supabase tip sync notice:", err));
 
     // Send notification to creator
     this.addNotification({

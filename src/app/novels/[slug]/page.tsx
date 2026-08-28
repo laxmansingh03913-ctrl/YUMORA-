@@ -139,18 +139,18 @@ export default function NovelDetailPage({ params }: PageProps) {
   }
 
   const handleBookmarkToggle = () => {
-    const next = dataStore.toggleBookmark(novel.id);
+    const next = dataStore.toggleBookmark(novel.id, user?.id, "NOVEL");
     setIsBookmarked(next);
   };
 
   const handleLikeToggle = () => {
-    const next = dataStore.toggleLike(novel.id);
+    const next = dataStore.toggleLike(novel.id, user?.id, "NOVEL");
     setIsLiked(next);
     setLikesCount((prev) => (next ? prev + 1 : prev - 1));
   };
 
   const handleFollowAuthor = () => {
-    const next = dataStore.toggleFollow(novel.creatorId);
+    const next = dataStore.toggleFollow(novel.creatorId, user?.id);
     setIsFollowingAuthor(next);
   };
 

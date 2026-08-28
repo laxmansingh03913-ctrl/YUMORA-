@@ -15,11 +15,14 @@ import {
   Trash2,
 } from "lucide-react";
 import { dataStore } from "@/lib/data/store";
+import { dbService } from "@/lib/supabase/db";
+import { useAuth } from "@/context/AuthContext";
 import { NovelCard } from "@/components/ui/NovelCard";
 import { Novel, ReadingProgress, UserProfile } from "@/lib/types";
 import { formatDate } from "@/lib/utils";
 
 export default function LibraryPage() {
+  const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<"continue" | "bookmarks" | "history" | "likes" | "following" | "lists">("continue");
 
   const [novels, setNovels] = useState<Novel[]>([]);
@@ -40,18 +43,37 @@ export default function LibraryPage() {
     const all = dataStore.getNovels();
     setNovels(all);
 
-    const bIds = dataStore.getBookmarks();
-    setBookmarks(all.filter((n) => bIds.includes(n.id)));
+    const loadData = async () => {
+      let bIds = dataStore.getBookmarks();
+      let lIds = dataStore.getLikes();
+      let fIds = dataStore.getFollows();
 
-    const lIds = dataStore.getLikes();
-    setLikes(all.filter((n) => lIds.includes(n.id)));
+      if (user?.id) {
+        try {
+          const [dbB, dbL, dbF] = await Promise.all([
+            dbService.getUserBookmarks(user.id),
+            dbService.getUserLikes(user.id),
+            dbService.getUserFollows(user.id),
+          ]);
+          if (dbB && dbB.length > 0) bIds = Array.from(new Set([...bIds, ...dbB]));
+          if (dbL && dbL.length > 0) lIds = Array.from(new Set([...lIds, ...dbL]));
+          if (dbF && dbF.length > 0) fIds = Array.from(new Set([...fIds, ...dbF]));
+        } catch {
+          // ignore
+        }
+      }
 
-    const prog = dataStore.getReadingProgressMap();
-    setReadingProgressMap(prog);
+      setBookmarks(all.filter((n) => bIds.includes(n.id)));
+      setLikes(all.filter((n) => lIds.includes(n.id)));
 
-    const fIds = dataStore.getFollows();
-    setFollowingCreators(dataStore.getUsers().filter((u) => fIds.includes(u.id)));
-  }, []);
+      const prog = dataStore.getReadingProgressMap();
+      setReadingProgressMap(prog);
+
+      setFollowingCreators(dataStore.getUsers().filter((u) => fIds.includes(u.id)));
+    };
+
+    loadData();
+  }, [user]);
 
   const continueReadingItems = Object.entries(readingProgressMap)
     .map(([id, prog]) => {

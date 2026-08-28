@@ -333,11 +333,16 @@ export interface Review {
 }
 
 export interface ReadingProgress {
+  id?: string;
+  userId?: string;
   contentId: string;
   contentType: ContentType;
   chapterId?: string;
   chapterNumber: number;
-  progressPercentage: number;
+  episodeNumber?: number;
+  progressPercentage?: number;
+  scrollOffset?: number;
+  pageIndex?: number;
   lastReadAt: string;
   contentTitle?: string;
   contentSlug?: string;
