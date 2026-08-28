@@ -226,11 +226,11 @@ export default function HomePage() {
             {/* Seamless Organic Hero Visual: Character + Books + Manga + Light Novel Pages */}
             <div className="relative w-full max-w-lg sm:max-w-xl lg:max-w-[680px] xl:max-w-[740px] h-[480px] sm:h-[560px] lg:h-[640px] flex items-center justify-center pointer-events-none">
               <img
-                src="/hero-creator.png"
+                src="/hero-character.png"
                 alt="Yomika Story Creator — Where Stories Come Alive"
                 className="w-full h-full object-contain mix-blend-multiply dark:mix-blend-lighten filter contrast-[1.03] drop-shadow-[0_25px_45px_rgba(0,0,0,0.12)] dark:drop-shadow-[0_25px_45px_rgba(217,30,24,0.3)] transition-transform duration-700 animate-float-slow"
                 onError={(e) => {
-                  (e.target as HTMLImageElement).src = "/hero-creator.jpg";
+                  (e.target as HTMLImageElement).src = "/hero-creator.png";
                 }}
               />
             </div>
