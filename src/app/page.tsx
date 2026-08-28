@@ -164,17 +164,17 @@ export default function HomePage() {
             </h1>
           </div>
 
-          {/* CENTER: Organic Hero Artwork */}
-          <div className="lg:col-span-6 relative flex items-center justify-center min-h-[360px] sm:min-h-[440px] lg:min-h-[500px] xl:min-h-[560px] select-none overflow-visible">
+          {/* CENTER: Complete Uncropped Hero Artwork (Full body, boots & floating pages) */}
+          <div className="lg:col-span-6 relative flex items-center justify-center min-h-[400px] sm:min-h-[480px] lg:min-h-[560px] xl:min-h-[620px] select-none overflow-visible">
             {/* Soft Ambient Brand Aura */}
-            <div className="w-72 h-72 sm:w-96 sm:h-96 lg:w-[480px] lg:h-[480px] rounded-full bg-red-500/10 dark:bg-red-600/15 blur-3xl absolute top-1/2 -translate-y-1/2 left-1/2 -translate-x-1/2 -z-10 animate-pulse-red pointer-events-none" />
+            <div className="w-80 h-80 sm:w-[450px] sm:h-[450px] lg:w-[540px] lg:h-[540px] rounded-full bg-red-500/10 dark:bg-red-600/15 blur-3xl absolute top-1/2 -translate-y-1/2 left-1/2 -translate-x-1/2 -z-10 animate-pulse-red pointer-events-none" />
 
-            {/* Floating Central Hero Visual */}
-            <div className="relative w-full max-w-[460px] sm:max-w-[540px] lg:max-w-[620px] xl:max-w-[680px] h-[360px] sm:h-[440px] lg:h-[500px] xl:h-[560px] flex items-center justify-center pointer-events-none">
+            {/* Floating Central Hero Visual (Natural aspect ratio, zero crop) */}
+            <div className="relative w-full max-w-[500px] sm:max-w-[600px] lg:max-w-[680px] xl:max-w-[760px] h-auto flex items-center justify-center pointer-events-none">
               <img
                 src="/hero-character.webp"
                 alt="Yomika Story Creator — Where Stories Come Alive"
-                className="w-full h-full object-contain filter drop-shadow-[0_20px_40px_rgba(0,0,0,0.12)] dark:drop-shadow-[0_25px_45px_rgba(217,30,24,0.3)] transition-transform duration-700 animate-float-slow"
+                className="w-full h-auto max-h-[420px] sm:max-h-[500px] lg:max-h-[580px] xl:max-h-[640px] object-contain filter drop-shadow-[0_20px_40px_rgba(0,0,0,0.12)] dark:drop-shadow-[0_25px_45px_rgba(217,30,24,0.3)] transition-transform duration-700 animate-float-slow"
                 onError={(e) => {
                   (e.target as HTMLImageElement).src = "/hero-character.png";
                 }}
