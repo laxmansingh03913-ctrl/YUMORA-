@@ -139,17 +139,17 @@ export default function HomePage() {
   return (
     <div className="flex flex-col space-y-12 lg:space-y-16 pb-20 bg-[#FAFAF7] text-[#111111] dark:bg-[#121214] dark:text-zinc-100 min-h-screen">
       {/* ========================================================================= */}
-      {/* 1. HERO SECTION (Neo-Japan Manga Editorial Design) */}
+      {/* 1. HERO SECTION (Immersive Full-Viewport Storytelling Platform Hero 85vh) */}
       {/* ========================================================================= */}
-      <section className="relative pt-2 sm:pt-4 pb-8 sm:pb-12 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto w-full">
+      <section className="relative min-h-[calc(100vh-5.5rem)] lg:min-h-[84vh] xl:min-h-[88vh] flex flex-col justify-between pt-1 sm:pt-3 pb-8 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto w-full">
         
         {/* ========================================================================= */}
-        {/* DESKTOP SPLIT COMPOSITION: [STORIES WORTH] -> [HERO ARTWORK] -> [GETTING LOST IN.] */}
+        {/* DESKTOP SPLIT COMPOSITION: [STORIES WORTH] -> [MASSIVE HERO ARTWORK] -> [GETTING LOST IN.] */}
         {/* ========================================================================= */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 items-center gap-4 lg:gap-2 relative">
+        <div className="grid grid-cols-1 lg:grid-cols-12 items-center gap-2 relative my-auto py-2">
           
           {/* LEFT WING (Desktop): STORIES WORTH */}
-          <div className="hidden lg:flex lg:col-span-3 flex-col items-end text-right space-y-4 z-20 select-none pr-2">
+          <div className="hidden lg:flex lg:col-span-3 flex-col items-end text-right space-y-4 z-20 select-none pr-1">
             <div className="flex items-center gap-2">
               <span className="w-5 h-5 border border-[#D91E18] text-[#D91E18] text-[9px] font-black flex items-center justify-center rounded-xs bg-white dark:bg-zinc-900 shadow-2xs">
                 物語
@@ -158,23 +158,23 @@ export default function HomePage() {
                 YOMIKA ORIGINAL
               </span>
             </div>
-            <h1 className="text-4xl lg:text-[46px] xl:text-[54px] font-black text-[#111111] dark:text-white tracking-tight leading-[1.02] uppercase text-right">
+            <h1 className="text-4xl lg:text-5xl xl:text-6xl font-black text-[#111111] dark:text-white tracking-tight leading-[1.0] uppercase text-right">
               STORIES <br />
               <span>WORTH</span>
             </h1>
           </div>
 
-          {/* CENTER: Complete Uncropped Hero Artwork (Full body, boots & floating pages) */}
-          <div className="lg:col-span-6 relative flex items-center justify-center min-h-[400px] sm:min-h-[480px] lg:min-h-[560px] xl:min-h-[620px] select-none overflow-visible">
+          {/* CENTER: Massive Dominant Hero Artwork (1.7x Scale, Complete & Uncropped) */}
+          <div className="lg:col-span-6 relative flex items-center justify-center min-h-[460px] sm:min-h-[560px] lg:min-h-[660px] xl:min-h-[740px] select-none overflow-visible">
             {/* Soft Ambient Brand Aura */}
-            <div className="w-80 h-80 sm:w-[450px] sm:h-[450px] lg:w-[540px] lg:h-[540px] rounded-full bg-red-500/10 dark:bg-red-600/15 blur-3xl absolute top-1/2 -translate-y-1/2 left-1/2 -translate-x-1/2 -z-10 animate-pulse-red pointer-events-none" />
+            <div className="w-80 h-80 sm:w-[500px] sm:h-[500px] lg:w-[650px] lg:h-[650px] rounded-full bg-red-500/10 dark:bg-red-600/15 blur-3xl absolute top-1/2 -translate-y-1/2 left-1/2 -translate-x-1/2 -z-10 animate-pulse-red pointer-events-none" />
 
-            {/* Floating Central Hero Visual (Natural aspect ratio, zero crop) */}
-            <div className="relative w-full max-w-[500px] sm:max-w-[600px] lg:max-w-[680px] xl:max-w-[760px] h-auto flex items-center justify-center pointer-events-none">
+            {/* Floating Central Hero Visual */}
+            <div className="relative w-full max-w-[560px] sm:max-w-[680px] lg:max-w-[820px] xl:max-w-[940px] h-auto flex items-center justify-center pointer-events-none">
               <img
                 src="/hero-character.webp"
                 alt="Yomika Story Creator — Where Stories Come Alive"
-                className="w-full h-auto max-h-[420px] sm:max-h-[500px] lg:max-h-[580px] xl:max-h-[640px] object-contain filter drop-shadow-[0_20px_40px_rgba(0,0,0,0.12)] dark:drop-shadow-[0_25px_45px_rgba(217,30,24,0.3)] transition-transform duration-700 animate-float-slow"
+                className="w-full h-auto max-h-[480px] sm:max-h-[580px] lg:max-h-[680px] xl:max-h-[760px] object-contain filter drop-shadow-[0_25px_45px_rgba(0,0,0,0.12)] dark:drop-shadow-[0_30px_55px_rgba(217,30,24,0.3)] transition-transform duration-700 animate-float-slow"
                 onError={(e) => {
                   (e.target as HTMLImageElement).src = "/hero-character.png";
                 }}
@@ -183,11 +183,11 @@ export default function HomePage() {
           </div>
 
           {/* RIGHT WING (Desktop): GETTING LOST IN. */}
-          <div className="hidden lg:flex lg:col-span-3 flex-col items-start text-left space-y-4 z-20 select-none pl-2">
+          <div className="hidden lg:flex lg:col-span-3 flex-col items-start text-left space-y-4 z-20 select-none pl-1">
             <span className="text-[10px] font-bold tracking-widest text-[#D91E18] uppercase">
               CREATORS & STORIES
             </span>
-            <h2 className="text-4xl lg:text-[46px] xl:text-[54px] font-black tracking-tight leading-[1.02] uppercase text-left">
+            <h2 className="text-4xl lg:text-5xl xl:text-6xl font-black tracking-tight leading-[1.0] uppercase text-left">
               <span className="text-[#D91E18]">GETTING</span> <br />
               <span className="text-[#111111] dark:text-white">LOST IN.</span>
             </h2>
@@ -214,7 +214,7 @@ export default function HomePage() {
         {/* ========================================================================= */}
         {/* CENTERED BELOW: DESCRIPTION, CTA BUTTONS & LIVE STATS */}
         {/* ========================================================================= */}
-        <div className="flex flex-col items-center text-center space-y-5 pt-4 sm:pt-6 max-w-2xl mx-auto z-20 relative">
+        <div className="flex flex-col items-center text-center space-y-4 pt-3 sm:pt-4 max-w-2xl mx-auto z-20 relative">
           {/* Supporting Description */}
           <p className="text-xs sm:text-sm lg:text-base text-[#555555] dark:text-zinc-400 leading-relaxed font-normal max-w-xl">
             Read original novels, discover independent creators, and share stories with readers around the world. From serial web novels to future webtoons and animations.
@@ -224,7 +224,7 @@ export default function HomePage() {
           <div className="flex flex-wrap items-center justify-center gap-3.5 pt-1">
             <button
               onClick={() => requireAuth("/discover")}
-              className="px-7 sm:px-8 py-3 rounded-lg bg-[#D91E18] hover:bg-[#B71813] text-white font-black text-xs sm:text-sm tracking-wider uppercase shadow-xs transition transform hover:scale-[1.02] active:scale-[0.98] flex items-center gap-2"
+              className="px-7 sm:px-8 py-3.5 rounded-lg bg-[#D91E18] hover:bg-[#B71813] text-white font-black text-xs sm:text-sm tracking-wider uppercase shadow-xs transition transform hover:scale-[1.02] active:scale-[0.98] flex items-center gap-2"
             >
               <BookOpen className="w-4 h-4" />
               <span>START READING</span>
@@ -232,7 +232,7 @@ export default function HomePage() {
 
             <button
               onClick={() => requireAuth("/creator/upload")}
-              className="px-7 sm:px-8 py-3 rounded-lg bg-white dark:bg-zinc-900 border-2 border-[#111111] dark:border-zinc-300 text-[#111111] dark:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800 font-black text-xs sm:text-sm tracking-wider uppercase shadow-xs transition transform hover:scale-[1.02] active:scale-[0.98] flex items-center gap-2"
+              className="px-7 sm:px-8 py-3.5 rounded-lg bg-white dark:bg-zinc-900 border-2 border-[#111111] dark:border-zinc-300 text-[#111111] dark:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800 font-black text-xs sm:text-sm tracking-wider uppercase shadow-xs transition transform hover:scale-[1.02] active:scale-[0.98] flex items-center gap-2"
             >
               <PenTool className="w-4 h-4 text-[#111111] dark:text-white" />
               <span>PUBLISH YOUR STORY</span>
@@ -240,7 +240,7 @@ export default function HomePage() {
           </div>
 
           {/* Editorial Stats Row */}
-          <div className="pt-4 grid grid-cols-3 gap-6 sm:gap-8 border-t border-[#EAEAE5] dark:border-zinc-800 w-full max-w-md">
+          <div className="pt-3 grid grid-cols-3 gap-6 sm:gap-8 border-t border-[#EAEAE5] dark:border-zinc-800 w-full max-w-md">
             <div className="space-y-0.5">
               <div className="flex items-center justify-center gap-1.5 text-xs sm:text-sm font-black text-[#111111] dark:text-white">
                 <span className="w-2 h-2 rounded-full bg-[#D91E18] animate-pulse" />
