@@ -31,7 +31,7 @@ import { ReportModal } from "@/components/ui/ReportModal";
 import { NovelCard } from "@/components/ui/NovelCard";
 import { TipCreatorModal } from "@/components/ui/TipCreatorModal";
 import { CoinShopModal } from "@/components/ui/CoinShopModal";
-import { Comment, Review } from "@/lib/types";
+import { Comment, Review, getStoryFormat } from "@/lib/types";
 
 interface PageProps {
   params: Promise<{ slug: string }>;
@@ -270,6 +270,14 @@ export default function NovelDetailPage({ params }: PageProps) {
             <div className="flex-1 space-y-3 sm:space-y-4">
               {/* Tags and Badges */}
               <div className="flex flex-wrap items-center gap-2">
+                {(() => {
+                  const formatInfo = getStoryFormat(novel);
+                  return (
+                    <span className={`px-3 py-1 rounded-full text-xs font-bold ${formatInfo.bgClass}`}>
+                      {formatInfo.badge}
+                    </span>
+                  );
+                })()}
                 <span className="px-3 py-1 rounded-full text-xs font-bold bg-rose-600 text-white shadow-sm shadow-rose-600/30">
                   {novel.genre}
                 </span>

@@ -56,7 +56,7 @@ export function useRealtimeSync() {
           if (payload.eventType === "INSERT" || payload.eventType === "UPDATE") {
             const chapter = payload.new as Chapter;
             if (chapter?.novelId && chapter?.id) {
-              dataStore.saveChapter(chapter.novelId, chapter);
+              dataStore.addChapter(chapter.novelId, chapter);
             }
           }
         }
@@ -86,7 +86,11 @@ export function useRealtimeSync() {
           if (payload.eventType === "INSERT" || payload.eventType === "UPDATE") {
             const ep = payload.new as ComicEpisode;
             if (ep?.comicId && ep?.id) {
-              dataStore.saveEpisode(ep.comicId, ep);
+              const comic = dataStore.getComicById(ep.comicId);
+              if (comic) {
+                const updatedEpisodes = [...(comic.episodes || []).filter((e) => e.id !== ep.id), ep];
+                dataStore.saveComic({ ...comic, episodes: updatedEpisodes });
+              }
             }
           }
         }

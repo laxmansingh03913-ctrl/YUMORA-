@@ -971,6 +971,8 @@ export default function CreatorUploadWizardPage() {
             secondaryGenre,
             tags,
             language,
+            format: formatChoice === "ILLUSTRATED_NOVEL" ? "ILLUSTRATED" : "STANDARD",
+            subType: formatChoice === "ILLUSTRATED_NOVEL" ? "ILLUSTRATED_NOVEL" : "WEB_NOVEL",
             status: contentStatus,
             contentRating,
             contentWarning: contentWarnings.join(", "),

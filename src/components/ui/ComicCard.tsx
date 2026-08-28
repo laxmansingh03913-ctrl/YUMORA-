@@ -3,7 +3,7 @@
 import React from "react";
 import Link from "next/link";
 import { Star, Image as ImageIcon, Sparkles, Eye, CheckCircle2 } from "lucide-react";
-import { Comic } from "@/lib/types";
+import { Comic, getStoryFormat } from "@/lib/types";
 import { formatNumber } from "@/lib/utils";
 
 interface ComicCardProps {
@@ -12,6 +12,8 @@ interface ComicCardProps {
 }
 
 export function ComicCard({ comic, rank }: ComicCardProps) {
+  const formatInfo = getStoryFormat(comic);
+
   const creator = comic.creator || {
     name: "Creator",
     username: "creator",
@@ -35,8 +37,16 @@ export function ComicCard({ comic, rank }: ComicCardProps) {
               {String(rank).padStart(2, "0")}
             </span>
           ) : (
-            <span className="px-2 py-0.5 rounded-xs text-[10px] font-black bg-[#D91E18] text-white shadow-xs flex items-center gap-0.5">
-              <Sparkles className="w-2.5 h-2.5" /> MANGA
+            <span
+              className={`px-2 py-0.5 rounded-xs text-[10px] font-black uppercase shadow-xs flex items-center gap-0.5 text-white ${
+                formatInfo.key === "MANGA"
+                  ? "bg-[#D91E18]"
+                  : formatInfo.key === "WEBTOON"
+                  ? "bg-emerald-600"
+                  : "bg-amber-600"
+              }`}
+            >
+              <Sparkles className="w-2.5 h-2.5" /> {formatInfo.badge}
             </span>
           )}
           <span className="px-1.5 py-0.5 rounded-md text-[9px] font-bold bg-black/60 text-zinc-100 backdrop-blur-xs">

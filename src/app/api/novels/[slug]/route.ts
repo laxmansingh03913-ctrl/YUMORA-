@@ -20,12 +20,10 @@ function getServerDb(): Record<string, any> {
 
 export async function GET(
   req: NextRequest,
-  context: { params: Promise<{ slug: string }> | { slug: string } }
+  context: { params: Promise<{ slug: string }> }
 ) {
   try {
-    const rawParams = await (typeof (context.params as any)?.then === "function"
-      ? (context.params as Promise<{ slug: string }>)
-      : Promise.resolve(context.params as { slug: string }));
+    const rawParams = await context.params;
 
     const rawSlug = rawParams?.slug || "";
     const cleanSlug = decodeURIComponent(rawSlug).trim().toLowerCase();

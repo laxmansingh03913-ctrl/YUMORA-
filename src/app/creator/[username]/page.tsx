@@ -67,7 +67,7 @@ const ALL_GENRES = [
 ];
 
 interface CreatorProfileProps {
-  params?: Promise<{ username: string }> | { username: string };
+  params?: Promise<{ username: string }>;
 }
 
 export default function CreatorProfilePage({ params }: CreatorProfileProps) {

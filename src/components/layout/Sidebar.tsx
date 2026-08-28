@@ -23,6 +23,7 @@ import {
   Info,
   Layers,
   FileText,
+  Smartphone,
 } from "lucide-react";
 import { useSidebar } from "@/context/SidebarContext";
 import { useAuth } from "@/context/AuthContext";
@@ -41,10 +42,16 @@ export function Sidebar() {
   const PRIMARY_NAV = [
     { name: "Home", href: "/", icon: Home },
     { name: "Discover", href: "/discover", icon: Compass },
-    { name: "Novels", href: "/novels", icon: BookOpen },
-    { name: "Comics", href: "/comics", icon: ImageIcon },
     { name: "Contests", href: "/contests", icon: Trophy, badge: "$500" },
     { name: "Community", href: "/community", icon: Users },
+  ];
+
+  const FORMATS_NAV = [
+    { name: "Web Novels", href: "/discover?format=web_novels", icon: BookOpen },
+    { name: "Light Novels", href: "/discover?format=light_novels", icon: Sparkles },
+    { name: "Manga", href: "/discover?format=manga", icon: Flame },
+    { name: "Webtoons", href: "/discover?format=webtoons", icon: Smartphone },
+    { name: "Comics", href: "/discover?format=comics", icon: ImageIcon },
   ];
 
   const SECONDARY_NAV = [
@@ -161,7 +168,17 @@ export function Sidebar() {
           {PRIMARY_NAV.map((item) => renderNavItem(item))}
         </div>
 
-        {/* 2. Library & Treasury */}
+        {/* 2. Story Formats Navigation */}
+        <div className="space-y-1 pt-2 border-t border-zinc-200/80 dark:border-zinc-800/80">
+          {!isCollapsed && (
+            <p className="px-3 text-[10px] font-black uppercase tracking-wider text-zinc-400 dark:text-zinc-500 mb-1.5">
+              Story Formats
+            </p>
+          )}
+          {FORMATS_NAV.map((item) => renderNavItem(item))}
+        </div>
+
+        {/* 3. Library & Treasury */}
         <div className="space-y-1 pt-2 border-t border-zinc-200/80 dark:border-zinc-800/80">
           {!isCollapsed && (
             <p className="px-3 text-[10px] font-black uppercase tracking-wider text-zinc-400 dark:text-zinc-500 mb-1.5">

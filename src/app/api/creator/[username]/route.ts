@@ -56,12 +56,10 @@ function synthesizeCreatorProfile(creator: any, fallbackId?: string, fallbackGen
 
 export async function GET(
   req: NextRequest,
-  context: { params: Promise<{ username: string }> | { username: string } }
+  context: { params: Promise<{ username: string }> }
 ) {
   try {
-    const rawParams = await (typeof (context.params as any)?.then === "function"
-      ? (context.params as Promise<{ username: string }>)
-      : Promise.resolve(context.params as { username: string }));
+    const rawParams = await context.params;
 
     const rawUsername = rawParams?.username || "";
     const cleanUsername = decodeURIComponent(rawUsername).trim().toLowerCase().replace(/^@/, "");

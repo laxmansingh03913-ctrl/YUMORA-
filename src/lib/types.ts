@@ -80,6 +80,18 @@ export interface Chapter {
   readTimeMinutes: number;
 }
 
+export type StoryFormat = 'WEB_NOVEL' | 'LIGHT_NOVEL' | 'MANGA' | 'WEBTOON' | 'COMIC';
+
+export interface StoryFormatInfo {
+  key: StoryFormat;
+  label: string;
+  badge: string;
+  color: string;
+  bgClass: string;
+  textClass: string;
+  borderClass: string;
+}
+
 export interface Novel {
   id: string;
   creatorId: string;
@@ -99,6 +111,8 @@ export interface Novel {
   secondaryGenre?: string;
   tags: string[];
   language: LanguageCode;
+  format?: 'STANDARD' | 'ILLUSTRATED';
+  subType?: 'NOVEL' | 'WEB_NOVEL' | 'LIGHT_NOVEL' | 'ILLUSTRATED_NOVEL';
   status: ContentStatus;
   contentRating: ContentRating;
   views: number;
@@ -168,6 +182,121 @@ export interface Comic {
   episodes: ComicEpisode[];
   createdAt: string;
   updatedAt: string;
+}
+
+export function getStoryFormat(item: {
+  type?: 'NOVEL' | 'COMIC';
+  subType?: string;
+  format?: string;
+  readingDirection?: string;
+  tags?: string[];
+  genre?: string;
+  chapters?: any[];
+  episodes?: any[];
+} | null | undefined): StoryFormatInfo {
+  if (!item) {
+    return {
+      key: 'WEB_NOVEL',
+      label: 'Web Novels',
+      badge: 'WEB NOVEL',
+      color: '#3B82F6',
+      bgClass: 'bg-blue-500/10 text-blue-500 border-blue-500/20',
+      textClass: 'text-blue-500',
+      borderClass: 'border-blue-500/20',
+    };
+  }
+
+  const subType = String(item.subType || '').toUpperCase();
+  const format = String(item.format || '').toUpperCase();
+  const readingDirection = String(item.readingDirection || '').toUpperCase();
+  const tags = (Array.isArray(item.tags) ? item.tags : []).map((t) => String(t || '').toLowerCase());
+  const isNovel = item.type === 'NOVEL' || (Array.isArray(item.chapters) && item.chapters.length > 0) || (item as any)?.chaptersCount !== undefined;
+  const isExplicitComic = item.type === 'COMIC' || Array.isArray(item.episodes) || (item as any)?.episodesCount !== undefined;
+
+  // 1. Light Novel (Illustrated Light Novel)
+  if (
+    subType === 'ILLUSTRATED_NOVEL' ||
+    subType === 'LIGHT_NOVEL' ||
+    format === 'ILLUSTRATED' ||
+    tags.includes('light novel') ||
+    tags.includes('illustrated novel')
+  ) {
+    return {
+      key: 'LIGHT_NOVEL',
+      label: 'Light Novels',
+      badge: 'LIGHT NOVEL',
+      color: '#8B5CF6',
+      bgClass: 'bg-purple-500/10 text-purple-500 border-purple-500/20',
+      textClass: 'text-purple-500',
+      borderClass: 'border-purple-500/20',
+    };
+  }
+
+  // 2. Manga (Japanese Manga RTL)
+  if (
+    subType === 'MANGA' ||
+    readingDirection === 'RTL' ||
+    tags.includes('manga') ||
+    tags.includes('japanese manga')
+  ) {
+    return {
+      key: 'MANGA',
+      label: 'Manga',
+      badge: 'MANGA',
+      color: '#D91E18',
+      bgClass: 'bg-rose-500/10 text-[#D91E18] border-rose-500/20',
+      textClass: 'text-[#D91E18]',
+      borderClass: 'border-rose-500/20',
+    };
+  }
+
+  // 3. Webtoon (Vertical Webtoon / Manhwa)
+  if (
+    subType === 'WEBTOON' ||
+    format === 'VERTICAL' ||
+    readingDirection === 'VERTICAL' ||
+    tags.includes('webtoon') ||
+    tags.includes('manhwa')
+  ) {
+    return {
+      key: 'WEBTOON',
+      label: 'Webtoons',
+      badge: 'WEBTOON',
+      color: '#10B981',
+      bgClass: 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20',
+      textClass: 'text-emerald-500',
+      borderClass: 'border-emerald-500/20',
+    };
+  }
+
+  // 4. Comic / Graphic Novel
+  if (
+    subType === 'COMIC' ||
+    subType === 'GRAPHIC_NOVEL' ||
+    subType === 'PDF_BOOK' ||
+    (isExplicitComic && !isNovel)
+  ) {
+    return {
+      key: 'COMIC',
+      label: 'Comics / Graphic Novels',
+      badge: 'COMIC',
+      color: '#F59E0B',
+      bgClass: 'bg-amber-500/10 text-amber-500 border-amber-500/20',
+      textClass: 'text-amber-500',
+      borderClass: 'border-amber-500/20',
+    };
+  }
+
+  // 5. Default: Web Novel
+  return {
+    key: 'WEB_NOVEL',
+    label: 'Web Novels',
+    badge: 'WEB NOVEL',
+    color: '#3B82F6',
+    bgClass: 'bg-blue-500/10 text-blue-500 border-blue-500/20',
+    textClass: 'text-blue-500',
+    borderClass: 'border-blue-500/20',
+  };
 }
 
 export interface Comment {

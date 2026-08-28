@@ -42,7 +42,7 @@ import { TipCreatorModal } from "@/components/ui/TipCreatorModal";
 import { CoinShopModal } from "@/components/ui/CoinShopModal";
 import { MangaDubbingPlayer } from "@/components/reader/MangaDubbingPlayer";
 import DanmakuOverlay from "@/components/reader/DanmakuOverlay";
-import { Comment, Review } from "@/lib/types";
+import { Comment, Review, getStoryFormat } from "@/lib/types";
 
 interface ComicPageProps {
   params: Promise<{ slug: string }>;
@@ -313,9 +313,17 @@ export default function ComicDetailPage({ params }: ComicPageProps) {
                 className="w-32 h-44 object-cover rounded-2xl shadow-xl border border-zinc-700 flex-shrink-0"
               />
               <div className="space-y-3 flex-1">
-                <div className="flex items-center gap-2">
-                  <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-indigo-600/30 text-indigo-400 border border-indigo-500/40">
-                    {comic.subType || comic.genre}
+                <div className="flex items-center gap-2 flex-wrap">
+                  {(() => {
+                    const formatInfo = getStoryFormat(comic);
+                    return (
+                      <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold ${formatInfo.bgClass}`}>
+                        {formatInfo.badge}
+                      </span>
+                    );
+                  })()}
+                  <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-zinc-800 text-zinc-300 border border-zinc-700">
+                    {comic.genre}
                   </span>
                   <span className="text-xs text-zinc-400">{comic.status}</span>
                   <span className="text-xs text-zinc-400 uppercase font-bold">• {comic.language}</span>

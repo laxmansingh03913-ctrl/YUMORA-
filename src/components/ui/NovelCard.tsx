@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { Star, BookOpen, Bookmark, Heart, Sparkles, Eye, CheckCircle2 } from "lucide-react";
-import { Novel } from "@/lib/types";
+import { Novel, getStoryFormat } from "@/lib/types";
 import { formatNumber } from "@/lib/utils";
 import { dataStore } from "@/lib/data/store";
 
@@ -17,6 +17,8 @@ export function NovelCard({ novel, variant = "standard", rank }: NovelCardProps)
   const [isBookmarked, setIsBookmarked] = useState(() => dataStore.isBookmarked(novel.id));
   const [isLiked, setIsLiked] = useState(() => dataStore.isLiked(novel.id));
   const [likesCount, setLikesCount] = useState(novel.likesCount || 0);
+
+  const formatInfo = getStoryFormat(novel);
 
   const creator = novel.creator || {
     name: "Creator",
@@ -55,11 +57,15 @@ export function NovelCard({ novel, variant = "standard", rank }: NovelCardProps)
             <span className="absolute top-1.5 left-1.5 px-1.5 py-0.5 rounded-xs text-[10px] font-black bg-[#D91E18] text-white">
               {String(rank).padStart(2, "0")}
             </span>
-          ) : novel.isFeatured ? (
-            <span className="absolute top-1 left-1 px-1.5 py-0.5 rounded-xs text-[9px] font-black bg-[#D91E18] text-white">
-              HOT
+          ) : (
+            <span
+              className={`absolute top-1 left-1 px-1.5 py-0.5 rounded-xs text-[9px] font-black text-white ${
+                formatInfo.key === "LIGHT_NOVEL" ? "bg-purple-600" : "bg-blue-600"
+              }`}
+            >
+              {formatInfo.badge}
             </span>
-          ) : null}
+          )}
         </div>
 
         <div className="flex-1 min-w-0 flex flex-col justify-between">
@@ -120,11 +126,15 @@ export function NovelCard({ novel, variant = "standard", rank }: NovelCardProps)
               <span className="px-2 py-0.5 rounded-xs text-xs font-black bg-[#D91E18] text-white shadow-xs">
                 {String(rank).padStart(2, "0")}
               </span>
-            ) : novel.isFeatured ? (
-              <span className="px-2 py-0.5 rounded-xs text-[10px] font-black bg-[#D91E18] text-white shadow-xs">
-                FEATURED
+            ) : (
+              <span
+                className={`px-1.5 py-0.5 rounded-xs text-[9px] font-black uppercase tracking-wider text-white shadow-xs ${
+                  formatInfo.key === "LIGHT_NOVEL" ? "bg-purple-600" : "bg-blue-600"
+                }`}
+              >
+                {formatInfo.badge}
               </span>
-            ) : null}
+            )}
           </div>
 
           <button

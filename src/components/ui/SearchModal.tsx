@@ -21,7 +21,7 @@ import {
   Command,
 } from "lucide-react";
 import { dataStore } from "@/lib/data/store";
-import { Novel, Comic, UserProfile, Contest } from "@/lib/types";
+import { Novel, Comic, UserProfile, Contest, getStoryFormat } from "@/lib/types";
 import { formatNumber } from "@/lib/utils";
 
 interface SearchModalProps {
@@ -120,7 +120,7 @@ export function SearchModal({ isOpen, onClose }: SearchModalProps) {
       setResults({
         novels: allNovels.slice(0, 4),
         comics: allComics.slice(0, 3),
-        creators: allUsers.filter((u) => u.role === "CREATOR" || u.worksCount > 0).slice(0, 4),
+        creators: allUsers.filter((u) => u.role === "CREATOR" || ((u as any).worksCount || 0) > 0).slice(0, 4),
         contests: allContests.slice(0, 2),
       });
       return;
@@ -163,7 +163,7 @@ export function SearchModal({ isOpen, onClose }: SearchModalProps) {
         c.title.toLowerCase().includes(q) ||
         c.subtitle?.toLowerCase().includes(q) ||
         c.description?.toLowerCase().includes(q) ||
-        c.theme?.toLowerCase().includes(q) ||
+        ((c as any).theme && (c as any).theme.toLowerCase().includes(q)) ||
         c.eligibleGenres?.some((g) => g.toLowerCase().includes(q))
     );
 
@@ -385,36 +385,42 @@ export function SearchModal({ isOpen, onClose }: SearchModalProps) {
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                {results.novels.slice(0, 6).map((novel) => (
-                  <button
-                    key={novel.id}
-                    onClick={() => handleSelectLink(`/novels/${novel.slug}`)}
-                    className="w-full text-left p-2.5 rounded-2xl bg-zinc-50 dark:bg-zinc-900/60 hover:bg-zinc-100 dark:hover:bg-zinc-800 border border-zinc-200/60 dark:border-zinc-800 transition flex items-center gap-3 group cursor-pointer"
-                  >
-                    <img
-                      src={novel.coverUrl || "/hero-character.png"}
-                      alt={novel.title}
-                      className="w-12 h-16 object-cover rounded-xl shadow-xs flex-shrink-0 group-hover:scale-105 transition"
-                    />
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-1.5">
-                        <span className="px-1.5 py-0.2 rounded bg-rose-500/10 text-rose-600 dark:text-rose-400 text-[9px] font-bold uppercase">
-                          {novel.genre}
-                        </span>
-                        <span className="text-[10px] text-amber-500 font-bold flex items-center gap-0.5">
-                          <Star className="w-2.5 h-2.5 fill-current" />
-                          {novel.rating}
-                        </span>
+                {results.novels.slice(0, 6).map((novel) => {
+                  const formatInfo = getStoryFormat(novel);
+                  return (
+                    <button
+                      key={novel.id}
+                      onClick={() => handleSelectLink(`/novels/${novel.slug}`)}
+                      className="w-full text-left p-2.5 rounded-2xl bg-zinc-50 dark:bg-zinc-900/60 hover:bg-zinc-100 dark:hover:bg-zinc-800 border border-zinc-200/60 dark:border-zinc-800 transition flex items-center gap-3 group cursor-pointer"
+                    >
+                      <img
+                        src={novel.coverUrl || "/hero-character.png"}
+                        alt={novel.title}
+                        className="w-12 h-16 object-cover rounded-xl shadow-xs flex-shrink-0 group-hover:scale-105 transition"
+                      />
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-1.5">
+                          <span className={`px-1.5 py-0.2 rounded text-[9px] font-bold uppercase ${formatInfo.bgClass}`}>
+                            {formatInfo.badge}
+                          </span>
+                          <span className="px-1.5 py-0.2 rounded bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 text-[9px] font-semibold">
+                            {novel.genre}
+                          </span>
+                          <span className="text-[10px] text-amber-500 font-bold flex items-center gap-0.5">
+                            <Star className="w-2.5 h-2.5 fill-current" />
+                            {novel.rating}
+                          </span>
+                        </div>
+                        <h4 className="font-bold text-xs text-zinc-900 dark:text-zinc-100 truncate group-hover:text-[#D91E18] transition mt-0.5">
+                          {novel.title}
+                        </h4>
+                        <p className="text-[11px] text-zinc-400 truncate">
+                          by {novel.creator?.name || "Author"} • {formatNumber(novel.reads)} reads
+                        </p>
                       </div>
-                      <h4 className="font-bold text-xs text-zinc-900 dark:text-zinc-100 truncate group-hover:text-[#D91E18] transition mt-0.5">
-                        {novel.title}
-                      </h4>
-                      <p className="text-[11px] text-zinc-400 truncate">
-                        by {novel.creator?.name || "Author"} • {formatNumber(novel.reads)} reads
-                      </p>
-                    </div>
-                  </button>
-                ))}
+                    </button>
+                  );
+                })}
               </div>
             </div>
           )}
@@ -425,7 +431,7 @@ export function SearchModal({ isOpen, onClose }: SearchModalProps) {
               <div className="flex items-center justify-between">
                 <p className="text-xs font-bold uppercase tracking-wider text-zinc-400 flex items-center gap-1.5">
                   <ImageIcon className="w-3.5 h-3.5 text-indigo-500" />
-                  <span>Comics & Webtoons ({results.comics.length})</span>
+                  <span>Comics & Manga ({results.comics.length})</span>
                 </p>
                 <Link
                   href="/comics"
@@ -437,36 +443,42 @@ export function SearchModal({ isOpen, onClose }: SearchModalProps) {
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                {results.comics.slice(0, 6).map((comic) => (
-                  <button
-                    key={comic.id}
-                    onClick={() => handleSelectLink(`/comics/${comic.slug}`)}
-                    className="w-full text-left p-2.5 rounded-2xl bg-zinc-50 dark:bg-zinc-900/60 hover:bg-zinc-100 dark:hover:bg-zinc-800 border border-zinc-200/60 dark:border-zinc-800 transition flex items-center gap-3 group cursor-pointer"
-                  >
-                    <img
-                      src={comic.coverUrl || "/hero-character.png"}
-                      alt={comic.title}
-                      className="w-12 h-16 object-cover rounded-xl shadow-xs flex-shrink-0 group-hover:scale-105 transition"
-                    />
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-1.5">
-                        <span className="px-1.5 py-0.2 rounded bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 text-[9px] font-bold uppercase">
-                          {comic.genre}
-                        </span>
-                        <span className="text-[10px] text-amber-500 font-bold flex items-center gap-0.5">
-                          <Star className="w-2.5 h-2.5 fill-current" />
-                          {comic.rating}
-                        </span>
+                {results.comics.slice(0, 6).map((comic) => {
+                  const formatInfo = getStoryFormat(comic);
+                  return (
+                    <button
+                      key={comic.id}
+                      onClick={() => handleSelectLink(`/comics/${comic.slug}`)}
+                      className="w-full text-left p-2.5 rounded-2xl bg-zinc-50 dark:bg-zinc-900/60 hover:bg-zinc-100 dark:hover:bg-zinc-800 border border-zinc-200/60 dark:border-zinc-800 transition flex items-center gap-3 group cursor-pointer"
+                    >
+                      <img
+                        src={comic.coverUrl || "/hero-character.png"}
+                        alt={comic.title}
+                        className="w-12 h-16 object-cover rounded-xl shadow-xs flex-shrink-0 group-hover:scale-105 transition"
+                      />
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-1.5">
+                          <span className={`px-1.5 py-0.2 rounded text-[9px] font-bold uppercase ${formatInfo.bgClass}`}>
+                            {formatInfo.badge}
+                          </span>
+                          <span className="px-1.5 py-0.2 rounded bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 text-[9px] font-semibold">
+                            {comic.genre}
+                          </span>
+                          <span className="text-[10px] text-amber-500 font-bold flex items-center gap-0.5">
+                            <Star className="w-2.5 h-2.5 fill-current" />
+                            {comic.rating}
+                          </span>
+                        </div>
+                        <h4 className="font-bold text-xs text-zinc-900 dark:text-zinc-100 truncate group-hover:text-indigo-500 transition mt-0.5">
+                          {comic.title}
+                        </h4>
+                        <p className="text-[11px] text-zinc-400 truncate">
+                          by {comic.creator?.name || "Artist"} • {comic.episodes?.length || 1} Episodes
+                        </p>
                       </div>
-                      <h4 className="font-bold text-xs text-zinc-900 dark:text-zinc-100 truncate group-hover:text-indigo-500 transition mt-0.5">
-                        {comic.title}
-                      </h4>
-                      <p className="text-[11px] text-zinc-400 truncate">
-                        by {comic.creator?.name || "Artist"} • {comic.episodes?.length || 1} Episodes
-                      </p>
-                    </div>
-                  </button>
-                ))}
+                    </button>
+                  );
+                })}
               </div>
             </div>
           )}
@@ -506,7 +518,7 @@ export function SearchModal({ isOpen, onClose }: SearchModalProps) {
                     </div>
 
                     <span className="px-2 py-1 rounded-lg bg-zinc-200 dark:bg-zinc-800 text-[10px] font-bold text-zinc-600 dark:text-zinc-300 flex-shrink-0">
-                      {creator.worksCount || 0} Works
+                      {((creator as any).worksCount !== undefined ? `${(creator as any).worksCount} Works` : (creator.totalReads > 0 ? "Featured" : "Creator"))}
                     </span>
                   </button>
                 ))}
@@ -532,7 +544,7 @@ export function SearchModal({ isOpen, onClose }: SearchModalProps) {
                     <div className="space-y-0.5 min-w-0">
                       <div className="flex items-center gap-2">
                         <span className="px-2 py-0.5 rounded-md bg-amber-500 text-zinc-950 text-[9px] font-black uppercase">
-                          ${contest.prizePoolTotal || 500} Prize
+                          ${(contest as any).prizePoolTotal || contest.prizePool || 500} Prize
                         </span>
                         <h4 className="font-black text-xs sm:text-sm text-zinc-900 dark:text-zinc-100 truncate group-hover:text-[#D91E18] transition">
                           {contest.title}
