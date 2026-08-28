@@ -141,102 +141,130 @@ export default function HomePage() {
       {/* ========================================================================= */}
       {/* 1. HERO SECTION (Neo-Japan Manga Editorial Design) */}
       {/* ========================================================================= */}
-      <section className="relative pt-6 sm:pt-10 pb-12 sm:pb-16 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto w-full">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-8 items-center relative">
+      <section className="relative pt-2 sm:pt-4 pb-8 sm:pb-12 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto w-full">
+        
+        {/* ========================================================================= */}
+        {/* DESKTOP SPLIT COMPOSITION: [STORIES WORTH] -> [HERO ARTWORK] -> [GETTING LOST IN.] */}
+        {/* ========================================================================= */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 items-center gap-4 lg:gap-2 relative">
           
-          {/* LEFT SIDE: Editorial Typography & Actions (Balanced width for 2-line layout) */}
-          <div className="lg:col-span-6 space-y-5 sm:space-y-6 z-20 relative max-w-xl lg:max-w-none">
-            {/* Small brand badge */}
-            <div className="flex items-center gap-3">
-              <span className="w-6 h-6 border-2 border-[#D91E18] text-[#D91E18] text-[10px] font-black flex items-center justify-center rounded-xs bg-white dark:bg-zinc-900 shadow-xs">
+          {/* LEFT WING (Desktop): STORIES WORTH */}
+          <div className="hidden lg:flex lg:col-span-3 flex-col items-end text-right space-y-4 z-20 select-none pr-2">
+            <div className="flex items-center gap-2">
+              <span className="w-5 h-5 border border-[#D91E18] text-[#D91E18] text-[9px] font-black flex items-center justify-center rounded-xs bg-white dark:bg-zinc-900 shadow-2xs">
                 物語
               </span>
-              <div className="flex flex-col">
-                <span className="text-xs font-black tracking-widest text-[#111111] dark:text-white uppercase leading-tight">
-                  YOMIKA
-                </span>
-                <span className="text-[10px] text-zinc-500 font-bold tracking-wider uppercase">
-                  WHERE STORIES COME ALIVE
-                </span>
-              </div>
+              <span className="text-[10px] font-black tracking-widest text-zinc-500 uppercase">
+                YOMIKA ORIGINAL
+              </span>
             </div>
-
-            {/* Large Dramatic Headline (Compact, 2-line natural layout) */}
-            <h1 className="text-3xl sm:text-4xl lg:text-[46px] xl:text-[52px] font-black text-[#111111] dark:text-white tracking-tight leading-[1.08] uppercase">
-              STORIES WORTH <br className="hidden sm:inline" />
-              <span className="text-[#D91E18]">GETTING</span> LOST IN.
+            <h1 className="text-4xl lg:text-[46px] xl:text-[54px] font-black text-[#111111] dark:text-white tracking-tight leading-[1.02] uppercase text-right">
+              STORIES <br />
+              <span>WORTH</span>
             </h1>
-
-            {/* Supporting Description */}
-            <p className="text-xs sm:text-sm lg:text-base text-[#555555] dark:text-zinc-400 max-w-lg leading-relaxed font-normal">
-              Read original novels, discover independent creators, and share stories with readers around the world. From serial web novels to future webtoons and animations.
-            </p>
-
-            {/* Buttons */}
-            <div className="flex flex-wrap items-center gap-3.5 pt-1">
-              <button
-                onClick={() => requireAuth("/discover")}
-                className="px-6 sm:px-8 py-3 rounded-lg bg-[#D91E18] hover:bg-[#B71813] text-white font-black text-xs sm:text-sm tracking-wider uppercase shadow-xs transition transform hover:scale-[1.02] active:scale-[0.98] flex items-center gap-2"
-              >
-                <BookOpen className="w-4 h-4" />
-                <span>START READING</span>
-              </button>
-
-              <button
-                onClick={() => requireAuth("/creator/upload")}
-                className="px-6 sm:px-8 py-3 rounded-lg bg-white dark:bg-zinc-900 border-2 border-[#111111] dark:border-zinc-300 text-[#111111] dark:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800 font-black text-xs sm:text-sm tracking-wider uppercase shadow-xs transition transform hover:scale-[1.02] active:scale-[0.98] flex items-center gap-2"
-              >
-                <PenTool className="w-4 h-4 text-[#111111] dark:text-white" />
-                <span>PUBLISH YOUR STORY</span>
-              </button>
-            </div>
-
-            {/* Editorial Stats Row */}
-            <div className="pt-5 grid grid-cols-3 gap-4 border-t border-[#EAEAE5] dark:border-zinc-800 max-w-md">
-              <div className="space-y-0.5">
-                <div className="flex items-center gap-1.5 text-xs sm:text-sm font-black text-[#111111] dark:text-white">
-                  <span className="w-2 h-2 rounded-full bg-[#D91E18] animate-pulse" />
-                  <span>LIVE</span>
-                </div>
-                <p className="text-[11px] text-[#555555] dark:text-zinc-500 font-medium">Real-time Publishing</p>
-              </div>
-
-              <div className="space-y-0.5 border-l border-[#EAEAE5] dark:border-zinc-800 pl-4">
-                <p className="text-xs sm:text-sm font-black text-[#111111] dark:text-white">
-                  {novels.length || 13}
-                </p>
-                <p className="text-[11px] text-[#555555] dark:text-zinc-500 font-medium">Published Novels</p>
-              </div>
-
-              <div className="space-y-0.5 border-l border-[#EAEAE5] dark:border-zinc-800 pl-4">
-                <p className="text-xs sm:text-sm font-black text-[#D91E18]">
-                  $1,000+
-                </p>
-                <p className="text-[11px] text-[#555555] dark:text-zinc-500 font-medium">Monthly Prizes</p>
-              </div>
-            </div>
           </div>
 
-          {/* RIGHT SIDE: Full-Bleed Organic Foreground Artwork (6 cols, Preserved prominent size) */}
-          <div className="lg:col-span-6 relative flex items-center justify-center min-h-[520px] sm:min-h-[640px] lg:min-h-[760px] xl:min-h-[820px] pt-2 lg:pt-0 select-none overflow-visible">
-            
+          {/* CENTER: Organic Hero Artwork */}
+          <div className="lg:col-span-6 relative flex items-center justify-center min-h-[360px] sm:min-h-[440px] lg:min-h-[500px] xl:min-h-[560px] select-none overflow-visible">
             {/* Soft Ambient Brand Aura */}
-            <div className="w-80 h-80 sm:w-[550px] sm:h-[550px] lg:w-[750px] lg:h-[750px] rounded-full bg-red-500/10 dark:bg-red-600/15 blur-3xl absolute top-1/2 -translate-y-1/2 right-1/2 translate-x-1/2 lg:right-[-60px] lg:translate-x-0 -z-10 animate-pulse-red pointer-events-none" />
+            <div className="w-72 h-72 sm:w-96 sm:h-96 lg:w-[480px] lg:h-[480px] rounded-full bg-red-500/10 dark:bg-red-600/15 blur-3xl absolute top-1/2 -translate-y-1/2 left-1/2 -translate-x-1/2 -z-10 animate-pulse-red pointer-events-none" />
 
-            {/* Floating Organic Hero Visual: Character + Books + Manga + Light Novel Pages */}
-            <div className="relative w-[110%] sm:w-[125%] lg:w-[138%] xl:w-[148%] h-[550px] sm:h-[660px] lg:h-[780px] xl:h-[880px] flex items-center justify-center pointer-events-none lg:-mr-20 xl:-mr-32">
+            {/* Floating Central Hero Visual */}
+            <div className="relative w-full max-w-[460px] sm:max-w-[540px] lg:max-w-[620px] xl:max-w-[680px] h-[360px] sm:h-[440px] lg:h-[500px] xl:h-[560px] flex items-center justify-center pointer-events-none">
               <img
-                src="/hero-character.png"
+                src="/hero-character.webp"
                 alt="Yomika Story Creator — Where Stories Come Alive"
-                className="w-full h-full object-contain transform scale-105 sm:scale-115 lg:scale-128 xl:scale-138 filter drop-shadow-[0_25px_45px_rgba(0,0,0,0.12)] dark:drop-shadow-[0_30px_55px_rgba(217,30,24,0.3)] transition-transform duration-700 animate-float-slow"
+                className="w-full h-full object-contain filter drop-shadow-[0_20px_40px_rgba(0,0,0,0.12)] dark:drop-shadow-[0_25px_45px_rgba(217,30,24,0.3)] transition-transform duration-700 animate-float-slow"
                 onError={(e) => {
-                  (e.target as HTMLImageElement).src = "/hero-creator.png";
+                  (e.target as HTMLImageElement).src = "/hero-character.png";
                 }}
               />
             </div>
+          </div>
 
+          {/* RIGHT WING (Desktop): GETTING LOST IN. */}
+          <div className="hidden lg:flex lg:col-span-3 flex-col items-start text-left space-y-4 z-20 select-none pl-2">
+            <span className="text-[10px] font-bold tracking-widest text-[#D91E18] uppercase">
+              CREATORS & STORIES
+            </span>
+            <h2 className="text-4xl lg:text-[46px] xl:text-[54px] font-black tracking-tight leading-[1.02] uppercase text-left">
+              <span className="text-[#D91E18]">GETTING</span> <br />
+              <span className="text-[#111111] dark:text-white">LOST IN.</span>
+            </h2>
+          </div>
+
+        </div>
+
+        {/* ========================================================================= */}
+        {/* MOBILE / TABLET UNIFIED HEADLINE (Shows below artwork on < lg screens) */}
+        {/* ========================================================================= */}
+        <div className="block lg:hidden text-center space-y-3 pt-2">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-2xs">
+            <span className="w-2 h-2 rounded-full bg-[#D91E18] animate-pulse" />
+            <span className="text-[10px] font-black tracking-wider text-zinc-600 dark:text-zinc-400 uppercase">
+              YOMIKA • WHERE STORIES COME ALIVE
+            </span>
+          </div>
+          <h1 className="text-3xl sm:text-4xl font-black text-[#111111] dark:text-white tracking-tight leading-[1.08] uppercase">
+            STORIES WORTH <br />
+            <span className="text-[#D91E18]">GETTING</span> LOST IN.
+          </h1>
+        </div>
+
+        {/* ========================================================================= */}
+        {/* CENTERED BELOW: DESCRIPTION, CTA BUTTONS & LIVE STATS */}
+        {/* ========================================================================= */}
+        <div className="flex flex-col items-center text-center space-y-5 pt-4 sm:pt-6 max-w-2xl mx-auto z-20 relative">
+          {/* Supporting Description */}
+          <p className="text-xs sm:text-sm lg:text-base text-[#555555] dark:text-zinc-400 leading-relaxed font-normal max-w-xl">
+            Read original novels, discover independent creators, and share stories with readers around the world. From serial web novels to future webtoons and animations.
+          </p>
+
+          {/* Action Buttons */}
+          <div className="flex flex-wrap items-center justify-center gap-3.5 pt-1">
+            <button
+              onClick={() => requireAuth("/discover")}
+              className="px-7 sm:px-8 py-3 rounded-lg bg-[#D91E18] hover:bg-[#B71813] text-white font-black text-xs sm:text-sm tracking-wider uppercase shadow-xs transition transform hover:scale-[1.02] active:scale-[0.98] flex items-center gap-2"
+            >
+              <BookOpen className="w-4 h-4" />
+              <span>START READING</span>
+            </button>
+
+            <button
+              onClick={() => requireAuth("/creator/upload")}
+              className="px-7 sm:px-8 py-3 rounded-lg bg-white dark:bg-zinc-900 border-2 border-[#111111] dark:border-zinc-300 text-[#111111] dark:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800 font-black text-xs sm:text-sm tracking-wider uppercase shadow-xs transition transform hover:scale-[1.02] active:scale-[0.98] flex items-center gap-2"
+            >
+              <PenTool className="w-4 h-4 text-[#111111] dark:text-white" />
+              <span>PUBLISH YOUR STORY</span>
+            </button>
+          </div>
+
+          {/* Editorial Stats Row */}
+          <div className="pt-4 grid grid-cols-3 gap-6 sm:gap-8 border-t border-[#EAEAE5] dark:border-zinc-800 w-full max-w-md">
+            <div className="space-y-0.5">
+              <div className="flex items-center justify-center gap-1.5 text-xs sm:text-sm font-black text-[#111111] dark:text-white">
+                <span className="w-2 h-2 rounded-full bg-[#D91E18] animate-pulse" />
+                <span>LIVE</span>
+              </div>
+              <p className="text-[11px] text-[#555555] dark:text-zinc-500 font-medium">Real-time Publishing</p>
+            </div>
+
+            <div className="space-y-0.5 border-l border-[#EAEAE5] dark:border-zinc-800 pl-4">
+              <p className="text-xs sm:text-sm font-black text-[#111111] dark:text-white">
+                {novels.length || 13}
+              </p>
+              <p className="text-[11px] text-[#555555] dark:text-zinc-500 font-medium">Published Novels</p>
+            </div>
+
+            <div className="space-y-0.5 border-l border-[#EAEAE5] dark:border-zinc-800 pl-4">
+              <p className="text-xs sm:text-sm font-black text-[#D91E18]">
+                $1,000+
+              </p>
+              <p className="text-[11px] text-[#555555] dark:text-zinc-500 font-medium">Monthly Prizes</p>
+            </div>
           </div>
         </div>
+
       </section>
 
       {/* ========================================================================= */}
