@@ -217,18 +217,18 @@ export default function HomePage() {
             </div>
           </div>
 
-          {/* RIGHT SIDE: Organic Foreground Artwork (No Box, Enlarged Character, Swirling Story Formats) */}
-          <div className="lg:col-span-6 relative flex items-center justify-center min-h-[480px] sm:min-h-[560px] lg:min-h-[640px] pt-2 lg:pt-0 select-none overflow-visible">
+          {/* RIGHT SIDE: Organic Foreground Artwork (No Box, Dominant Character, Swirling Story Formats) */}
+          <div className="lg:col-span-6 relative flex items-center justify-center min-h-[480px] sm:min-h-[580px] lg:min-h-[660px] xl:min-h-[700px] pt-2 lg:pt-0 select-none overflow-visible">
             
             {/* Soft Ambient Yomika Red Aura */}
-            <div className="w-80 h-80 sm:w-[450px] sm:h-[450px] rounded-full bg-red-500/10 dark:bg-red-600/15 blur-3xl absolute top-1/2 -translate-y-1/2 right-1/2 translate-x-1/2 lg:right-4 lg:translate-x-0 -z-10 animate-pulse-red pointer-events-none" />
+            <div className="w-80 h-80 sm:w-[480px] sm:h-[480px] lg:w-[560px] lg:h-[560px] rounded-full bg-red-500/10 dark:bg-red-600/15 blur-3xl absolute top-1/2 -translate-y-1/2 right-1/2 translate-x-1/2 lg:right-0 lg:translate-x-0 -z-10 animate-pulse-red pointer-events-none" />
 
             {/* Seamless Organic Hero Visual: Character + Books + Manga + Light Novel Pages */}
-            <div className="relative w-full max-w-lg sm:max-w-xl lg:max-w-[680px] xl:max-w-[740px] h-[480px] sm:h-[560px] lg:h-[640px] flex items-center justify-center pointer-events-none">
+            <div className="relative w-full max-w-lg sm:max-w-xl lg:max-w-[760px] xl:max-w-[840px] h-[480px] sm:h-[580px] lg:h-[660px] xl:h-[700px] flex items-center justify-center pointer-events-none">
               <img
                 src="/hero-character.png"
                 alt="Yomika Story Creator — Where Stories Come Alive"
-                className="w-full h-full object-contain mix-blend-multiply dark:mix-blend-lighten filter contrast-[1.03] drop-shadow-[0_25px_45px_rgba(0,0,0,0.12)] dark:drop-shadow-[0_25px_45px_rgba(217,30,24,0.3)] transition-transform duration-700 animate-float-slow"
+                className="w-full h-full object-contain mix-blend-multiply dark:mix-blend-lighten filter contrast-[1.03] drop-shadow-[0_20px_40px_rgba(0,0,0,0.08)] dark:drop-shadow-[0_20px_40px_rgba(217,30,24,0.25)] transition-transform duration-700 animate-float-slow"
                 onError={(e) => {
                   (e.target as HTMLImageElement).src = "/hero-creator.png";
                 }}
