@@ -217,44 +217,22 @@ export default function HomePage() {
             </div>
           </div>
 
-          {/* RIGHT SIDE: Original Youmika Story Creator Artwork & Floating Formats */}
-          <div className="lg:col-span-6 relative flex items-center justify-center min-h-[460px] sm:min-h-[520px] lg:min-h-[580px] pt-4 lg:pt-0">
+          {/* RIGHT SIDE: Organic Foreground Artwork (No Box, Enlarged Character, Swirling Story Formats) */}
+          <div className="lg:col-span-6 relative flex items-center justify-center min-h-[480px] sm:min-h-[560px] lg:min-h-[640px] pt-2 lg:pt-0 select-none overflow-visible">
             
-            {/* Soft Radiant Brand Glow */}
-            <div className="w-72 h-72 sm:w-96 sm:h-96 rounded-full bg-red-500/10 dark:bg-red-600/15 blur-3xl absolute top-1/2 -translate-y-1/2 right-10 -z-10 animate-pulse-red pointer-events-none" />
+            {/* Soft Ambient Yomika Red Aura */}
+            <div className="w-80 h-80 sm:w-[450px] sm:h-[450px] rounded-full bg-red-500/10 dark:bg-red-600/15 blur-3xl absolute top-1/2 -translate-y-1/2 right-1/2 translate-x-1/2 lg:right-4 lg:translate-x-0 -z-10 animate-pulse-red pointer-events-none" />
 
-            {/* Hero Creator Character Artwork */}
-            <div className="relative w-full max-w-lg lg:max-w-xl h-[460px] sm:h-[520px] lg:h-[580px] flex items-center justify-center select-none">
+            {/* Seamless Organic Hero Visual: Character + Books + Manga + Light Novel Pages */}
+            <div className="relative w-full max-w-lg sm:max-w-xl lg:max-w-[680px] xl:max-w-[740px] h-[480px] sm:h-[560px] lg:h-[640px] flex items-center justify-center pointer-events-none">
               <img
                 src="/hero-creator.png"
-                alt="Yomika Original Story Creator"
-                className="w-full h-full object-contain mix-blend-multiply dark:mix-blend-lighten filter contrast-[1.02] drop-shadow-[0_20px_35px_rgba(0,0,0,0.15)] dark:drop-shadow-[0_20px_35px_rgba(217,30,24,0.25)] transition-transform duration-700 hover:scale-[1.02] animate-float-slow"
+                alt="Yomika Story Creator — Where Stories Come Alive"
+                className="w-full h-full object-contain mix-blend-multiply dark:mix-blend-lighten filter contrast-[1.03] drop-shadow-[0_25px_45px_rgba(0,0,0,0.12)] dark:drop-shadow-[0_25px_45px_rgba(217,30,24,0.3)] transition-transform duration-700 animate-float-slow"
                 onError={(e) => {
-                  (e.target as HTMLImageElement).src = "/hero-character.png";
+                  (e.target as HTMLImageElement).src = "/hero-creator.jpg";
                 }}
               />
-            </div>
-
-            {/* Floating Floating Story Card 1: Manga Preview */}
-            <div className="absolute top-12 right-2 sm:right-6 hidden sm:flex items-center gap-2 p-2 rounded-xl bg-white/90 dark:bg-zinc-900/90 border border-zinc-200 dark:border-zinc-700 shadow-lg backdrop-blur-xs text-[10px] animate-float-slow select-none pointer-events-none">
-              <div className="w-8 h-10 rounded-md bg-zinc-800 overflow-hidden flex-shrink-0">
-                <img src="https://images.unsplash.com/photo-1563089145-599997674d42?w=100&auto=format&fit=crop&q=80" alt="Manga" className="w-full h-full object-cover" />
-              </div>
-              <div>
-                <p className="font-black text-zinc-900 dark:text-zinc-100 uppercase">Manga: Awakening</p>
-                <p className="text-[9px] text-[#D91E18] font-bold">Action • 8.7K Reads</p>
-              </div>
-            </div>
-
-            {/* Floating Story Card 2: Webtoon Preview */}
-            <div className="absolute bottom-16 right-4 sm:right-10 hidden sm:flex items-center gap-2 p-2 rounded-xl bg-white/90 dark:bg-zinc-900/90 border border-zinc-200 dark:border-zinc-700 shadow-lg backdrop-blur-xs text-[10px] select-none pointer-events-none">
-              <div className="w-8 h-10 rounded-md bg-amber-500 overflow-hidden flex-shrink-0">
-                <img src="https://images.unsplash.com/photo-1578632767115-351597cf2477?w=100&auto=format&fit=crop&q=80" alt="Webtoon" className="w-full h-full object-cover" />
-              </div>
-              <div>
-                <p className="font-black text-zinc-900 dark:text-zinc-100 uppercase">Webtoon: Eloria</p>
-                <p className="text-[9px] text-amber-500 font-bold">Fantasy • 22.1K Reads</p>
-              </div>
             </div>
 
           </div>
