@@ -351,18 +351,21 @@ export default function ContestsPage() {
 
           </div>
 
-          {/* Right Column: Original Yomika Contest Trophy Artwork with Float Animation */}
-          <div className="lg:col-span-5 relative flex items-center justify-center">
-            <div className="relative w-full aspect-[4/3] rounded-2xl overflow-hidden bg-zinc-100 dark:bg-zinc-800 shadow-md border border-[#EAEAE5] dark:border-zinc-800 group animate-float-slow animate-pulse-red">
+          {/* Right Column: Photorealistic Seamless 3D Trophy Integration (No Box Framing) */}
+          <div className="lg:col-span-5 relative flex items-center justify-center select-none pointer-events-none">
+            {/* Subtle Radiant Atmospheric Glow Behind Trophy */}
+            <div className="w-64 h-64 sm:w-80 sm:h-80 rounded-full bg-red-500/10 dark:bg-red-600/20 blur-3xl absolute top-1/2 -translate-y-1/2 right-1/2 translate-x-1/2 -z-10 animate-pulse-red pointer-events-none" />
+
+            {/* Seamless 3D Trophy Visual Asset */}
+            <div className="relative w-full max-w-[520px] flex items-center justify-center animate-float-slow">
               <img
-                src="/contest-trophy.jpg"
+                src="/contest-trophy.png"
                 alt="Yomika Tournament Trophy"
-                className="w-full h-full object-cover group-hover:scale-105 transition duration-700 ease-out"
+                className="w-full h-auto object-contain max-h-[360px] sm:max-h-[420px] mix-blend-multiply dark:mix-blend-lighten filter contrast-[1.03] drop-shadow-[0_15px_25px_rgba(0,0,0,0.12)] dark:drop-shadow-[0_20px_35px_rgba(217,30,24,0.25)] transition duration-700 hover:scale-105"
                 onError={(e) => {
-                  (e.target as HTMLImageElement).src = "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=800&auto=format&fit=crop&q=90";
+                  (e.target as HTMLImageElement).src = "/contest-trophy.jpg";
                 }}
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent pointer-events-none" />
             </div>
           </div>
 

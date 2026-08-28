@@ -142,25 +142,28 @@ export default function HomePage() {
       {/* 1. HERO SECTION (Neo-Japan Manga Editorial Design) */}
       {/* ========================================================================= */}
       <section className="relative pt-6 sm:pt-10 pb-12 sm:pb-16 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto w-full">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center relative">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-8 items-center relative">
           
           {/* LEFT SIDE: Editorial Typography & Actions */}
-          <div className="lg:col-span-7 space-y-6 z-10">
-            {/* Small uppercase brand badge with red flourish */}
+          <div className="lg:col-span-6 space-y-6 z-10">
+            {/* Small brand badge */}
             <div className="flex items-center gap-3">
-              <span className="text-[#D91E18] font-black text-xs sm:text-[13px] tracking-widest uppercase">
-                THE NEXT GENERATION STORYTELLING UNIVERSE
+              <span className="w-6 h-6 border-2 border-[#D91E18] text-[#D91E18] text-[10px] font-black flex items-center justify-center rounded-xs bg-white dark:bg-zinc-900 shadow-xs">
+                物語
               </span>
-              <span className="hidden sm:inline-block w-10 h-[1.5px] bg-[#D91E18]" />
+              <div className="flex flex-col">
+                <span className="text-xs font-black tracking-widest text-[#111111] dark:text-white uppercase leading-tight">
+                  YOMIKA
+                </span>
+                <span className="text-[10px] text-zinc-500 font-bold tracking-wider uppercase">
+                  WHERE STORIES COME ALIVE
+                </span>
+              </div>
             </div>
 
             {/* Large Dramatic Headline */}
-            <h1 className="text-4xl sm:text-5xl lg:text-6xl xl:text-[68px] font-black text-[#111111] dark:text-white tracking-tight leading-[1.04]">
-              STORIES WORTH{" "}
-              <span className="inline-flex items-center justify-center w-7 h-9 sm:w-8 sm:h-10 border-2 border-[#D91E18] text-[#D91E18] text-xs font-serif font-black rounded-xs ml-1.5 align-middle select-none">
-                <span className="[writing-mode:vertical-rl] leading-none">物語</span>
-              </span>
-              <br />
+            <h1 className="text-4xl sm:text-5xl lg:text-6xl xl:text-[66px] font-black text-[#111111] dark:text-white tracking-tight leading-[1.04]">
+              STORIES WORTH <br />
               <span className="text-[#D91E18]">GETTING</span> LOST IN.
             </h1>
 
@@ -176,7 +179,7 @@ export default function HomePage() {
                 className="px-6 sm:px-8 py-3 rounded-lg bg-[#D91E18] hover:bg-[#B71813] text-white font-black text-xs sm:text-sm tracking-wider uppercase shadow-xs transition transform hover:scale-[1.02] active:scale-[0.98] flex items-center gap-2"
               >
                 <BookOpen className="w-4 h-4" />
-                <span>Start Reading</span>
+                <span>START READING</span>
               </button>
 
               <button
@@ -184,7 +187,7 @@ export default function HomePage() {
                 className="px-6 sm:px-8 py-3 rounded-lg bg-white dark:bg-zinc-900 border-2 border-[#111111] dark:border-zinc-300 text-[#111111] dark:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800 font-black text-xs sm:text-sm tracking-wider uppercase shadow-xs transition transform hover:scale-[1.02] active:scale-[0.98] flex items-center gap-2"
               >
                 <PenTool className="w-4 h-4 text-[#111111] dark:text-white" />
-                <span>Publish Your Story</span>
+                <span>PUBLISH YOUR STORY</span>
               </button>
             </div>
 
@@ -195,81 +198,65 @@ export default function HomePage() {
                   <span className="w-2 h-2 rounded-full bg-[#D91E18] animate-pulse" />
                   <span>LIVE</span>
                 </div>
-                <p className="text-[11px] text-[#555555] dark:text-zinc-500">Real-time Publishing</p>
+                <p className="text-[11px] text-[#555555] dark:text-zinc-500 font-medium">Real-time Publishing</p>
               </div>
 
               <div className="space-y-0.5 border-l border-[#EAEAE5] dark:border-zinc-800 pl-4">
                 <p className="text-xs sm:text-sm font-black text-[#111111] dark:text-white">
-                  {novels.length}
+                  {novels.length || 13}
                 </p>
-                <p className="text-[11px] text-[#555555] dark:text-zinc-500">Published Novels</p>
+                <p className="text-[11px] text-[#555555] dark:text-zinc-500 font-medium">Published Novels</p>
               </div>
 
               <div className="space-y-0.5 border-l border-[#EAEAE5] dark:border-zinc-800 pl-4">
                 <p className="text-xs sm:text-sm font-black text-[#D91E18]">
                   $1,000+
                 </p>
-                <p className="text-[11px] text-[#555555] dark:text-zinc-500">Monthly Prizes</p>
+                <p className="text-[11px] text-[#555555] dark:text-zinc-500 font-medium">Monthly Prizes</p>
               </div>
             </div>
           </div>
 
-          {/* RIGHT SIDE: Neo-Japan Character Graphic Composition + "BE THE FIRST CREATOR" Card */}
-          <div className="lg:col-span-5 relative flex items-center justify-center min-h-[460px] sm:min-h-[520px] lg:min-h-[580px] pt-4 lg:pt-0">
+          {/* RIGHT SIDE: Original Youmika Story Creator Artwork & Floating Formats */}
+          <div className="lg:col-span-6 relative flex items-center justify-center min-h-[460px] sm:min-h-[520px] lg:min-h-[580px] pt-4 lg:pt-0">
             
-            {/* 1. Japanese Red Sun Background Circle */}
-            <div className="w-72 h-72 sm:w-88 sm:h-88 lg:w-[400px] lg:h-[400px] rounded-full bg-[#D91E18] absolute top-1/2 -translate-y-1/2 left-1/2 -translate-x-1/2 lg:left-auto lg:right-6 lg:translate-x-0 -z-10 shadow-2xl shadow-red-600/20 pointer-events-none" />
+            {/* Soft Radiant Brand Glow */}
+            <div className="w-72 h-72 sm:w-96 sm:h-96 rounded-full bg-red-500/10 dark:bg-red-600/15 blur-3xl absolute top-1/2 -translate-y-1/2 right-10 -z-10 animate-pulse-red pointer-events-none" />
 
-            {/* 2. Ink Brush Accent Ring */}
-            <div className="absolute inset-0 flex items-center justify-center pointer-events-none -z-10 opacity-20 dark:opacity-25">
-              <div className="w-80 h-80 sm:w-[420px] sm:h-[420px] rounded-full border-2 border-dashed border-[#111111] dark:border-zinc-400" />
-            </div>
-
-            {/* 3. Hero Character Artwork (Large, visually dominant, uncropped head/body, transparent integration) */}
-            <div className="relative w-full max-w-md sm:max-w-lg lg:max-w-none h-[460px] sm:h-[520px] lg:h-[580px] flex items-end justify-center select-none pointer-events-none">
+            {/* Hero Creator Character Artwork */}
+            <div className="relative w-full max-w-lg lg:max-w-xl h-[460px] sm:h-[520px] lg:h-[580px] flex items-center justify-center select-none">
               <img
-                src="/hero-character.png"
-                alt="YOMIKA Hero Character"
-                className="w-full h-full object-contain object-bottom drop-shadow-[0_20px_35px_rgba(0,0,0,0.3)] transition-transform duration-700 hover:scale-105"
+                src="/hero-creator.png"
+                alt="Yomika Original Story Creator"
+                className="w-full h-full object-contain mix-blend-multiply dark:mix-blend-lighten filter contrast-[1.02] drop-shadow-[0_20px_35px_rgba(0,0,0,0.15)] dark:drop-shadow-[0_20px_35px_rgba(217,30,24,0.25)] transition-transform duration-700 hover:scale-[1.02] animate-float-slow"
+                onError={(e) => {
+                  (e.target as HTMLImageElement).src = "/hero-character.png";
+                }}
               />
-
-              {/* Subtle bottom fade into the page background */}
-              <div className="absolute bottom-0 left-0 right-0 h-12 bg-gradient-to-t from-[#FAFAF7] dark:from-[#121214] to-transparent pointer-events-none" />
             </div>
 
-            {/* 4. Vertical Japanese Calligraphy & Seal Stamp */}
-            <div className="absolute right-0 top-4 bottom-16 hidden xl:flex flex-col items-center justify-between text-zinc-400 select-none pointer-events-none z-10">
-              <span className="text-[11px] font-bold [writing-mode:vertical-rl] tracking-widest text-[#111111] dark:text-zinc-300 drop-shadow-xs">
-                すべての物語は、ここから始まる。
-              </span>
-              <span className="w-6 h-6 border-2 border-[#D91E18] text-[#D91E18] text-[10px] font-black flex items-center justify-center rounded-xs bg-white/90 dark:bg-zinc-900/90 backdrop-blur-xs shadow-xs">
-                創造
-              </span>
-            </div>
-
-            {/* 5. Floating "BE THE FIRST CREATOR" Card */}
-            <div className="absolute bottom-0 right-0 sm:right-2 md:right-4 max-w-[280px] sm:max-w-xs w-full bg-white dark:bg-zinc-900 border border-[#111111] dark:border-zinc-700 rounded-xl p-4 sm:p-5 shadow-2xl space-y-3 z-20">
-              <div className="flex items-center justify-between">
-                <h3 className="font-black text-xs sm:text-sm tracking-tight text-[#111111] dark:text-white uppercase">
-                  BE THE FIRST CREATOR
-                </h3>
-                {/* Mini Torii Gate Outline */}
-                <svg className="w-5 h-5 text-[#D91E18]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M2 5h20M4 9h16M7 5v14M17 5v14" />
-                </svg>
+            {/* Floating Floating Story Card 1: Manga Preview */}
+            <div className="absolute top-12 right-2 sm:right-6 hidden sm:flex items-center gap-2 p-2 rounded-xl bg-white/90 dark:bg-zinc-900/90 border border-zinc-200 dark:border-zinc-700 shadow-lg backdrop-blur-xs text-[10px] animate-float-slow select-none pointer-events-none">
+              <div className="w-8 h-10 rounded-md bg-zinc-800 overflow-hidden flex-shrink-0">
+                <img src="https://images.unsplash.com/photo-1563089145-599997674d42?w=100&auto=format&fit=crop&q=80" alt="Manga" className="w-full h-full object-cover" />
               </div>
-
-              <p className="text-[11px] text-[#555555] dark:text-zinc-400 leading-relaxed font-medium">
-                Write and serialize your novel or publish a webtoon. Share your story with readers worldwide.
-              </p>
-
-              <button
-                onClick={() => requireAuth("/creator/upload")}
-                className="w-full py-2.5 rounded-lg bg-[#D91E18] hover:bg-[#B71813] text-white font-black text-xs tracking-wider uppercase shadow-xs transition flex items-center justify-center gap-1"
-              >
-                <span>PUBLISH STORY NOW →</span>
-              </button>
+              <div>
+                <p className="font-black text-zinc-900 dark:text-zinc-100 uppercase">Manga: Awakening</p>
+                <p className="text-[9px] text-[#D91E18] font-bold">Action • 8.7K Reads</p>
+              </div>
             </div>
+
+            {/* Floating Story Card 2: Webtoon Preview */}
+            <div className="absolute bottom-16 right-4 sm:right-10 hidden sm:flex items-center gap-2 p-2 rounded-xl bg-white/90 dark:bg-zinc-900/90 border border-zinc-200 dark:border-zinc-700 shadow-lg backdrop-blur-xs text-[10px] select-none pointer-events-none">
+              <div className="w-8 h-10 rounded-md bg-amber-500 overflow-hidden flex-shrink-0">
+                <img src="https://images.unsplash.com/photo-1578632767115-351597cf2477?w=100&auto=format&fit=crop&q=80" alt="Webtoon" className="w-full h-full object-cover" />
+              </div>
+              <div>
+                <p className="font-black text-zinc-900 dark:text-zinc-100 uppercase">Webtoon: Eloria</p>
+                <p className="text-[9px] text-amber-500 font-bold">Fantasy • 22.1K Reads</p>
+              </div>
+            </div>
+
           </div>
         </div>
       </section>
