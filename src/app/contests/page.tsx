@@ -169,6 +169,10 @@ export default function ContestsPage() {
   const [submissionError, setSubmissionError] = useState<string | null>(null);
   const [isSubmitted, setIsSubmitted] = useState(false);
 
+  // Faction Wars State
+  const [userFaction, setUserFaction] = useState<string | null>(null);
+  const [submitFaction, setSubmitFaction] = useState<"SHADOW" | "LIGHT" | "CYBER">("SHADOW");
+
   useEffect(() => {
     const active = dataStore.getActiveContest();
     setContest(active);
@@ -192,6 +196,25 @@ export default function ContestsPage() {
   const userStories = user ? novels.filter((n) => n.creatorId === user.id) : novels;
   const selectedStory = novels.find((n) => n.id === selectedNovelId) || userStories[0] || novels[0];
 
+  // Classifier helper for Faction assignment
+  const getEntryFaction = (genre: string, id: string): "SHADOW" | "LIGHT" | "CYBER" => {
+    const lower = genre.toLowerCase();
+    if (lower.includes("dark") || lower.includes("action") || lower.includes("martial") || lower.includes("shadow")) return "SHADOW";
+    if (lower.includes("fantasy") || lower.includes("romance") || lower.includes("wuxia") || lower.includes("light") || lower.includes("angel")) return "LIGHT";
+    if (lower.includes("sci-fi") || lower.includes("cyber") || lower.includes("mech") || lower.includes("rebels") || lower.includes("apocalypse")) return "CYBER";
+    const charCode = id.charCodeAt(id.length - 1) || 0;
+    if (charCode % 3 === 0) return "SHADOW";
+    if (charCode % 3 === 1) return "LIGHT";
+    return "CYBER";
+  };
+
+  // useEffect to automatically suggest faction alignment on selecting a story
+  useEffect(() => {
+    if (selectedStory) {
+      setSubmitFaction(getEntryFaction(selectedStory.genre, selectedStory.id));
+    }
+  }, [selectedNovelId, selectedStory]);
+
   // Combine user novels with tournament entries
   const allEntries = [
     ...novels.map((n, idx) => ({
@@ -209,6 +232,39 @@ export default function ContestsPage() {
     })),
     ...SEEDED_CONTENDERS,
   ].sort((a, b) => (votes[b.id] || b.votes) - (votes[a.id] || a.votes));
+
+  // Compute live faction scores dynamically based on the active vote counts
+  const getFactionScores = () => {
+    let shadow = 12450;
+    let light = 9620;
+    let cyber = 5540;
+
+    allEntries.forEach((entry) => {
+      const faction = getEntryFaction(entry.genre, entry.id);
+      const activeVotes = votes[entry.id] || 0;
+      if (faction === "SHADOW") shadow += activeVotes * 8;
+      else if (faction === "LIGHT") light += activeVotes * 8;
+      else if (faction === "CYBER") cyber += activeVotes * 8;
+    });
+
+    return { shadow, light, cyber };
+  };
+
+  const factionScores = getFactionScores();
+  const totalFactionVotes = factionScores.shadow + factionScores.light + factionScores.cyber || 1;
+  const pctShadow = Math.round((factionScores.shadow / totalFactionVotes) * 100);
+  const pctLight = Math.round((factionScores.light / totalFactionVotes) * 100);
+  const pctCyber = 100 - pctShadow - pctLight;
+
+  const joinFaction = (faction: string) => {
+    setUserFaction(faction);
+    localStorage.setItem("yomika_user_faction", faction);
+    try {
+      confetti({ particleCount: 100, spread: 80, origin: { y: 0.6 } });
+    } catch {
+      // ignore
+    }
+  };
 
   const handleVote = (entryId: string) => {
     if (votedIds.includes(entryId)) return;
@@ -261,75 +317,75 @@ export default function ContestsPage() {
   ];
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-10 bg-[#FAFAF7] dark:bg-[#121214] min-h-screen text-[#111111] dark:text-zinc-100 font-sans">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-10 bg-white dark:bg-zinc-950 min-h-screen text-[#111111] dark:text-zinc-100 font-sans">
       
       {/* ========================================================================= */}
       {/* 1. HERO SECTION: CLEAN, PROFESSIONAL YOMIKA CONTEST BANNER */}
       {/* ========================================================================= */}
-      <div className="relative rounded-2xl overflow-hidden bg-white dark:bg-zinc-900 border border-[#EAEAE5] dark:border-zinc-800 p-6 sm:p-10 lg:p-12 shadow-sm">
+      <div className="relative rounded-2xl overflow-hidden bg-white dark:bg-zinc-950 border border-zinc-100 dark:border-zinc-900 p-6 sm:p-10 lg:p-12 shadow-sm">
         <div className="relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
           
           {/* Left Column: Contest Title & Stats */}
-          <div className="lg:col-span-7 space-y-6">
+          <div className="lg:col-span-6 space-y-5">
             
-            <div className="space-y-2">
-              <span className="text-xs font-black tracking-widest uppercase text-[#D91E18]">
+            <div className="space-y-1.5">
+              <span className="text-[10px] font-black tracking-widest uppercase text-[#D91E18]">
                 YOMIKA MONTHLY CHALLENGE
               </span>
               
-              <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight text-[#111111] dark:text-white leading-[1.08] uppercase">
+              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black tracking-tight text-[#111111] dark:text-white leading-[1.1] uppercase">
                 {contest.title || "SCI-FI & FANTASY STORY BATTLE"}
               </h1>
 
               {/* Tournament Divider */}
-              <div className="flex items-center gap-3 pt-1">
-                <span className="w-8 h-[2px] bg-[#D91E18]" />
-                <span className="text-xs sm:text-sm font-black tracking-widest text-[#D91E18] uppercase">
+              <div className="flex items-center gap-2.5 pt-0.5">
+                <span className="w-6 h-[1.5px] bg-[#D91E18]" />
+                <span className="text-[10px] sm:text-xs font-black tracking-widest text-[#D91E18] uppercase">
                   TOURNAMENT #{contest.contestNumber || "08"}
                 </span>
-                <span className="w-8 h-[2px] bg-[#D91E18]" />
+                <span className="w-6 h-[1.5px] bg-[#D91E18]" />
               </div>
             </div>
 
-            <p className="text-xs sm:text-sm text-zinc-600 dark:text-zinc-400 font-medium leading-relaxed max-w-xl">
+            <p className="text-[11px] sm:text-xs text-zinc-500 dark:text-zinc-400 font-medium leading-relaxed max-w-xl">
               {contest.description || "Where imagination meets competition. Write your best story. Compete with creators. Win glory, recognition and exciting rewards."}
             </p>
 
             {/* 3 Metric Badges in a Row */}
             <div className="grid grid-cols-3 gap-3 sm:gap-4 pt-1 max-w-lg">
-              <div className="flex items-center gap-2.5 sm:gap-3">
-                <div className="w-8 h-8 rounded-lg bg-red-50 dark:bg-red-950/50 text-[#D91E18] flex items-center justify-center flex-shrink-0">
-                  <Trophy className="w-4 h-4" />
+              <div className="flex items-center gap-2 sm:gap-2.5">
+                <div className="w-7 h-7 rounded-lg bg-red-50 dark:bg-red-950/50 text-[#D91E18] flex items-center justify-center flex-shrink-0">
+                  <Trophy className="w-3.5 h-3.5" />
                 </div>
                 <div>
-                  <p className="text-xs sm:text-sm font-black text-[#111111] dark:text-white">
+                  <p className="text-[11px] sm:text-xs font-black text-[#111111] dark:text-white">
                     {contest.prizePool || "$850 USD"}
                   </p>
-                  <p className="text-[10px] text-zinc-400 font-bold uppercase tracking-tight">Total Prize Pool</p>
+                  <p className="text-[9px] text-zinc-400 font-bold uppercase tracking-tight">Total Prize Pool</p>
                 </div>
               </div>
 
-              <div className="flex items-center gap-2.5 sm:gap-3">
-                <div className="w-8 h-8 rounded-lg bg-red-50 dark:bg-red-950/50 text-[#D91E18] flex items-center justify-center flex-shrink-0">
-                  <Users className="w-4 h-4" />
+              <div className="flex items-center gap-2 sm:gap-2.5">
+                <div className="w-7 h-7 rounded-lg bg-red-50 dark:bg-red-950/50 text-[#D91E18] flex items-center justify-center flex-shrink-0">
+                  <Users className="w-3.5 h-3.5" />
                 </div>
                 <div>
-                  <p className="text-xs sm:text-sm font-black text-[#111111] dark:text-white">
+                  <p className="text-[11px] sm:text-xs font-black text-[#111111] dark:text-white">
                     {contest.submissionCount || allEntries.length || 14}
                   </p>
-                  <p className="text-[10px] text-zinc-400 font-bold uppercase tracking-tight">Authors Entered</p>
+                  <p className="text-[9px] text-zinc-400 font-bold uppercase tracking-tight">Authors Entered</p>
                 </div>
               </div>
 
-              <div className="flex items-center gap-2.5 sm:gap-3">
-                <div className="w-8 h-8 rounded-lg bg-red-50 dark:bg-red-950/50 text-[#D91E18] flex items-center justify-center flex-shrink-0">
-                  <Calendar className="w-4 h-4" />
+              <div className="flex items-center gap-2 sm:gap-2.5">
+                <div className="w-7 h-7 rounded-lg bg-red-50 dark:bg-red-950/50 text-[#D91E18] flex items-center justify-center flex-shrink-0">
+                  <Calendar className="w-3.5 h-3.5" />
                 </div>
                 <div>
-                  <p className="text-xs sm:text-sm font-black text-[#111111] dark:text-white">
+                  <p className="text-[11px] sm:text-xs font-black text-[#111111] dark:text-white">
                     {formatContestDeadline(contest.endDate, contest.timezone).split(" ")[0]} {formatContestDeadline(contest.endDate, contest.timezone).split(" ")[1]}
                   </p>
-                  <p className="text-[10px] text-zinc-400 font-bold uppercase tracking-tight">Submission Deadline</p>
+                  <p className="text-[9px] text-zinc-400 font-bold uppercase tracking-tight">Submission Deadline</p>
                 </div>
               </div>
             </div>
@@ -352,16 +408,20 @@ export default function ContestsPage() {
           </div>
 
           {/* Right Column: Photorealistic Seamless 3D Trophy Integration (No Box Framing) */}
-          <div className="lg:col-span-5 relative flex items-center justify-center select-none pointer-events-none">
+          <div className="lg:col-span-6 relative flex items-center justify-center select-none pointer-events-none">
             {/* Subtle Radiant Atmospheric Glow Behind Trophy */}
-            <div className="w-64 h-64 sm:w-80 sm:h-80 rounded-full bg-red-500/10 dark:bg-red-600/20 blur-3xl absolute top-1/2 -translate-y-1/2 right-1/2 translate-x-1/2 -z-10 animate-pulse-red pointer-events-none" />
+            <div className="w-72 h-72 sm:w-96 sm:h-96 rounded-full bg-red-500/10 dark:bg-red-600/20 blur-3xl absolute top-1/2 -translate-y-1/2 right-1/2 translate-x-1/2 -z-10 animate-pulse-red pointer-events-none" />
 
             {/* Seamless 3D Trophy Visual Asset */}
-            <div className="relative w-full max-w-[520px] flex items-center justify-center animate-float-slow">
+            <div className="relative w-full max-w-[580px] flex items-center justify-center animate-float-slow">
               <img
                 src="/contest-trophy.png"
                 alt="Yomika Tournament Trophy"
-                className="w-full h-auto object-contain max-h-[360px] sm:max-h-[420px] mix-blend-multiply dark:mix-blend-lighten filter contrast-[1.03] drop-shadow-[0_15px_25px_rgba(0,0,0,0.12)] dark:drop-shadow-[0_20px_35px_rgba(217,30,24,0.25)] transition duration-700 hover:scale-105"
+                className="w-full h-auto object-contain max-h-[460px] sm:max-h-[520px] mix-blend-multiply dark:mix-blend-lighten filter contrast-[1.03] drop-shadow-[0_15px_25px_rgba(0,0,0,0.12)] dark:drop-shadow-[0_20px_35px_rgba(217,30,24,0.25)] transition duration-700 hover:scale-105"
+                style={{
+                  WebkitMaskImage: "radial-gradient(circle at center, black 38%, transparent 64%)",
+                  maskImage: "radial-gradient(circle at center, black 38%, transparent 64%)"
+                }}
                 onError={(e) => {
                   (e.target as HTMLImageElement).src = "/contest-trophy.jpg";
                 }}
@@ -881,22 +941,77 @@ export default function ContestsPage() {
                           ))}
                         </select>
 
-                        {selectedStory && (
-                          <div className="p-3.5 rounded-lg bg-zinc-50 dark:bg-zinc-950 border border-[#EAEAE5] dark:border-zinc-800 flex items-center gap-3">
-                            <div className="w-14 h-18 rounded-md overflow-hidden bg-zinc-200 flex-shrink-0">
-                              <img
-                                src={selectedStory.coverUrl}
-                                alt={selectedStory.title}
-                                className="w-full h-full object-cover"
-                              />
+                        {selectedStory && (() => {
+                          const recommended = getEntryFaction(selectedStory.genre, selectedStory.id);
+                          return (
+                            <div className="space-y-4">
+                              {/* Selected Novel Details */}
+                              <div className="p-3.5 rounded-lg bg-zinc-50 dark:bg-zinc-950 border border-[#EAEAE5] dark:border-zinc-800 flex items-center gap-3">
+                                <div className="w-14 h-18 rounded-md overflow-hidden bg-zinc-200 flex-shrink-0">
+                                  <img
+                                    src={selectedStory.coverUrl}
+                                    alt={selectedStory.title}
+                                    className="w-full h-full object-cover"
+                                  />
+                                </div>
+                                <div className="space-y-0.5 min-w-0">
+                                  <p className="font-black text-sm text-[#111111] dark:text-white truncate">{selectedStory.title}</p>
+                                  <p className="text-xs text-[#D91E18] font-bold">{selectedStory.genre}</p>
+                                  <p className="text-[11px] text-zinc-500">{selectedStory.chaptersCount || 3} Published Chapters • ★ {selectedStory.rating || 5.0}</p>
+                                </div>
+                              </div>
+
+                              {/* Faction Recommendation Alert & Choice */}
+                              <div className="space-y-2.5">
+                                <label className="block text-xs font-black text-[#111111] dark:text-white uppercase tracking-wider">
+                                  Choose Faction Alliance
+                                </label>
+                                
+                                <div className="p-3 rounded-lg bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 text-[10px] text-zinc-550 flex items-center gap-1.5 leading-snug">
+                                  <Sparkles className="w-3.5 h-3.5 text-amber-550 animate-pulse flex-shrink-0" />
+                                  <span>
+                                    Recommended: <strong className={
+                                      recommended === "SHADOW"
+                                        ? "text-[#00F0FF]"
+                                        : recommended === "LIGHT"
+                                        ? "text-[#FFB300]"
+                                        : "text-[#FF007A]"
+                                    }>
+                                      {recommended === "SHADOW" ? "Shadow Syndicate 🕶️" : recommended === "LIGHT" ? "Light Vanguard 🛡️" : "Cyber Rebels ⚡"}
+                                    </strong> (based on genre &apos;{selectedStory.genre}&apos;)
+                                  </span>
+                                </div>
+
+                                <div className="grid grid-cols-3 gap-2">
+                                  {["SHADOW", "LIGHT", "CYBER"].map((fac) => {
+                                    const isActive = submitFaction === fac;
+                                    const theme =
+                                      fac === "SHADOW"
+                                        ? { text: "Shadow", color: "border-[#00F0FF] text-[#00F0FF] bg-[#00F0FF]/5" }
+                                        : fac === "LIGHT"
+                                        ? { text: "Light", color: "border-[#FFB300] text-[#FFB300] bg-[#FFB300]/5" }
+                                        : { text: "Rebels", color: "border-[#FF007A] text-[#FF007A] bg-[#FF007A]/5" };
+                                    
+                                    return (
+                                      <button
+                                        key={fac}
+                                        type="button"
+                                        onClick={() => setSubmitFaction(fac as any)}
+                                        className={`p-2.5 rounded-lg border-2 text-[10px] font-black uppercase text-center transition duration-200 ${
+                                          isActive
+                                            ? `${theme.color} shadow-md`
+                                            : "border-zinc-200 dark:border-zinc-800 text-zinc-450 dark:text-zinc-650 hover:border-zinc-400"
+                                        }`}
+                                      >
+                                        {theme.text}
+                                      </button>
+                                    );
+                                  })}
+                                </div>
+                              </div>
                             </div>
-                            <div className="space-y-0.5 min-w-0">
-                              <p className="font-black text-sm text-[#111111] dark:text-white truncate">{selectedStory.title}</p>
-                              <p className="text-xs text-[#D91E18] font-bold">{selectedStory.genre}</p>
-                              <p className="text-[11px] text-zinc-500">{selectedStory.chaptersCount || 3} Published Chapters • ★ {selectedStory.rating || 5.0}</p>
-                            </div>
-                          </div>
-                        )}
+                          );
+                        })()}
 
                         <div className="flex justify-end gap-2 pt-2">
                           <button
@@ -947,16 +1062,31 @@ export default function ContestsPage() {
                     </h4>
 
                     <div className="space-y-2 p-3.5 rounded-lg bg-zinc-50 dark:bg-zinc-950 border border-[#EAEAE5] text-xs text-[#555555] dark:text-zinc-300">
-                      <div className="flex items-center gap-2 text-emerald-600 font-bold">
-                        <Check className="w-4 h-4" />
+                      <div className="flex items-center gap-2 text-emerald-650 font-bold">
+                        <Check className="w-4 h-4 flex-shrink-0" />
                         <span>Meets {contest.minChapters || 2}+ published chapter requirement</span>
                       </div>
-                      <div className="flex items-center gap-2 text-emerald-600 font-bold">
-                        <Check className="w-4 h-4" />
+                      <div className="flex items-center gap-2 text-emerald-650 font-bold">
+                        <Check className="w-4 h-4 flex-shrink-0" />
                         <span>100% original creator-owned work</span>
                       </div>
-                      <div className="flex items-center gap-2 text-emerald-600 font-bold">
-                        <Check className="w-4 h-4" />
+                      <div className="flex items-center gap-2 text-emerald-650 font-bold">
+                        <Check className="w-4 h-4 flex-shrink-0" />
+                        <span>
+                          Alliance: representing{" "}
+                          <strong className={
+                            submitFaction === "SHADOW"
+                              ? "text-[#00F0FF]"
+                              : submitFaction === "LIGHT"
+                              ? "text-[#FFB300]"
+                              : "text-[#FF007A]"
+                          }>
+                            {submitFaction === "SHADOW" ? "Shadow Syndicate" : submitFaction === "LIGHT" ? "Light Vanguard" : "Cyber Rebels"}
+                          </strong>
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2 text-emerald-650 font-bold">
+                        <Check className="w-4 h-4 flex-shrink-0" />
                         <span>Eligible for {contest.prizePool} Tournament prize pool</span>
                       </div>
                     </div>
