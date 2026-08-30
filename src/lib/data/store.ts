@@ -770,56 +770,18 @@ class DataStore {
     this.setItem(STORAGE_KEYS.NOTIFICATIONS, notifs);
   }
 
-  // Reading Progress
-  private getDefaultReadingProgress(): Record<string, ReadingProgress> {
-    const now = Date.now();
-    return {
-      "novel-1": {
-        contentId: "novel-1",
-        contentType: "NOVEL",
-        contentTitle: "The Starfall Sovereign: Celestial Monarch",
-        contentSlug: "the-starfall-sovereign",
-        coverUrl: "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=600&auto=format&fit=crop&q=80",
-        creatorName: "Elena Rostova",
-        chapterNumber: 3,
-        episodeTitle: "Chapter 3: The Awakening of the Blade",
-        progressPercentage: 68,
-        totalUnits: 12,
-        lastReadAt: new Date(now - 25 * 60 * 1000).toISOString(),
-      },
-      "comic-1": {
-        contentId: "comic-1",
-        contentType: "COMIC",
-        contentTitle: "The RPG: Shadow Descent",
-        contentSlug: "the-rpg",
-        coverUrl: "https://images.unsplash.com/photo-1563089145-599997674d42?w=600&auto=format&fit=crop&q=80",
-        creatorName: "Animerecap Ninja",
-        chapterNumber: 2,
-        episodeTitle: "Episode 2: Gate of the Undead King",
-        progressPercentage: 100,
-        totalUnits: 5,
-        lastReadAt: new Date(now - 3 * 3600 * 1000).toISOString(),
-      },
-    };
-  }
-
   getReadingProgressMap(): Record<string, ReadingProgress> {
-    const map = this.getItem<Record<string, ReadingProgress>>(STORAGE_KEYS.READING_PROGRESS, {});
-    if (Object.keys(map).length === 0) {
-      const defaults = this.getDefaultReadingProgress();
-      this.setItem(STORAGE_KEYS.READING_PROGRESS, defaults);
-      return defaults;
-    }
-    return map;
+    return this.getItem<Record<string, ReadingProgress>>(STORAGE_KEYS.READING_PROGRESS, {});
   }
 
-  saveReadingProgress(progress: ReadingProgress): void {
+  saveReadingProgress(progress: ReadingProgress, userId?: string): void {
+    const resolvedUserId = userId || progress.userId;
     const map = this.getReadingProgressMap();
-    map[progress.contentId] = progress;
+    map[progress.contentId] = { ...progress, userId: resolvedUserId };
     this.setItem(STORAGE_KEYS.READING_PROGRESS, map);
 
-    if (progress.userId) {
-      dbService.saveReadingProgress(progress).catch(() => {});
+    if (resolvedUserId) {
+      dbService.saveReadingProgress({ ...progress, userId: resolvedUserId }).catch(() => {});
     }
   }
 
@@ -884,21 +846,17 @@ class DataStore {
   // Coin & Wallet Methods
   getUserCoins(userId: string): number {
     const map = this.getItem<Record<string, number>>(STORAGE_KEYS.COINS, {});
-    if (map[userId] === undefined) {
-      map[userId] = 0;
-      this.setItem(STORAGE_KEYS.COINS, map);
-
-      // Async sync from authoritative Supabase wallet
-      if (userId) {
-        dbService.getWalletBalance(userId).then((balance) => {
-          if (balance !== undefined) {
-            const currentMap = this.getItem<Record<string, number>>(STORAGE_KEYS.COINS, {});
-            currentMap[userId] = balance;
-            this.setItem(STORAGE_KEYS.COINS, currentMap);
-          }
-        }).catch(() => {});
-      }
+    
+    if (userId && this.isBrowser()) {
+      dbService.getWalletBalance(userId).then((balance) => {
+        if (balance !== undefined && balance !== map[userId]) {
+          const currentMap = this.getItem<Record<string, number>>(STORAGE_KEYS.COINS, {});
+          currentMap[userId] = balance;
+          this.setItem(STORAGE_KEYS.COINS, currentMap);
+        }
+      }).catch(() => {});
     }
+    
     return map[userId] || 0;
   }
 

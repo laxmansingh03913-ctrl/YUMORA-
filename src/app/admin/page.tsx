@@ -25,7 +25,6 @@ import {
   Mail,
 } from "lucide-react";
 import { useAuth, isMasterAdmin, MASTER_ADMIN_EMAIL } from "@/context/AuthContext";
-import { dataStore } from "@/lib/data/store";
 import { emailService } from "@/lib/email/service";
 import { PayoutRequest, UserProfile } from "@/lib/types";
 import { formatNumber, formatDate } from "@/lib/utils";
@@ -41,6 +40,17 @@ export default function AdminDashboardPage() {
   const [selectedPayout, setSelectedPayout] = useState<PayoutRequest | null>(null);
   const [isSlipOpen, setIsSlipOpen] = useState(false);
   const [actionSuccessMsg, setActionSuccessMsg] = useState<string | null>(null);
+  const [realStats, setRealStats] = useState<{
+    totalNovels: number;
+    totalComics: number;
+    totalStories: number;
+    totalReaders: number;
+    totalCreators: number;
+    totalUsers: number;
+    totalReads: number;
+    pendingPayoutsCount: number;
+    totalPendingPayoutAmount: number;
+  } | null>(null);
 
   // Admin Gate State
   const [adminEmail, setAdminEmail] = useState("megwansiabhishek7@gmail.com");
@@ -101,15 +111,24 @@ export default function AdminDashboardPage() {
 
   const loadData = async () => {
     try {
-      const res = await fetch("/api/admin/payouts");
-      const data = await res.json();
-      if (res.ok && data.success && Array.isArray(data.payouts)) {
-        setPayouts(data.payouts);
+      const [payoutsRes, statsRes] = await Promise.all([
+        fetch("/api/admin/payouts"),
+        fetch("/api/admin/stats"),
+      ]);
+
+      const payoutsData = await payoutsRes.json();
+      if (payoutsRes.ok && payoutsData.success && Array.isArray(payoutsData.payouts)) {
+        setPayouts(payoutsData.payouts);
       } else {
         setPayouts([]);
       }
+
+      const statsData = await statsRes.json();
+      if (statsRes.ok && statsData.success && statsData.stats) {
+        setRealStats(statsData.stats);
+      }
     } catch (err) {
-      console.warn("[ADMIN LOAD PAYOUTS NOTICE]", err);
+      console.warn("[ADMIN LOAD DATA ERROR]", err);
       setPayouts([]);
     }
   };
@@ -261,12 +280,6 @@ export default function AdminDashboardPage() {
       </div>
     );
   }
-
-  const novels = dataStore.getNovels();
-  const comics = dataStore.getComics();
-  const users = dataStore.getUsers();
-  const totalStories = novels.length + comics.length;
-  const totalPlatformReads = novels.reduce((a, b) => a + b.reads, 0) + comics.reduce((a, b) => a + b.reads, 0);
 
   const pendingPayouts = payouts.filter((p) => p.status === "PENDING");
   const totalPendingAmount = pendingPayouts.reduce((a, b) => a + b.amountInr, 0);
@@ -428,10 +441,12 @@ export default function AdminDashboardPage() {
             <BookOpen className="w-4 h-4 text-indigo-500" />
           </div>
           <p className="text-2xl font-black text-zinc-900 dark:text-white font-mono">
-            {totalStories} Works
+            {realStats ? `${realStats.totalStories} Works` : "—"}
           </p>
           <p className="text-[11px] text-zinc-500 font-medium">
-            {novels.length} Novels • {comics.length} Comics
+            {realStats
+              ? `${realStats.totalNovels} Novels • ${realStats.totalComics} Comics`
+              : "Loading..."}
           </p>
         </div>
 
@@ -441,9 +456,13 @@ export default function AdminDashboardPage() {
             <TrendingUp className="w-4 h-4 text-[#D91E18]" />
           </div>
           <p className="text-2xl font-black text-[#D91E18] font-mono">
-            {formatNumber(totalPlatformReads)}
+            {realStats ? formatNumber(realStats.totalReads) : "—"}
           </p>
-          <p className="text-[11px] text-zinc-500 font-medium">Active global engagement</p>
+          <p className="text-[11px] text-zinc-500 font-medium">
+            {realStats
+              ? `${realStats.totalCreators} Creators • ${realStats.totalReaders} Readers`
+              : "Loading..."}
+          </p>
         </div>
       </div>
 

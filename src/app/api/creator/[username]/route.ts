@@ -1,22 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import fs from "fs";
-import path from "path";
-import { SEED_USERS } from "@/lib/data/seed-data";
 import { dbService } from "@/lib/supabase/db";
-import { UserProfile, Comic, Novel } from "@/lib/types";
-
-const DB_FILE = path.join(process.cwd(), "src", "lib", "data", "server-db.json");
-
-function getServerDb(): Record<string, any> {
-  try {
-    if (!fs.existsSync(DB_FILE)) return {};
-    const data = fs.readFileSync(DB_FILE, "utf-8");
-    return JSON.parse(data || "{}");
-  } catch (error) {
-    console.error("Failed to read server DB:", error);
-    return {};
-  }
-}
+import { UserProfile } from "@/lib/types";
 
 function synthesizeCreatorProfile(creator: any, fallbackId?: string, fallbackGenre?: string): UserProfile {
   const id = String(creator?.id || fallbackId || `creator-${Date.now()}`);
@@ -68,7 +52,7 @@ export async function GET(
       return NextResponse.json({ success: false, error: "Username is required" }, { status: 400 });
     }
 
-    // 1. Query Supabase Database (Authoritative Source of Truth)
+    // Query Supabase profiles table (sole source of truth)
     try {
       const cloud =
         (await dbService.getProfileByUsername(cleanUsername)) ||
@@ -78,70 +62,6 @@ export async function GET(
       }
     } catch (e) {
       console.warn("Supabase creator lookup notice:", e);
-    }
-
-    // 2. Check Server DB Users
-    const db = getServerDb();
-    const serverUsers: UserProfile[] = Array.isArray(db.yumora_users) ? db.yumora_users : [];
-    const fromServerUsers = serverUsers.find(
-      (u) =>
-        u &&
-        ((u.username && u.username.trim().toLowerCase().replace(/^@/, "") === cleanUsername) ||
-          (u.id && u.id.trim().toLowerCase() === cleanUsername))
-    );
-    if (fromServerUsers) {
-      return NextResponse.json({ success: true, creator: fromServerUsers });
-    }
-
-    // 3. Check Server DB Comics creators
-    const serverComics: Comic[] = Array.isArray(db.yumora_comics) ? db.yumora_comics : [];
-    for (const c of serverComics) {
-      if (
-        c?.creator?.username &&
-        c.creator.username.trim().toLowerCase().replace(/^@/, "") === cleanUsername
-      ) {
-        return NextResponse.json({
-          success: true,
-          creator: synthesizeCreatorProfile(c.creator, c.creatorId, c.genre),
-        });
-      }
-      if (c?.creatorId && c.creatorId.trim().toLowerCase() === cleanUsername) {
-        return NextResponse.json({
-          success: true,
-          creator: synthesizeCreatorProfile(c.creator || { id: c.creatorId, name: "Storyteller", username: cleanUsername }, c.creatorId, c.genre),
-        });
-      }
-    }
-
-    // 4. Check Server DB Novels creators
-    const serverNovels: Novel[] = Array.isArray(db.yumora_novels) ? db.yumora_novels : [];
-    for (const n of serverNovels) {
-      if (
-        n?.creator?.username &&
-        n.creator.username.trim().toLowerCase().replace(/^@/, "") === cleanUsername
-      ) {
-        return NextResponse.json({
-          success: true,
-          creator: synthesizeCreatorProfile(n.creator, n.creatorId, n.genre),
-        });
-      }
-      if (n?.creatorId && n.creatorId.trim().toLowerCase() === cleanUsername) {
-        return NextResponse.json({
-          success: true,
-          creator: synthesizeCreatorProfile(n.creator || { id: n.creatorId, name: "Storyteller", username: cleanUsername }, n.creatorId, n.genre),
-        });
-      }
-    }
-
-    // 5. Check Seed Users as fallback
-    const fromSeed = SEED_USERS.find(
-      (u) =>
-        u &&
-        ((u.username && u.username.trim().toLowerCase().replace(/^@/, "") === cleanUsername) ||
-          (u.id && u.id.trim().toLowerCase() === cleanUsername))
-    );
-    if (fromSeed) {
-      return NextResponse.json({ success: true, creator: fromSeed });
     }
 
     return NextResponse.json(

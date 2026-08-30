@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -27,12 +27,24 @@ import {
 } from "lucide-react";
 import { useSidebar } from "@/context/SidebarContext";
 import { useAuth } from "@/context/AuthContext";
-import { dataStore } from "@/lib/data/store";
+import { dbService } from "@/lib/supabase/db";
 
 export function Sidebar() {
   const pathname = usePathname();
   const { isCollapsed, isMobileOpen, toggleCollapse, closeMobile, openCoinShop } = useSidebar();
   const { user, role } = useAuth();
+  const [liveCoins, setLiveCoins] = useState<number | null>(null);
+
+  // Fetch live coin balance from Supabase on user login
+  useEffect(() => {
+    if (!user?.id) {
+      setLiveCoins(null);
+      return;
+    }
+    dbService.getWalletBalance(user.id)
+      .then((balance) => setLiveCoins(balance))
+      .catch(() => setLiveCoins(0));
+  }, [user?.id]);
 
   // Hide sidebar inside immersive reader
   if (pathname.includes("/chapter/")) {
@@ -191,7 +203,7 @@ export function Sidebar() {
           {renderNavItem(
             {
               name: user
-                ? `${dataStore.getUserCoins(user.id).toLocaleString()} Coins`
+                ? `${(liveCoins ?? 0).toLocaleString()} Coins`
                 : "Coin Treasury",
               icon: Coins,
               badge: "+ Top Up",

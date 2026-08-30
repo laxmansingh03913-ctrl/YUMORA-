@@ -75,6 +75,7 @@ export function Navbar() {
   const [isNotifsOpen, setIsNotifsOpen] = useState(false);
   const [isCoinShopOpen, setIsCoinShopOpen] = useState(false);
   const [currentLang, setCurrentLang] = useState<LanguageCode>("en");
+  const [dbCoins, setDbCoins] = useState<number | null>(null);
 
   const userMenuRef = React.useRef<HTMLDivElement>(null);
   const notifsRef = React.useRef<HTMLDivElement>(null);
@@ -114,6 +115,16 @@ export function Navbar() {
       document.removeEventListener("keydown", handleKeyDown);
     };
   }, []);
+
+  useEffect(() => {
+    if (user?.id) {
+      dbService.getWalletBalance(user.id)
+        .then((balance) => {
+          setDbCoins(balance);
+        })
+        .catch(() => {});
+    }
+  }, [user, isCoinShopOpen]);
 
   // Don't render full navbar on pure reading chapter route for maximum immersion
   const isReadingChapter = pathname.includes("/chapter/");
@@ -427,7 +438,7 @@ export function Navbar() {
                   title="Yumora Coin Treasury (Click to get more coins)"
                 >
                   <Coins className="w-3.5 h-3.5 text-amber-500" />
-                  <span>{dataStore.getUserCoins(user.id).toLocaleString()}</span>
+                   <span>{(dbCoins ?? 0).toLocaleString()}</span>
                   <Plus className="w-3 h-3 text-amber-500 ml-0.5" />
                 </button>
 
@@ -512,7 +523,7 @@ export function Navbar() {
                           <div>
                             <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">Your Balance</p>
                             <p className="text-xs font-black text-amber-600 dark:text-amber-400 font-mono">
-                              {dataStore.getUserCoins(user.id).toLocaleString()} Coins
+                              {(dbCoins ?? 0).toLocaleString()} Coins
                             </p>
                           </div>
                         </div>

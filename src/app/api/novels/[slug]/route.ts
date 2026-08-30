@@ -1,22 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import fs from "fs";
-import path from "path";
-import { SEED_NOVELS } from "@/lib/data/seed-data";
 import { dbService } from "@/lib/supabase/db";
 import { prisma } from "@/lib/prisma";
 import { Novel } from "@/lib/types";
-
-const DB_FILE = path.join(process.cwd(), "src", "lib", "data", "server-db.json");
-
-function getServerDb(): Record<string, any> {
-  try {
-    if (!fs.existsSync(DB_FILE)) return {};
-    const data = fs.readFileSync(DB_FILE, "utf-8");
-    return JSON.parse(data || "{}");
-  } catch (error) {
-    return {};
-  }
-}
 
 export async function GET(
   req: NextRequest,
@@ -32,25 +17,7 @@ export async function GET(
       return NextResponse.json({ success: false, error: "Slug is required" }, { status: 400 });
     }
 
-    // 1. Check Seed Novels
-    const fromSeed = SEED_NOVELS.find(
-      (n) => n.slug?.toLowerCase() === cleanSlug || n.id?.toLowerCase() === cleanSlug
-    );
-    if (fromSeed) {
-      return NextResponse.json({ success: true, novel: fromSeed });
-    }
-
-    // 2. Check Server DB JSON (server-side persistence)
-    const db = getServerDb();
-    const serverNovels: Novel[] = Array.isArray(db.yumora_novels) ? db.yumora_novels : [];
-    const fromServerDb = serverNovels.find(
-      (n) => n && (n.slug?.toLowerCase() === cleanSlug || n.id?.toLowerCase() === cleanSlug)
-    );
-    if (fromServerDb) {
-      return NextResponse.json({ success: true, novel: fromServerDb });
-    }
-
-    // 3. Query Prisma PostgreSQL Database
+    // 1. Query Supabase (primary source of truth)
     try {
       const dbNovel: any = await prisma.novel.findFirst({
         where: {

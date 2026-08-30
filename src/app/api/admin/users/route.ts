@@ -1,27 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAuthenticatedServerUser } from "@/lib/auth/server";
-import fs from "fs";
-import path from "path";
+import { createClient } from "@supabase/supabase-js";
 
-const DB_FILE = path.join(process.cwd(), "src", "lib", "data", "server-db.json");
-
-function getDb(): Record<string, any> {
-  try {
-    if (!fs.existsSync(DB_FILE)) return {};
-    const data = fs.readFileSync(DB_FILE, "utf-8");
-    return JSON.parse(data || "{}");
-  } catch {
-    return {};
-  }
-}
-
-function saveDb(db: Record<string, any>) {
-  try {
-    fs.writeFileSync(DB_FILE, JSON.stringify(db, null, 2), "utf-8");
-  } catch (err) {
-    console.error("[ADMIN USERS DB SAVE ERROR]", err);
-  }
-}
+const supabaseAdmin = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+);
 
 export async function GET(req: NextRequest) {
   try {
@@ -33,15 +17,44 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    const db = getDb();
-    const users = Array.isArray(db.yumora_users) ? db.yumora_users : [];
-    // Omit sensitive password fields if any
-    const safeUsers = users.map((u: any) => {
-      const { passwordHash, password, ...rest } = u || {};
+    const { searchParams } = new URL(req.url);
+    const page = parseInt(searchParams.get("page") || "1");
+    const limit = parseInt(searchParams.get("limit") || "50");
+    const search = searchParams.get("search") || "";
+    const role = searchParams.get("role") || "";
+
+    const offset = (page - 1) * limit;
+
+    let query = supabaseAdmin.from("profiles").select("*", { count: "exact" });
+
+    if (search) {
+      query = query.or(`name.ilike.%${search}%,username.ilike.%${search}%,email.ilike.%${search}%`);
+    }
+    if (role) {
+      query = query.eq("role", role);
+    }
+
+    const { data: users, error, count } = await query
+      .order("created_at", { ascending: false })
+      .range(offset, offset + limit - 1);
+
+    if (error) {
+      return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+
+    // Omit sensitive fields
+    const safeUsers = (users || []).map((u: any) => {
+      const { password_hash, ...rest } = u;
       return rest;
     });
 
-    return NextResponse.json({ success: true, users: safeUsers });
+    return NextResponse.json({
+      success: true,
+      users: safeUsers,
+      total: count || 0,
+      page,
+      limit,
+    });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
@@ -67,34 +80,33 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const db = getDb();
-    const users = Array.isArray(db.yumora_users) ? db.yumora_users : [];
-    const targetIdx = users.findIndex((u: any) => u && u.id === targetUserId);
-
-    if (targetIdx < 0) {
-      return NextResponse.json({ error: "User not found." }, { status: 404 });
-    }
-
     // Only allow updating safe administrative fields
     const safeUpdates: Record<string, any> = {};
-    if (typeof updates.isVerified === "boolean") safeUpdates.isVerified = updates.isVerified;
-    if (updates.role && ["READER", "CREATOR", "ADMIN"].includes(updates.role)) safeUpdates.role = updates.role;
-    if (updates.monetizationStatus) safeUpdates.monetizationStatus = updates.monetizationStatus;
-    if (updates.monetizationTier) safeUpdates.monetizationTier = updates.monetizationTier;
-    if (updates.fraudAuditStatus) safeUpdates.fraudAuditStatus = updates.fraudAuditStatus;
+    if (typeof updates.isVerified === "boolean") safeUpdates.is_email_verified = updates.isVerified;
+    if (updates.role && ["READER", "CREATOR", "ADMIN"].includes(updates.role)) {
+      safeUpdates.role = updates.role;
+    }
+    if (updates.monetizationStatus) safeUpdates.monetization_status = updates.monetizationStatus;
+    if (updates.monetizationTier) safeUpdates.monetization_tier = updates.monetizationTier;
+    if (updates.fraudAuditStatus) safeUpdates.fraud_audit_status = updates.fraudAuditStatus;
+    if (typeof updates.isBanned === "boolean") safeUpdates.is_banned = updates.isBanned;
 
-    users[targetIdx] = {
-      ...users[targetIdx],
-      ...safeUpdates,
-      updatedAt: new Date().toISOString(),
-    };
+    safeUpdates.updated_at = new Date().toISOString();
 
-    db.yumora_users = users;
-    saveDb(db);
+    const { data: updatedUser, error } = await supabaseAdmin
+      .from("profiles")
+      .update(safeUpdates)
+      .eq("id", targetUserId)
+      .select()
+      .single();
+
+    if (error) {
+      return NextResponse.json({ error: error.message }, { status: 500 });
+    }
 
     return NextResponse.json({
       success: true,
-      user: users[targetIdx],
+      user: updatedUser,
       message: "User administrative settings updated successfully.",
     });
   } catch (error: any) {

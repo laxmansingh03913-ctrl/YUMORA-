@@ -20,11 +20,9 @@ import {
   ArrowRight,
   TrendingUp,
 } from "lucide-react";
-import { dataStore } from "@/lib/data/store";
-import { dbService } from "@/lib/supabase/db";
 import { NovelCard } from "@/components/ui/NovelCard";
 import { ComicCard } from "@/components/ui/ComicCard";
-import { Novel, Comic, LanguageCode, StoryFormat, StoryFormatInfo, getStoryFormat } from "@/lib/types";
+import { StoryFormat, StoryFormatInfo, getStoryFormat } from "@/lib/types";
 
 const ALL_GENRES = [
   "All Genres",
@@ -102,9 +100,10 @@ function DiscoverPageContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
 
-  const [novels, setNovels] = useState<Novel[]>(() => dataStore.getNovels());
-  const [comics, setComics] = useState<Comic[]>(() => dataStore.getComics());
   const [searchQuery, setSearchQuery] = useState("");
+  const [isLoading, setIsLoading] = useState(true);
+  const [serverResults, setServerResults] = useState<any[]>([]);
+  const [totalCounts, setTotalCounts] = useState({ novelCount: 0, comicCount: 0, total: 0 });
 
   const urlFormat = (searchParams?.get("format") || searchParams?.get("medium") || "").toLowerCase();
   const getInitialFormat = (): DiscoverFormat => {
@@ -136,174 +135,67 @@ function DiscoverPageContent() {
     }
   }, [urlFormat]);
 
-  // Sync latest from data store and Supabase Cloud
+  // Server-side search with debounce — fires whenever any filter changes
   useEffect(() => {
-    setNovels(dataStore.getNovels());
-    setComics(dataStore.getComics());
+    const controller = new AbortController();
 
-    dbService.getNovels().then((cloudNovels) => {
-      if (cloudNovels && cloudNovels.length > 0) {
-        cloudNovels.forEach((n) => dataStore.saveNovel(n));
-        setNovels(dataStore.getNovels());
+    const fetchResults = async () => {
+      setIsLoading(true);
+      try {
+        const params = new URLSearchParams();
+        if (searchQuery.trim()) params.set("q", searchQuery.trim());
+        if (selectedGenre !== "All Genres") params.set("genre", selectedGenre);
+        if (selectedLanguage !== "all") params.set("language", selectedLanguage);
+        if (selectedStatus !== "all") params.set("status", selectedStatus);
+        if (selectedRating !== "all") params.set("contentRating", selectedRating);
+        if (selectedFormat !== "all") params.set("format", selectedFormat);
+        params.set("sortBy", sortBy);
+        params.set("tab", activeTab);
+        params.set("limit", "80");
+
+        const res = await fetch(`/api/discover/search?${params.toString()}`, {
+          signal: controller.signal,
+        });
+        const data = await res.json();
+
+        if (res.ok && data.success) {
+          setServerResults(data.results || []);
+          setTotalCounts({
+            novelCount: data.novelCount || 0,
+            comicCount: data.comicCount || 0,
+            total: data.total || 0,
+          });
+        }
+      } catch (e: any) {
+        if (e?.name !== "AbortError") console.warn("Discover search error:", e);
+      } finally {
+        setIsLoading(false);
       }
-    });
+    };
 
-    dbService.getComics().then((cloudComics) => {
-      if (cloudComics && cloudComics.length > 0) {
-        cloudComics.forEach((c) => dataStore.saveComic(c));
-        setComics(dataStore.getComics());
-      }
-    });
-  }, []);
+    // Debounce — 350ms for search query, instant for filter changes
+    const delay = searchQuery !== "" ? 350 : 0;
+    const timer = setTimeout(fetchResults, delay);
+    return () => {
+      clearTimeout(timer);
+      controller.abort();
+    };
+  }, [searchQuery, selectedFormat, selectedGenre, selectedLanguage, selectedStatus, selectedRating, sortBy, activeTab]);
 
-  // Combine novels and comics into unified searchable works with precise format taxonomy
-  const allWorks = useMemo<UnifiedWork[]>(() => {
-    const novelItems: UnifiedWork[] = (novels || []).map((n) => {
-      const formatInfo = getStoryFormat(n);
-      return {
-        id: n?.id || `novel-${Math.random()}`,
-        type: "NOVEL",
-        storyFormat: formatInfo.key,
-        storyFormatInfo: formatInfo,
-        title: n?.title || "Untitled Novel",
-        creatorName: n?.creator?.name || "Creator",
-        creatorUsername: n?.creator?.username || "creator",
-        genre: n?.genre || "Fantasy",
-        secondaryGenre: n?.secondaryGenre || "",
-        tags: Array.isArray(n?.tags) ? n.tags : [],
-        description: n?.description || "",
-        language: n?.language || "en",
-        status: n?.status || "ONGOING",
-        contentRating: n?.contentRating || "TEEN",
-        isEditorPick: !!n?.isEditorPick,
-        reads: n?.reads || 0,
-        rating: n?.rating || 5.0,
-        likesCount: n?.likesCount || 0,
-        createdAt: n?.createdAt || new Date().toISOString(),
-        novelData: n,
-      };
-    });
-
-    const comicItems: UnifiedWork[] = (comics || []).map((c) => {
-      const formatInfo = getStoryFormat(c);
-      return {
-        id: c?.id || `comic-${Math.random()}`,
-        type: "COMIC",
-        storyFormat: formatInfo.key,
-        storyFormatInfo: formatInfo,
-        title: c?.title || "Untitled Comic",
-        creatorName: c?.creator?.name || "Creator",
-        creatorUsername: c?.creator?.username || "creator",
-        genre: c?.genre || "Action",
-        secondaryGenre: c?.secondaryGenre || "",
-        tags: Array.isArray(c?.tags) ? c.tags : [],
-        description: c?.description || "",
-        language: c?.language || "en",
-        status: c?.status || "ONGOING",
-        contentRating: c?.contentRating || "TEEN",
-        isEditorPick: !!c?.isEditorPick,
-        reads: c?.reads || 0,
-        rating: c?.rating || 5.0,
-        likesCount: c?.likesCount || 0,
-        createdAt: c?.createdAt || new Date().toISOString(),
-        comicData: c,
-      };
-    });
-
-    return [...novelItems, ...comicItems];
-  }, [novels, comics]);
-
-  // Real-time counts for each format category
+  // Format counts from server results
   const formatCounts = useMemo(() => {
     return {
-      all: allWorks.length,
-      web_novels: allWorks.filter((w) => w.storyFormat === "WEB_NOVEL").length,
-      light_novels: allWorks.filter((w) => w.storyFormat === "LIGHT_NOVEL").length,
-      manga: allWorks.filter((w) => w.storyFormat === "MANGA").length,
-      webtoons: allWorks.filter((w) => w.storyFormat === "WEBTOON").length,
-      comics: allWorks.filter((w) => w.storyFormat === "COMIC").length,
+      all: totalCounts.total,
+      web_novels: serverResults.filter((w) => w.storyFormat === "WEB_NOVEL").length,
+      light_novels: serverResults.filter((w) => w.storyFormat === "LIGHT_NOVEL").length,
+      manga: serverResults.filter((w) => w.storyFormat === "MANGA").length,
+      webtoons: serverResults.filter((w) => w.storyFormat === "WEBTOON").length,
+      comics: serverResults.filter((w) => w.storyFormat === "COMIC").length,
     };
-  }, [allWorks]);
+  }, [serverResults, totalCounts]);
 
-  // Filter and sort all works
-  const filteredWorks = useMemo(() => {
-    return allWorks
-      .filter((work) => {
-        // Story Format filter
-        if (selectedFormat === "web_novels" && work.storyFormat !== "WEB_NOVEL") return false;
-        if (selectedFormat === "light_novels" && work.storyFormat !== "LIGHT_NOVEL") return false;
-        if (selectedFormat === "manga" && work.storyFormat !== "MANGA") return false;
-        if (selectedFormat === "webtoons" && work.storyFormat !== "WEBTOON") return false;
-        if (selectedFormat === "comics" && work.storyFormat !== "COMIC") return false;
-
-        // Tab filtering
-        if (activeTab === "trending" && (work.reads || 0) < 500) return false;
-        if (activeTab === "editors" && !work.isEditorPick) return false;
-        if (activeTab === "completed" && work.status !== "COMPLETED") return false;
-        if (activeTab === "gems" && ((work.reads || 0) > 150000 || (work.rating || 5.0) < 4.8)) return false;
-
-        // Search query
-        if (searchQuery.trim()) {
-          const q = searchQuery.toLowerCase();
-          const matchTitle = (work.title || "").toLowerCase().includes(q);
-          const matchAuthor = (work.creatorName || "").toLowerCase().includes(q);
-          const matchTag = (work.tags || []).some((t) => (t || "").toLowerCase().includes(q));
-          const matchDesc = (work.description || "").toLowerCase().includes(q);
-          if (!matchTitle && !matchAuthor && !matchTag && !matchDesc) return false;
-        }
-
-        // Genre
-        if (selectedGenre !== "All Genres") {
-          const g = selectedGenre.toLowerCase();
-          const matchGenre = (work.genre || "").toLowerCase() === g;
-          const matchSecGenre = (work.secondaryGenre || "").toLowerCase() === g;
-          const matchTags = (work.tags || []).some((t) => (t || "").toLowerCase() === g);
-          if (!matchGenre && !matchSecGenre && !matchTags) {
-            return false;
-          }
-        }
-
-        // Language
-        if (
-          selectedLanguage !== "all" &&
-          (work.language || "").toLowerCase() !== selectedLanguage.toLowerCase()
-        ) {
-          return false;
-        }
-
-        // Status
-        if (selectedStatus !== "all" && work.status !== selectedStatus) {
-          return false;
-        }
-
-        // Content Rating
-        if (selectedRating !== "all" && work.contentRating !== selectedRating) {
-          return false;
-        }
-
-        return true;
-      })
-      .sort((a, b) => {
-        if (sortBy === "trending") return ((b.reads || 0) + 1) * (b.rating || 5) - ((a.reads || 0) + 1) * (a.rating || 5);
-        if (sortBy === "reads") return (b.reads || 0) - (a.reads || 0);
-        if (sortBy === "rating") return (b.rating || 5) - (a.rating || 5);
-        if (sortBy === "likes") return (b.likesCount || 0) - (a.likesCount || 0);
-        if (sortBy === "newest") {
-          return new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime();
-        }
-        return 0;
-      });
-  }, [
-    allWorks,
-    selectedFormat,
-    searchQuery,
-    selectedGenre,
-    selectedLanguage,
-    selectedStatus,
-    selectedRating,
-    sortBy,
-    activeTab,
-  ]);
+  // filteredWorks = server results (already filtered/sorted by API)
+  const filteredWorks = serverResults;
 
   const resetFilters = () => {
     setSearchQuery("");
@@ -583,7 +475,16 @@ function DiscoverPageContent() {
       </div>
 
       {/* Results Grid */}
-      {filteredWorks.length === 0 ? (
+      {isLoading ? (
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
+          {Array.from({ length: 8 }).map((_, i) => (
+            <div
+              key={i}
+              className="rounded-2xl bg-zinc-100 dark:bg-zinc-800/60 animate-pulse aspect-[3/4]"
+            />
+          ))}
+        </div>
+      ) : filteredWorks.length === 0 ? (
         <div className="py-20 text-center space-y-4 rounded-3xl bg-zinc-50 dark:bg-zinc-900/40 border border-dashed border-zinc-300 dark:border-zinc-800">
           <BookOpen className="w-12 h-12 text-zinc-400 mx-auto" />
           <h3 className="text-lg font-bold text-zinc-900 dark:text-zinc-100">
@@ -602,13 +503,54 @@ function DiscoverPageContent() {
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
           {filteredWorks.map((work) => {
-            if (work.type === "COMIC" && work.comicData) {
-              return <ComicCard key={work.id} comic={work.comicData} />;
+            // Server results come as flat objects — map to card format
+            if (work.type === "COMIC") {
+              const comicData = work.comicData || {
+                id: work.id,
+                title: work.title,
+                slug: work.slug,
+                coverUrl: work.coverUrl,
+                genre: work.genre,
+                tags: work.tags || [],
+                description: work.description,
+                status: work.status,
+                storyFormat: work.storyFormat,
+                reads: work.reads || 0,
+                rating: work.rating || 5.0,
+                likesCount: work.likesCount || 0,
+                createdAt: work.createdAt,
+                creator: {
+                  name: work.creatorName || "Creator",
+                  username: work.creatorUsername || "creator",
+                  avatar: work.creatorAvatar,
+                },
+                episodes: [],
+              };
+              return <ComicCard key={work.id} comic={comicData as any} />;
             }
-            if (work.type === "NOVEL" && work.novelData) {
-              return <NovelCard key={work.id} novel={work.novelData} />;
-            }
-            return null;
+            // NOVEL
+            const novelData = work.novelData || {
+              id: work.id,
+              title: work.title,
+              slug: work.slug,
+              coverUrl: work.coverUrl,
+              genre: work.genre,
+              tags: work.tags || [],
+              description: work.description,
+              status: work.status,
+              storyFormat: work.storyFormat,
+              reads: work.reads || 0,
+              rating: work.rating || 5.0,
+              likesCount: work.likesCount || 0,
+              createdAt: work.createdAt,
+              creator: {
+                name: work.creatorName || "Creator",
+                username: work.creatorUsername || "creator",
+                avatar: work.creatorAvatar,
+              },
+              chapters: [],
+            };
+            return <NovelCard key={work.id} novel={novelData as any} />;
           })}
         </div>
       )}

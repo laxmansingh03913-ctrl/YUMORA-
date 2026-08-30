@@ -895,6 +895,42 @@ export const dbService = {
     }
   },
 
+  // Returns full profile data for all creators a user follows
+  async getFollowedCreatorProfiles(userId: string): Promise<UserProfile[]> {
+    try {
+      if (!userId) return [];
+      const validUserId = ensureUuid(userId);
+
+      // Step 1: Get the IDs of followed creators
+      const { data: followRows, error: followError } = await supabase
+        .from("follows")
+        .select("following_id")
+        .eq("follower_id", validUserId);
+
+      if (followError || !followRows || followRows.length === 0) return [];
+
+      const followingIds = followRows
+        .map((r: any) => r.following_id)
+        .filter(Boolean);
+
+      if (followingIds.length === 0) return [];
+
+      // Step 2: Batch-fetch their profiles from the profiles table
+      const { data: profileRows, error: profileError } = await supabase
+        .from("profiles")
+        .select("*")
+        .in("id", followingIds);
+
+      if (profileError || !profileRows) return [];
+
+      return profileRows
+        .map((row: any) => mapProfileFromDb(row))
+        .filter((p: UserProfile | null): p is UserProfile => p !== null);
+    } catch {
+      return [];
+    }
+  },
+
   async toggleFollow(followerId: string, followingId: string): Promise<boolean> {
     try {
       if (!followerId || !followingId || followerId === followingId) return false;

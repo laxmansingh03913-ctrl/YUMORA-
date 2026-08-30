@@ -32,18 +32,16 @@ export default function LibraryPage() {
   const [followingCreators, setFollowingCreators] = useState<UserProfile[]>([]);
 
   // Custom reading lists
-  const [customLists, setCustomLists] = useState<{ id: string; name: string; count: number }[]>([
-    { id: "list-1", name: "Epic Space Operas", count: 3 },
-    { id: "list-2", name: "Weekend Binge Reads", count: 2 },
-  ]);
+  const [customLists, setCustomLists] = useState<{ id: string; name: string; count: number }[]>([]);
   const [newListName, setNewListName] = useState("");
   const [isAddingList, setIsAddingList] = useState(false);
 
   useEffect(() => {
-    const all = dataStore.getNovels();
-    setNovels(all);
-
     const loadData = async () => {
+      // Load novels from store (already Supabase-synced)
+      const all = dataStore.getNovels();
+      setNovels(all);
+
       let bIds = dataStore.getBookmarks();
       let lIds = dataStore.getLikes();
       let fIds = dataStore.getFollows();
@@ -61,15 +59,68 @@ export default function LibraryPage() {
         } catch {
           // ignore
         }
+
+        // Fetch reading progress from Supabase
+        try {
+          const { supabase } = await import("@/lib/supabase/client");
+          const { data: progressRows } = await supabase
+            .from("reading_progress")
+            .select("*")
+            .eq("user_id", user.id)
+            .order("last_read_at", { ascending: false });
+
+          if (progressRows && progressRows.length > 0) {
+            const currentMap = dataStore.getReadingProgressMap();
+            progressRows.forEach((row: any) => {
+              const contentId = row.content_id;
+              const local = currentMap[contentId];
+              const dbLastRead = new Date(row.last_read_at || "").getTime();
+              const localLastRead = local ? new Date(local.lastReadAt || "").getTime() : 0;
+
+              // Enrich with novel metadata if available
+              const matchedNovel = all.find((n) => n.id === contentId);
+              if (!local || dbLastRead >= localLastRead) {
+                currentMap[contentId] = {
+                  ...(local || {}),
+                  contentId,
+                  userId: row.user_id,
+                  contentType: row.content_type || "NOVEL",
+                  chapterNumber: row.chapter_number || 1,
+                  progressPercentage: row.progress_percentage || 0,
+                  lastReadAt: row.last_read_at || new Date().toISOString(),
+                  contentTitle: local?.contentTitle || matchedNovel?.title,
+                  contentSlug: local?.contentSlug || matchedNovel?.slug,
+                  coverUrl: local?.coverUrl || matchedNovel?.coverUrl,
+                  creatorName: local?.creatorName || matchedNovel?.creator?.name,
+                  totalUnits: local?.totalUnits || matchedNovel?.chaptersCount,
+                };
+              }
+            });
+            setReadingProgressMap({ ...currentMap });
+          } else {
+            setReadingProgressMap(dataStore.getReadingProgressMap());
+          }
+        } catch {
+          setReadingProgressMap(dataStore.getReadingProgressMap());
+        }
+      } else {
+        setReadingProgressMap(dataStore.getReadingProgressMap());
       }
 
       setBookmarks(all.filter((n) => bIds.includes(n.id)));
       setLikes(all.filter((n) => lIds.includes(n.id)));
 
-      const prog = dataStore.getReadingProgressMap();
-      setReadingProgressMap(prog);
-
-      setFollowingCreators(dataStore.getUsers().filter((u) => fIds.includes(u.id)));
+      // Load real creator profiles from Supabase for following tab
+      if (user?.id) {
+        try {
+          const realProfiles = await dbService.getFollowedCreatorProfiles(user.id);
+          setFollowingCreators(realProfiles);
+        } catch {
+          setFollowingCreators([]);
+        }
+      } else {
+        setFollowingCreators([]);
+      }
     };
 
     loadData();
@@ -304,14 +355,15 @@ export default function LibraryPage() {
                       </h4>
                       <p className="text-xs text-zinc-400 truncate">@{creator.username}</p>
                       <p className="text-[11px] text-rose-500 font-semibold mt-0.5">
-                        {creator.followersCount.toLocaleString()} followers
+                        {(creator.followersCount ?? 0).toLocaleString()} followers
                       </p>
                     </div>
                   </Link>
 
                   <button
-                    onClick={() => {
-                      dataStore.unfollowCreator("usr-reader-1", creator.id);
+                    onClick={async () => {
+                      if (!user?.id) return;
+                      await dbService.toggleFollow(user.id, creator.id).catch(() => {});
                       setFollowingCreators((prev) => prev.filter((c) => c.id !== creator.id));
                     }}
                     className="px-3 py-1.5 rounded-xl bg-zinc-100 dark:bg-zinc-800 hover:bg-rose-950/40 hover:text-rose-400 text-zinc-500 text-xs font-semibold transition flex-shrink-0"

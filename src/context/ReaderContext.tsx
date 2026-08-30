@@ -3,6 +3,8 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { ReaderSettings, ReadingProgress } from "../lib/types";
 import { dataStore } from "../lib/data/store";
+import { useAuth } from "./AuthContext";
+import { supabase } from "../lib/supabase/client";
 
 const DEFAULT_SETTINGS: ReaderSettings = {
   theme: "dark",
@@ -26,6 +28,7 @@ const ReaderContext = createContext<ReaderContextType | undefined>(undefined);
 export function ReaderProvider({ children }: { children: React.ReactNode }) {
   const [settings, setSettings] = useState<ReaderSettings>(DEFAULT_SETTINGS);
   const [mounted, setMounted] = useState(false);
+  const { user } = useAuth();
 
   useEffect(() => {
     try {
@@ -38,6 +41,54 @@ export function ReaderProvider({ children }: { children: React.ReactNode }) {
     }
     setMounted(true);
   }, []);
+
+  // On user login, load their reading progress from Supabase into local store
+  useEffect(() => {
+    if (!user?.id || !mounted) return;
+
+    const syncProgressFromDB = async () => {
+      try {
+        const { data: rows } = await supabase
+          .from("reading_progress")
+          .select("*")
+          .eq("user_id", user.id)
+          .order("last_read_at", { ascending: false });
+
+        if (rows && rows.length > 0) {
+          const currentMap = dataStore.getReadingProgressMap();
+          rows.forEach((row: any) => {
+            const contentId = row.content_id;
+            const local = currentMap[contentId];
+            const dbLastRead = new Date(row.last_read_at || "").getTime();
+            const localLastRead = local ? new Date(local.lastReadAt || "").getTime() : 0;
+
+            // Only update if DB version is newer or doesn't exist locally
+            if (!local || dbLastRead >= localLastRead) {
+              currentMap[contentId] = {
+                ...(local || {}),
+                contentId,
+                userId: row.user_id,
+                contentType: row.content_type || "NOVEL",
+                chapterNumber: row.chapter_number || 1,
+                episodeNumber: row.episode_number,
+                progressPercentage: row.progress_percentage || 0,
+                scrollOffset: row.scroll_offset || 0,
+                pageIndex: row.page_index || 0,
+                lastReadAt: row.last_read_at || new Date().toISOString(),
+              };
+            }
+          });
+          try {
+            localStorage.setItem("yumora_reading_progress", JSON.stringify(currentMap));
+          } catch { /* ignore */ }
+        }
+      } catch (e) {
+        console.warn("Reading progress DB sync error:", e);
+      }
+    };
+
+    syncProgressFromDB();
+  }, [user?.id, mounted]);
 
   const updateSettings = (partial: Partial<ReaderSettings>) => {
     setSettings((prev) => {
@@ -80,8 +131,10 @@ export function ReaderProvider({ children }: { children: React.ReactNode }) {
     const total = metadata?.totalUnits || novel?.chapters.length || comic?.episodes.length;
     const type = metadata?.contentType || (comic ? "COMIC" : "NOVEL");
 
+    // Save with userId so it syncs to Supabase
     dataStore.saveReadingProgress({
       contentId,
+      userId: user?.id,
       contentType: type,
       contentTitle: title,
       contentSlug: slug,
