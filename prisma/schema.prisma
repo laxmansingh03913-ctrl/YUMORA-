@@ -1,5 +1,3 @@
-// Prisma schema for Yumora - Global Novel & Comics Creator Platform
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -10,13 +8,399 @@ datasource db {
   directUrl = env("DIRECT_URL")
 }
 
-enum Role {
-  READER
-  CREATOR
-  ADMIN
+model User {
+  id                          String              @id @db.Uuid
+  name                        String?
+  username                    String              @unique
+  email                       String              @unique
+  role                        user_role?          @default(READER)
+  avatar                      String?
+  banner                      String?
+  bio                         String?
+  country                     String?             @default("Global")
+  website                     String?
+  twitter                     String?
+  isVerified                  Boolean?            @default(false) @map("is_verified")
+  is_creator_profile_complete Boolean?            @default(false)
+  is_email_verified           Boolean?            @default(false)
+  is_age_verified             Boolean?            @default(true)
+  followers_count             Int?                @default(0)
+  following_count             Int?                @default(0)
+  total_reads                 Int?                @default(0)
+  createdAt                   DateTime?           @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt                   DateTime?           @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  bookmarks                   Bookmark[]
+  coin_transactions           coin_transactions[]
+  wallet                      CoinWallet?
+  comics                      Comic[]
+  comments                    Comment[]
+  communityComments           CommunityComment[]
+  communityPosts              CommunityPost[]
+  contestSubmissions          ContestSubmission[]
+  followers                   Follow[]            @relation("UserFollowers")
+  following                   Follow[]            @relation("UserFollowing")
+  likes                       Like[]
+  novels                      Novel[]
+  transactions                Transaction[]
+  payoutRequests              PayoutRequest[]
+  readingProgress             ReadingProgress[]
+  reportsFiled                Report[]
+
+  @@map("profiles")
 }
 
-enum ContentStatus {
+model Follow {
+  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  followerId  String    @map("follower_id") @db.Uuid
+  followingId String    @map("following_id") @db.Uuid
+  createdAt   DateTime? @default(now()) @map("created_at") @db.Timestamptz(6)
+  follower    User      @relation("UserFollowers", fields: [followerId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  following   User      @relation("UserFollowing", fields: [followingId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([followerId, followingId])
+  @@map("follows")
+}
+
+model Novel {
+  id               String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  creatorId        String            @map("creator_id") @db.Uuid
+  title            String
+  slug             String            @unique
+  description      String
+  coverUrl         String            @map("cover_url")
+  bannerUrl        String?           @map("banner_url")
+  genre            String
+  secondaryGenre   String?           @map("secondary_genre")
+  tags             String[]          @default([])
+  language         String?           @default("en")
+  status           content_status?   @default(ONGOING)
+  contentRating    content_rating?   @default(TEEN) @map("content_rating")
+  content_warning  String?
+  views            Int?              @default(0)
+  reads            Int?              @default(0)
+  likes_count      Int?              @default(0)
+  bookmarks_count  Int?              @default(0)
+  rating           Decimal?          @default(5.00) @db.Decimal(3, 2)
+  totalRatings     Int?              @default(0) @map("total_ratings")
+  isFeatured       Boolean?          @default(false) @map("is_featured")
+  isEditorPick     Boolean?          @default(false) @map("is_editor_pick")
+  isPremium        Boolean?          @default(false) @map("is_premium")
+  chapters_count   Int?              @default(0)
+  createdAt        DateTime?         @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt        DateTime?         @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  format           String?           @default("STANDARD")
+  sub_type         String?           @default("WEB_NOVEL")
+  bookmarks        Bookmark[]
+  chapters         Chapter[]
+  comments         Comment[]
+  profiles         User              @relation(fields: [creatorId], references: [id], onDelete: Cascade)
+  reading_progress ReadingProgress[]
+
+  @@index([creatorId], map: "idx_novels_creator_id")
+  @@index([format], map: "idx_novels_format")
+  @@index([sub_type], map: "idx_novels_sub_type")
+  @@map("novels")
+}
+
+model Chapter {
+  id                String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  novelId           String          @map("novel_id") @db.Uuid
+  chapterNumber     Int             @map("chapter_number")
+  title             String
+  content           String
+  status            content_status? @default(PUBLISHED)
+  wordCount         Int?            @default(0) @map("word_count")
+  read_time_minutes Int?            @default(1)
+  isFree            Boolean?        @default(true) @map("is_free")
+  publishedAt       DateTime?       @default(now()) @map("published_at") @db.Timestamptz(6)
+  createdAt         DateTime?       @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt         DateTime?       @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  novel             Novel           @relation(fields: [novelId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  comments          Comment[]
+
+  @@unique([novelId, chapterNumber])
+  @@map("chapters")
+}
+
+model Comic {
+  id                 String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  creatorId          String            @map("creator_id") @db.Uuid
+  title              String
+  slug               String            @unique
+  description        String
+  coverUrl           String            @map("cover_url")
+  bannerUrl          String?           @map("banner_url")
+  genre              String
+  secondary_genre    String?
+  tags               String[]          @default([])
+  language           String?           @default("en")
+  format             String?           @default("PAGE_BASED")
+  reading_direction  String?           @default("RTL")
+  sub_type           String?           @default("MANGA")
+  allow_pdf_download Boolean?          @default(true)
+  status             content_status?   @default(ONGOING)
+  contentRating      content_rating?   @default(TEEN) @map("content_rating")
+  content_warning    String?
+  views              Int?              @default(0)
+  reads              Int?              @default(0)
+  likes_count        Int?              @default(0)
+  bookmarks_count    Int?              @default(0)
+  rating             Decimal?          @default(5.00) @db.Decimal(3, 2)
+  totalRatings       Int?              @default(0) @map("total_ratings")
+  isFeatured         Boolean?          @default(false) @map("is_featured")
+  isEditorPick       Boolean?          @default(false) @map("is_editor_pick")
+  isPremium          Boolean?          @default(false) @map("is_premium")
+  episodes_count     Int?              @default(0)
+  createdAt          DateTime?         @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt          DateTime?         @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  bookmarks          Bookmark[]
+  profiles           User              @relation(fields: [creatorId], references: [id], onDelete: Cascade)
+  comments           Comment[]
+  episodes           ComicEpisode[]
+  reading_progress   ReadingProgress[]
+
+  @@index([creatorId], map: "idx_comics_creator_id")
+  @@map("comics")
+}
+
+model ComicEpisode {
+  id            String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  comicId       String          @map("comic_id") @db.Uuid
+  episodeNumber Int             @map("episode_number")
+  title         String
+  thumbnailUrl  String?         @map("thumbnail_url")
+  imageUrls     String[]        @default([]) @map("image_urls")
+  status        content_status? @default(PUBLISHED)
+  likes_count   Int?            @default(0)
+  publishedAt   DateTime?       @default(now()) @map("published_at") @db.Timestamptz(6)
+  createdAt     DateTime?       @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt     DateTime?       @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  comments      Comment[]
+  comic         Comic           @relation(fields: [comicId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([comicId, episodeNumber])
+  @@map("episodes")
+}
+
+model Comment {
+  id          String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId      String        @map("user_id") @db.Uuid
+  novelId     String?       @map("novel_id") @db.Uuid
+  chapterId   String?       @map("chapter_id") @db.Uuid
+  comicId     String?       @map("comic_id") @db.Uuid
+  episodeId   String?       @map("episode_id") @db.Uuid
+  content     String
+  likes_count Int?          @default(0)
+  createdAt   DateTime?     @default(now()) @map("created_at") @db.Timestamptz(6)
+  chapters    Chapter?      @relation(fields: [chapterId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  comics      Comic?        @relation(fields: [comicId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  episodes    ComicEpisode? @relation(fields: [episodeId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  novels      Novel?        @relation(fields: [novelId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  user        User          @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@map("comments")
+}
+
+model Like {
+  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId     String    @map("user_id") @db.Uuid
+  targetId   String    @map("target_id") @db.Uuid
+  targetType String    @map("target_type")
+  createdAt  DateTime? @default(now()) @map("created_at") @db.Timestamptz(6)
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([userId, targetId, targetType])
+  @@map("likes")
+}
+
+model Bookmark {
+  id        String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId    String    @map("user_id") @db.Uuid
+  novelId   String?   @map("novel_id") @db.Uuid
+  comicId   String?   @map("comic_id") @db.Uuid
+  createdAt DateTime? @default(now()) @map("created_at") @db.Timestamptz(6)
+  comics    Comic?    @relation(fields: [comicId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  novels    Novel?    @relation(fields: [novelId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@map("bookmarks")
+}
+
+model ReadingProgress {
+  id              String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId          String    @map("user_id") @db.Uuid
+  novel_id        String?   @db.Uuid
+  comic_id        String?   @db.Uuid
+  chapterNumber   Int?      @default(1) @map("chapter_number")
+  episodeNumber   Int?      @default(1) @map("episode_number")
+  scroll_position Int?      @default(0)
+  percentage      Int?      @default(0)
+  updated_at      DateTime? @default(now()) @db.Timestamptz(6)
+  comics          Comic?    @relation(fields: [comic_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  novels          Novel?    @relation(fields: [novel_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@map("reading_progress")
+}
+
+model CoinWallet {
+  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId      String    @unique @map("user_id") @db.Uuid
+  balance     Int?      @default(0)
+  totalEarned Int?      @default(0) @map("total_earned")
+  totalSpent  Int?      @default(0) @map("total_spent")
+  createdAt   DateTime? @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime? @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([userId], map: "idx_coin_wallets_user_id")
+  @@map("coin_wallets")
+}
+
+model Transaction {
+  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId     String    @map("user_id") @db.Uuid
+  orderId    String    @map("order_id")
+  paymentId  String    @unique @map("payment_id")
+  packageId  String    @map("package_id")
+  amountInr  Decimal   @map("amount_inr") @db.Decimal(10, 2)
+  coinsAdded Int       @map("coins_credited")
+  status     String    @default("COMPLETED")
+  createdAt  DateTime? @default(now()) @map("created_at") @db.Timestamptz(6)
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([userId], map: "idx_payment_transactions_user_id")
+  @@map("payment_transactions")
+}
+
+model PayoutRequest {
+  id                String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId            String    @map("user_id") @db.Uuid
+  amountInr         Decimal   @map("amount_inr") @db.Decimal(10, 2)
+  amountUsd         Decimal?  @map("amount_usd") @db.Decimal(10, 2)
+  method            String?   @default("UPI")
+  details           String?
+  accountHolderName String?   @map("account_holder_name")
+  status            String?   @default("PENDING")
+  referenceId       String?   @map("reference_id")
+  note              String?
+  processedAt       DateTime? @map("processed_at") @db.Timestamptz(6)
+  createdAt         DateTime? @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt         DateTime? @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([status], map: "idx_payout_requests_status")
+  @@index([userId], map: "idx_payout_requests_user_id")
+  @@map("payout_requests")
+}
+
+model Contest {
+  id               String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  title            String
+  slug             String              @unique
+  subtitle         String?
+  description      String
+  bannerUrl        String?             @map("banner_url")
+  prizePool        String?             @map("prize_pool")
+  startDate        DateTime            @map("start_date") @db.Timestamptz(6)
+  endDate          DateTime            @map("end_date") @db.Timestamptz(6)
+  status           String?             @default("ACTIVE")
+  rules            String[]            @default([])
+  eligibleGenres   String[]            @default([]) @map("eligible_genres")
+  minChapters      Int?                @default(2) @map("min_chapters")
+  submission_count Int?                @default(0)
+  createdAt        DateTime?           @default(now()) @map("created_at") @db.Timestamptz(6)
+  submissions      ContestSubmission[]
+
+  @@map("contests")
+}
+
+model Report {
+  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  reporterId  String    @map("reporter_id") @db.Uuid
+  contentId   String    @map("content_id") @db.Uuid
+  contentType String    @default("NOVEL") @map("content_type")
+  reason      String
+  description String?
+  status      String    @default("PENDING")
+  createdAt   DateTime? @default(now()) @map("created_at") @db.Timestamptz(6)
+  resolvedAt  DateTime? @map("resolved_at") @db.Timestamptz(6)
+  reporter    User      @relation(fields: [reporterId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@map("reports")
+}
+
+model CommunityPost {
+  id        String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId    String             @map("user_id") @db.Uuid
+  category  String
+  title     String
+  content   String
+  tags      String[]           @default([])
+  upvotes   Int                @default(0)
+  views     Int                @default(0)
+  isPinned  Boolean            @default(false) @map("is_pinned")
+  createdAt DateTime?          @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime?          @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  comments  CommunityComment[]
+  user      User               @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@map("community_posts")
+}
+
+model CommunityComment {
+  id        String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  postId    String        @map("post_id") @db.Uuid
+  userId    String        @map("user_id") @db.Uuid
+  text      String
+  upvotes   Int           @default(0)
+  createdAt DateTime?     @default(now()) @map("created_at") @db.Timestamptz(6)
+  post      CommunityPost @relation(fields: [postId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  user      User          @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@map("community_comments")
+}
+
+model ContestSubmission {
+  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  contestId   String    @map("contest_id") @db.Uuid
+  contentId   String    @map("content_id") @db.Uuid
+  contentType String    @default("NOVEL") @map("content_type")
+  creatorId   String    @map("creator_id") @db.Uuid
+  score       Decimal   @default(0.00) @db.Decimal(5, 2)
+  rank        Int?
+  status      String    @default("PENDING")
+  votes       Int       @default(0)
+  submittedAt DateTime? @default(now()) @map("submitted_at") @db.Timestamptz(6)
+  contest     Contest   @relation(fields: [contestId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  creator     User      @relation(fields: [creatorId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([contestId, contentId, contentType], map: "unique_contest_submission")
+  @@map("contest_submissions")
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model coin_transactions {
+  id           String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id      String    @db.Uuid
+  amount       Int
+  type         String
+  description  String
+  reference_id String?
+  created_at   DateTime? @default(now()) @db.Timestamptz(6)
+  profiles     User      @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([created_at(sort: Desc)], map: "idx_coin_transactions_created_at")
+  @@index([user_id], map: "idx_coin_transactions_user_id")
+}
+
+enum content_rating {
+  EVERYONE
+  TEEN
+  MATURE
+}
+
+enum content_status {
   DRAFT
   SCHEDULED
   PUBLISHED
@@ -25,428 +409,14 @@ enum ContentStatus {
   HIATUS
 }
 
-enum ContentRating {
-  EVERYONE
-  TEEN
-  MATURE
+enum role_type {
+  READER
+  CREATOR
+  ADMIN
 }
 
-enum ContentType {
-  NOVEL
-  COMIC
-  ANIMATION
+enum user_role {
+  READER
+  CREATOR
+  ADMIN
 }
-
-model User {
-  id             String          @id
-  name           String
-  username       String          @unique
-  email          String          @unique
-  role           Role            @default(CREATOR)
-  avatar         String?
-  banner         String?
-  bio            String?
-  country        String?         @default("Global")
-  website        String?
-  twitter        String?
-  isVerified     Boolean         @default(false) @map("is_verified")
-  createdAt      DateTime        @default(now()) @map("created_at")
-  updatedAt      DateTime        @updatedAt @map("updated_at")
-
-  preferredTypes String[]        @default([]) @map("preferred_types")
-  primaryGenres  String[]        @default([]) @map("primary_genres")
-
-  novels         Novel[]
-  comics         Comic[]
-  comments       Comment[]
-  likes          Like[]
-  bookmarks      Bookmark[]
-  communityPosts    CommunityPost[]
-  communityComments CommunityComment[]
-  contestSubmissions ContestSubmission[]
-  readingProgress ReadingProgress[]
-
-  followers      Follow[]        @relation("UserFollowers")
-  following      Follow[]        @relation("UserFollowing")
-  transactions   Transaction[]
-  wallet         CoinWallet?
-  payoutRequests PayoutRequest[]
-  reportsFiled   Report[]
-
-  @@index([username])
-  @@index([email])
-  @@map("profiles")
-}
-
-model Follow {
-  id          String   @id @default(dbgenerated("gen_random_uuid()"))
-  followerId  String   @map("follower_id")
-  followingId String   @map("following_id")
-  createdAt   DateTime @default(now()) @map("created_at")
-
-  follower    User     @relation("UserFollowers", fields: [followerId], references: [id], onDelete: Cascade)
-  following   User     @relation("UserFollowing", fields: [followingId], references: [id], onDelete: Cascade)
-
-  @@unique([followerId, followingId])
-  @@map("follows")
-}
-
-model Novel {
-  id             String          @id @default(dbgenerated("gen_random_uuid()"))
-  creatorId      String          @map("creator_id")
-  title          String
-  slug           String          @unique
-  description    String          @db.Text
-  coverUrl       String          @map("cover_url")
-  bannerUrl      String?         @map("banner_url")
-  genre          String
-  secondaryGenre String?         @map("secondary_genre")
-  tags           String[]        @default([])
-  language       String          @default("en")
-  format         String?         @default("STANDARD")
-  subType        String?         @default("WEB_NOVEL")
-  status         ContentStatus   @default(ONGOING)
-  contentRating  ContentRating   @default(TEEN) @map("content_rating")
-  views          Int             @default(0)
-  reads          Int             @default(0)
-  rating         Float           @default(5.0)
-  totalRatings   Int             @default(0) @map("total_ratings")
-  isFeatured     Boolean         @default(false) @map("is_featured")
-  isEditorPick   Boolean         @default(false) @map("is_editor_pick")
-  isPremium      Boolean         @default(false) @map("is_premium")
-  createdAt      DateTime        @default(now()) @map("created_at")
-  updatedAt      DateTime        @updatedAt @map("updated_at")
-
-  creator        User            @relation(fields: [creatorId], references: [id], onDelete: Cascade)
-  chapters       Chapter[]
-
-  @@index([slug])
-  @@index([genre])
-  @@index([language])
-  @@index([creatorId])
-  @@index([status])
-  @@map("novels")
-}
-
-model Chapter {
-  id            String        @id @default(dbgenerated("gen_random_uuid()"))
-  novelId       String        @map("novel_id")
-  chapterNumber Int           @map("chapter_number")
-  title         String
-  content       String        @db.Text
-  status        ContentStatus @default(ONGOING)
-  wordCount     Int           @default(0) @map("word_count")
-  isFree        Boolean       @default(true) @map("is_free")
-  publishedAt   DateTime      @default(now()) @map("published_at")
-  createdAt     DateTime      @default(now()) @map("created_at")
-  updatedAt     DateTime      @updatedAt @map("updated_at")
-
-  novel         Novel         @relation(fields: [novelId], references: [id], onDelete: Cascade)
-
-  @@unique([novelId, chapterNumber])
-  @@index([novelId])
-  @@map("chapters")
-}
-
-model Comic {
-  id            String        @id @default(dbgenerated("gen_random_uuid()"))
-  creatorId     String        @map("creator_id")
-  title         String
-  slug          String        @unique
-  description   String        @db.Text
-  coverUrl      String        @map("cover_url")
-  bannerUrl     String?       @map("banner_url")
-  genre         String
-  tags          String[]      @default([])
-  language      String        @default("en")
-  status        ContentStatus @default(ONGOING)
-  contentRating ContentRating @default(TEEN) @map("content_rating")
-  views          Int             @default(0)
-  reads          Int             @default(0)
-  rating         Float           @default(5.0)
-  totalRatings  Int             @default(0) @map("total_ratings")
-  isFeatured    Boolean         @default(false) @map("is_featured")
-  isEditorPick  Boolean         @default(false) @map("is_editor_pick")
-  isPremium     Boolean         @default(false) @map("is_premium")
-  createdAt     DateTime        @default(now()) @map("created_at")
-  updatedAt     DateTime        @updatedAt @map("updated_at")
-
-  creator       User          @relation(fields: [creatorId], references: [id], onDelete: Cascade)
-  episodes      ComicEpisode[]
-
-  @@index([slug])
-  @@index([genre])
-  @@index([creatorId])
-  @@map("comics")
-}
-
-model ComicEpisode {
-  id            String        @id @default(dbgenerated("gen_random_uuid()"))
-  comicId       String        @map("comic_id")
-  episodeNumber Int           @map("episode_number")
-  title         String
-  thumbnailUrl  String?       @map("thumbnail_url")
-  imageUrls     String[]      @default([]) @map("image_urls")
-  status        ContentStatus @default(ONGOING)
-  publishedAt   DateTime      @default(now()) @map("published_at")
-  createdAt     DateTime      @default(now()) @map("created_at")
-  updatedAt     DateTime      @updatedAt @map("updated_at")
-
-  comic         Comic         @relation(fields: [comicId], references: [id], onDelete: Cascade)
-
-  @@unique([comicId, episodeNumber])
-  @@index([comicId])
-  @@map("episodes")
-}
-
-model Comment {
-  id        String   @id @default(dbgenerated("gen_random_uuid()"))
-  userId    String   @map("user_id")
-  content   String   @db.Text
-  novelId   String?  @map("novel_id")
-  chapterId String?  @map("chapter_id")
-  comicId   String?  @map("comic_id")
-  episodeId String?  @map("episode_id")
-  createdAt DateTime @default(now()) @map("created_at")
-
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([userId])
-  @@map("comments")
-}
-
-model Like {
-  id         String   @id @default(dbgenerated("gen_random_uuid()"))
-  userId     String   @map("user_id")
-  targetId   String   @map("target_id")
-  targetType String   @default("STORY") @map("target_type")
-  createdAt  DateTime @default(now()) @map("created_at")
-
-  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@unique([userId, targetId])
-  @@map("likes")
-}
-
-model Bookmark {
-  id        String   @id @default(dbgenerated("gen_random_uuid()"))
-  userId    String   @map("user_id")
-  novelId   String?  @map("novel_id")
-  comicId   String?  @map("comic_id")
-  createdAt DateTime @default(now()) @map("created_at")
-
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@map("bookmarks")
-}
-
-model ReadingProgress {
-  id            String   @id @default(dbgenerated("gen_random_uuid()"))
-  userId        String   @map("user_id")
-  contentId     String   @map("content_id")
-  contentType   String   @default("NOVEL") @map("content_type")
-  chapterNumber Int?     @map("chapter_number")
-  episodeNumber Int?     @map("episode_number")
-  scrollOffset  Float    @default(0.0) @map("scroll_offset")
-  pageIndex     Int      @default(0) @map("page_index")
-  lastReadAt    DateTime @default(now()) @map("last_read_at")
-
-  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@unique([userId, contentId])
-  @@map("reading_progress")
-}
-
-model CoinWallet {
-  id          String   @id @default(dbgenerated("gen_random_uuid()"))
-  userId      String   @unique @map("user_id")
-  balance     Int      @default(0)
-  totalEarned Int      @default(0) @map("total_earned")
-  totalSpent  Int      @default(0) @map("total_spent")
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
-
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@map("coin_wallets")
-}
-
-model Transaction {
-  id         String   @id @default(dbgenerated("gen_random_uuid()"))
-  userId     String   @map("user_id")
-  orderId    String   @map("order_id")
-  paymentId  String   @unique @map("payment_id")
-  packageId  String   @map("package_id")
-  amountInr  Float    @map("amount_inr")
-  coinsAdded Int      @map("coins_credited")
-  status     String   @default("COMPLETED")
-  createdAt  DateTime @default(now()) @map("created_at")
-
-  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@map("payment_transactions")
-}
-
-model PayoutRequest {
-  id                String    @id @default(dbgenerated("gen_random_uuid()"))
-  userId            String    @map("user_id")
-  amountInr         Float     @map("amount_inr")
-  amountUsd         Float?    @map("amount_usd")
-  method            String    @default("UPI")
-  details           String    @db.Text
-  accountHolderName String?   @map("account_holder_name")
-  status            String    @default("PENDING")
-  referenceId       String?   @map("reference_id")
-  note              String?
-  createdAt         DateTime  @default(now()) @map("created_at")
-  updatedAt         DateTime  @updatedAt @map("updated_at")
-  processedAt       DateTime? @map("processed_at")
-
-  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@map("payout_requests")
-}
-
-model Contest {
-  id             String   @id @default(dbgenerated("gen_random_uuid()"))
-  title          String
-  slug           String   @unique
-  subtitle       String?
-  description    String?  @db.Text
-  bannerUrl      String?  @map("banner_url")
-  prizePool      String?  @map("prize_pool")
-  startDate      DateTime @map("start_date")
-  endDate        DateTime @map("end_date")
-  status         String   @default("LIVE")
-  rules          String[] @default([])
-  eligibleGenres String[] @default([]) @map("eligible_genres")
-  minChapters    Int      @default(2) @map("min_chapters")
-  createdAt      DateTime @default(now()) @map("created_at")
-  updatedAt      DateTime @default(now()) @updatedAt @map("updated_at")
-
-  submissions    ContestSubmission[]
-
-  @@index([slug])
-  @@map("contests")
-}
-
-model Report {
-  id          String    @id @default(dbgenerated("gen_random_uuid()"))
-  reporterId  String    @map("reporter_id")
-  contentId   String    @map("content_id")
-  contentType String    @default("NOVEL") @map("content_type")
-  reason      String
-  description String?   @db.Text
-  status      String    @default("PENDING")
-  createdAt   DateTime  @default(now()) @map("created_at")
-  resolvedAt  DateTime? @map("resolved_at")
-
-  reporter    User      @relation(fields: [reporterId], references: [id], onDelete: Cascade)
-
-  @@map("reports")
-}
-
-model CommunityPost {
-  id        String             @id @default(dbgenerated("gen_random_uuid()"))
-  userId    String             @map("user_id")
-  category  String
-  title     String
-  content   String             @db.Text
-  tags      String[]           @default([])
-  upvotes   Int                @default(0)
-  views     Int                @default(0)
-  isPinned  Boolean            @default(false) @map("is_pinned")
-  createdAt DateTime           @default(now()) @map("created_at")
-  updatedAt DateTime           @default(now()) @updatedAt @map("updated_at")
-
-  user      User               @relation(fields: [userId], references: [id], onDelete: Cascade)
-  comments  CommunityComment[]
-
-  @@map("community_posts")
-}
-
-model CommunityComment {
-  id        String   @id @default(dbgenerated("gen_random_uuid()"))
-  postId    String   @map("post_id")
-  userId    String   @map("user_id")
-  text      String   @db.Text
-  upvotes   Int      @default(0)
-  createdAt DateTime @default(now()) @map("created_at")
-
-  post      CommunityPost @relation(fields: [postId], references: [id], onDelete: Cascade)
-  user      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@map("community_comments")
-}
-
-// Unused models commented out to avoid errors on non-existent tables:
-//
-// model Rating {
-//   id          String      @id @default(cuid())
-//   userId      String
-//   contentId   String
-//   contentType ContentType @default(NOVEL)
-//   score       Int
-//   review      String?     @db.Text
-//   createdAt   DateTime    @default(now())
-//   user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
-//   @@unique([userId, contentId, contentType])
-// }
-model ContestSubmission {
-  id          String   @id @default(dbgenerated("gen_random_uuid()"))
-  contestId   String   @map("contest_id")
-  contentId   String   @map("content_id")
-  contentType String   @default("NOVEL") @map("content_type")
-  creatorId   String   @map("creator_id")
-  score       Float    @default(0.0)
-  rank        Int?
-  status      String   @default("PENDING")
-  votes       Int      @default(0)
-  submittedAt DateTime @default(now()) @map("submitted_at")
-
-  contest     Contest  @relation(fields: [contestId], references: [id], onDelete: Cascade)
-  creator     User     @relation(fields: [creatorId], references: [id], onDelete: Cascade)
-
-  @@unique([contestId, contentId, contentType])
-  @@map("contest_submissions")
-}
-//
-// model Report {
-//   id          String       @id @default(cuid())
-//   reporterId  String
-//   contentId   String
-//   contentType ContentType  @default(NOVEL)
-//   reason      String
-//   description String?      @db.Text
-//   status      ReportStatus @default(PENDING)
-//   createdAt   DateTime     @default(now())
-//   resolvedAt  DateTime?
-//   reporter    User         @relation("Reporter", fields: [reporterId], references: [id], onDelete: Cascade)
-// }
-//
-// model CommunityPost {
-//   id          String             @id @default(cuid())
-//   userId      String
-//   category    String
-//   title       String
-//   content     String             @db.Text
-//   tags        String[]
-//   upvotes     Int                @default(0)
-//   views       Int                @default(0)
-//   isPinned    Boolean            @default(false)
-//   createdAt   DateTime           @default(now())
-//   updatedAt   DateTime           @updatedAt
-//   user        User               @relation(fields: [userId], references: [id], onDelete: Cascade)
-//   comments    CommunityComment[]
-// }
-//
-// model CommunityComment {
-//   id        String        @id @default(cuid())
-//   postId    String
-//   userId    String
-//   text      String        @db.Text
-//   upvotes   Int           @default(0)
-//   createdAt DateTime      @default(now())
-//   post      CommunityPost @relation(fields: [postId], references: [id], onDelete: Cascade)
-//   user      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-// }

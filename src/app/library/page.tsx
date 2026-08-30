@@ -67,32 +67,33 @@ export default function LibraryPage() {
             .from("reading_progress")
             .select("*")
             .eq("user_id", user.id)
-            .order("last_read_at", { ascending: false });
+            .order("updated_at", { ascending: false });
 
           if (progressRows && progressRows.length > 0) {
             const currentMap = dataStore.getReadingProgressMap();
             progressRows.forEach((row: any) => {
-              const contentId = row.content_id;
+              const contentId = row.novel_id || row.comic_id;
+              if (!contentId) return;
               const local = currentMap[contentId];
-              const dbLastRead = new Date(row.last_read_at || "").getTime();
+              const dbLastRead = new Date(row.updated_at || "").getTime();
               const localLastRead = local ? new Date(local.lastReadAt || "").getTime() : 0;
 
-              // Enrich with novel metadata if available
+              // Enrich with novel/comic metadata if available
               const matchedNovel = all.find((n) => n.id === contentId);
               if (!local || dbLastRead >= localLastRead) {
                 currentMap[contentId] = {
                   ...(local || {}),
                   contentId,
                   userId: row.user_id,
-                  contentType: row.content_type || "NOVEL",
+                  contentType: row.novel_id ? "NOVEL" : "COMIC",
                   chapterNumber: row.chapter_number || 1,
-                  progressPercentage: row.progress_percentage || 0,
-                  lastReadAt: row.last_read_at || new Date().toISOString(),
+                  progressPercentage: row.percentage || 0,
+                  lastReadAt: row.updated_at || new Date().toISOString(),
                   contentTitle: local?.contentTitle || matchedNovel?.title,
                   contentSlug: local?.contentSlug || matchedNovel?.slug,
                   coverUrl: local?.coverUrl || matchedNovel?.coverUrl,
-                  creatorName: local?.creatorName || matchedNovel?.creator?.name,
-                  totalUnits: local?.totalUnits || matchedNovel?.chaptersCount,
+                  creatorName: local?.creatorName || (matchedNovel as any)?.creator?.name,
+                  totalUnits: local?.totalUnits || (matchedNovel as any)?.chaptersCount || (matchedNovel as any)?.episodesCount,
                 };
               }
             });
@@ -100,7 +101,8 @@ export default function LibraryPage() {
           } else {
             setReadingProgressMap(dataStore.getReadingProgressMap());
           }
-        } catch {
+        } catch (e) {
+          console.error("Library page progress error:", e);
           setReadingProgressMap(dataStore.getReadingProgressMap());
         }
       } else {

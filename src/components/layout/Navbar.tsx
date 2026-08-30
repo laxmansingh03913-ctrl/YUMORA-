@@ -33,6 +33,7 @@ import { useTheme } from "@/context/ThemeContext";
 import { useSidebar } from "@/context/SidebarContext";
 import { dataStore } from "@/lib/data/store";
 import { formatDate } from "@/lib/utils";
+import { supabase } from "@/lib/supabase/client";
 import { SearchModal } from "../ui/SearchModal";
 import { AuthModal } from "../ui/AuthModal";
 import { CoinShopModal } from "../ui/CoinShopModal";
@@ -118,9 +119,13 @@ export function Navbar() {
 
   useEffect(() => {
     if (user?.id) {
-      dbService.getWalletBalance(user.id)
-        .then((balance) => {
-          setDbCoins(balance);
+      supabase
+        .from("coin_wallets")
+        .select("balance")
+        .eq("user_id", user.id)
+        .maybeSingle()
+        .then(({ data }) => {
+          setDbCoins(data?.balance ?? 0);
         })
         .catch(() => {});
     }

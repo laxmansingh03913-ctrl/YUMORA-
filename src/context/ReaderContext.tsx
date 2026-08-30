@@ -52,14 +52,15 @@ export function ReaderProvider({ children }: { children: React.ReactNode }) {
           .from("reading_progress")
           .select("*")
           .eq("user_id", user.id)
-          .order("last_read_at", { ascending: false });
+          .order("updated_at", { ascending: false });
 
         if (rows && rows.length > 0) {
           const currentMap = dataStore.getReadingProgressMap();
           rows.forEach((row: any) => {
-            const contentId = row.content_id;
+            const contentId = row.novel_id || row.comic_id;
+            if (!contentId) return;
             const local = currentMap[contentId];
-            const dbLastRead = new Date(row.last_read_at || "").getTime();
+            const dbLastRead = new Date(row.updated_at || "").getTime();
             const localLastRead = local ? new Date(local.lastReadAt || "").getTime() : 0;
 
             // Only update if DB version is newer or doesn't exist locally
@@ -68,13 +69,13 @@ export function ReaderProvider({ children }: { children: React.ReactNode }) {
                 ...(local || {}),
                 contentId,
                 userId: row.user_id,
-                contentType: row.content_type || "NOVEL",
+                contentType: row.novel_id ? "NOVEL" : "COMIC",
                 chapterNumber: row.chapter_number || 1,
                 episodeNumber: row.episode_number,
-                progressPercentage: row.progress_percentage || 0,
-                scrollOffset: row.scroll_offset || 0,
-                pageIndex: row.page_index || 0,
-                lastReadAt: row.last_read_at || new Date().toISOString(),
+                progressPercentage: row.percentage || 0,
+                scrollOffset: row.scroll_position || 0,
+                pageIndex: 0,
+                lastReadAt: row.updated_at || new Date().toISOString(),
               };
             }
           });

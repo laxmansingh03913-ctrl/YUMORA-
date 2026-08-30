@@ -972,21 +972,21 @@ export const dbService = {
         .from("reading_progress")
         .select("*")
         .eq("user_id", validUserId)
-        .eq("content_id", validContentId)
+        .or(`novel_id.eq.${validContentId},comic_id.eq.${validContentId}`)
         .maybeSingle();
 
       if (error || !data) return null;
       return {
         id: data.id,
         userId: data.user_id,
-        contentId: data.content_id,
-        contentType: data.content_type || "NOVEL",
+        contentId: data.novel_id || data.comic_id || "",
+        contentType: data.novel_id ? "NOVEL" : "COMIC",
         chapterNumber: data.chapter_number,
         episodeNumber: data.episode_number,
-        scrollOffset: data.scroll_offset || 0,
-        pageIndex: data.page_index || 0,
-        progressPercentage: data.progress_percentage || 0,
-        lastReadAt: data.last_read_at || data.updated_at || new Date().toISOString(),
+        scrollOffset: data.scroll_position || 0,
+        pageIndex: 0,
+        progressPercentage: data.percentage || 0,
+        lastReadAt: data.updated_at || new Date().toISOString(),
       };
     } catch {
       return null;
@@ -998,27 +998,47 @@ export const dbService = {
       if (!progress.userId || !progress.contentId) return false;
       const validUserId = ensureUuid(progress.userId);
       const validContentId = ensureUuid(progress.contentId);
+      const isComic = progress.contentType === "COMIC";
 
-      const { error } = await supabase
+      const query = supabase
         .from("reading_progress")
-        .upsert(
-          [
-            {
-              user_id: validUserId,
-              content_id: validContentId,
-              content_type: progress.contentType || "NOVEL",
-              chapter_number: progress.chapterNumber,
-              episode_number: progress.episodeNumber,
-              scroll_offset: progress.scrollOffset || 0,
-              page_index: progress.pageIndex || 0,
-              last_read_at: new Date().toISOString(),
-            },
-          ],
-          { onConflict: "user_id,content_id" }
-        );
+        .select("id")
+        .eq("user_id", validUserId);
+      
+      if (isComic) {
+        query.eq("comic_id", validContentId);
+      } else {
+        query.eq("novel_id", validContentId);
+      }
 
-      return !error;
-    } catch {
+      const { data: existing, error: fetchError } = await query.maybeSingle();
+      if (fetchError) throw fetchError;
+
+      const record = {
+        user_id: validUserId,
+        novel_id: isComic ? null : validContentId,
+        comic_id: isComic ? validContentId : null,
+        chapter_number: isComic ? null : (progress.chapterNumber || 1),
+        episode_number: isComic ? (progress.episodeNumber || 1) : null,
+        scroll_position: Math.round(progress.scrollOffset || 0),
+        percentage: Math.round(progress.progressPercentage || 0),
+        updated_at: new Date().toISOString(),
+      };
+
+      if (existing) {
+        const { error } = await supabase
+          .from("reading_progress")
+          .update(record)
+          .eq("id", existing.id);
+        return !error;
+      } else {
+        const { error } = await supabase
+          .from("reading_progress")
+          .insert([record]);
+        return !error;
+      }
+    } catch (e) {
+      console.error("Error saving reading progress:", e);
       return false;
     }
   },
