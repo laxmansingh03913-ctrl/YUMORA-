@@ -109,66 +109,7 @@ class DataStore {
 
   private async syncFromSupabase() {
     try {
-      // 1. Sync from persistent Server DB (works across all browsers, incognito, profiles & devices)
-      try {
-        const res = await fetch("/api/storage");
-        if (res.ok) {
-          const json = await res.json();
-          const data = json?.data || {};
-          if (data.yumora_comics && Array.isArray(data.yumora_comics)) {
-            data.yumora_comics.forEach((c: Comic) => {
-              if (c && c.id) this.memoryComics.set(c.id, c);
-            });
-          }
-          if (data.yumora_novels && Array.isArray(data.yumora_novels)) {
-            data.yumora_novels.forEach((n: Novel) => {
-              if (n && n.id) this.memoryNovels.set(n.id, n);
-            });
-          }
-          if (data.yumora_users && Array.isArray(data.yumora_users)) {
-            const existingUsers = this.getItem<UserProfile[]>(STORAGE_KEYS.USERS || "yumora_users", []);
-            const userMap = new Map<string, UserProfile>();
-            existingUsers.forEach((u) => { if (u && u.id) userMap.set(u.id, u); });
-            data.yumora_users.forEach((u: UserProfile) => { if (u && u.id) userMap.set(u.id, u); });
-            this.setItem(STORAGE_KEYS.USERS || "yumora_users", Array.from(userMap.values()));
-          }
-        }
-      } catch (e) {
-        // ignore
-      }
-
-      // Also ensure current browser's local items are backed up to server DB if server DB is empty
-      const localComics = this.getItem<Comic[]>(STORAGE_KEYS.COMICS, []);
-      if (localComics.length > 0) {
-        localComics.forEach((c) => {
-          if (c && c.id) this.memoryComics.set(c.id, c);
-        });
-        fetch("/api/storage", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            key: STORAGE_KEYS.COMICS,
-            data: Array.from(this.memoryComics.values()),
-          }),
-        }).catch(() => {});
-      }
-
-      const localNovels = this.getItem<Novel[]>(STORAGE_KEYS.NOVELS, []);
-      if (localNovels.length > 0) {
-        localNovels.forEach((n) => {
-          if (n && n.id) this.memoryNovels.set(n.id, n);
-        });
-        fetch("/api/storage", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            key: STORAGE_KEYS.NOVELS,
-            data: Array.from(this.memoryNovels.values()),
-          }),
-        }).catch(() => {});
-      }
-
-      // 2. Sync from Supabase if configured
+      // Sync from Supabase PostgreSQL
       const [cloudNovels, cloudComics, cloudContests] = await Promise.all([
         dbService.getNovels(),
         dbService.getComics(),
@@ -179,19 +120,23 @@ class DataStore {
         cloudNovels.forEach((n) => {
           if (n && n.id) this.memoryNovels.set(n.id, n);
         });
+        this.setItem(STORAGE_KEYS.NOVELS, cloudNovels);
+        idbSet(STORAGE_KEYS.NOVELS, cloudNovels).catch(() => {});
       }
 
       if (cloudComics && cloudComics.length > 0) {
         cloudComics.forEach((c) => {
           if (c && c.id) this.memoryComics.set(c.id, c);
         });
+        this.setItem(STORAGE_KEYS.COMICS, cloudComics);
+        idbSet(STORAGE_KEYS.COMICS, cloudComics).catch(() => {});
       }
 
       if (cloudContests && cloudContests.length > 0) {
         this.setItem(STORAGE_KEYS.CONTESTS, cloudContests);
       }
     } catch (e) {
-      console.warn("Background sync notice:", e);
+      console.warn("Background sync error:", e);
     }
   }
 
@@ -270,14 +215,6 @@ class DataStore {
     this.setItem(STORAGE_KEYS.NOVELS, novels);
     if (this.isBrowser()) {
       idbSet(STORAGE_KEYS.NOVELS, Array.from(this.memoryNovels.values())).catch(() => {});
-      fetch("/api/storage", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          key: STORAGE_KEYS.NOVELS,
-          data: Array.from(this.memoryNovels.values()),
-        }),
-      }).catch(() => {});
     }
     return novel;
   }
@@ -329,14 +266,6 @@ class DataStore {
     this.setItem(STORAGE_KEYS.COMICS, comics);
     if (this.isBrowser()) {
       idbSet(STORAGE_KEYS.COMICS, Array.from(this.memoryComics.values())).catch(() => {});
-      fetch("/api/storage", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          key: STORAGE_KEYS.COMICS,
-          data: Array.from(this.memoryComics.values()),
-        }),
-      }).catch(() => {});
     }
     return comic;
   }

@@ -107,7 +107,7 @@ export const dbService = {
     try {
       const { data, error } = await supabase
         .from("novels")
-        .select("*, chapters(*)")
+        .select("*, chapters(*), profiles:profiles(*)")
         .order("created_at", { ascending: false });
 
       if (error || !data) {
@@ -118,10 +118,10 @@ export const dbService = {
         creatorId: row.creator_id || "creator",
         creator: {
           id: row.creator_id || "creator",
-          name: "Original Author",
-          username: `creator_${String(row.creator_id || "auth").slice(0, 6)}`,
-          avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=85",
-          isVerified: true,
+          name: row.profiles?.name || "Original Author",
+          username: row.profiles?.username || `creator_${String(row.creator_id || "auth").slice(0, 6)}`,
+          avatar: row.profiles?.avatar || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=85",
+          isVerified: row.profiles?.is_verified ?? true,
         },
         title: row.title || "Untitled Novel",
         slug: row.slug || row.id,
@@ -171,7 +171,7 @@ export const dbService = {
     try {
       const { data, error } = await supabase
         .from("novels")
-        .select("*, chapters(*)")
+        .select("*, chapters(*), profiles:profiles(*)")
         .eq("slug", slug)
         .single();
 
@@ -182,10 +182,10 @@ export const dbService = {
         creatorId: row.creator_id || "creator",
         creator: {
           id: row.creator_id || "creator",
-          name: "Original Author",
-          username: `creator_${String(row.creator_id || "auth").slice(0, 6)}`,
-          avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=85",
-          isVerified: true,
+          name: row.profiles?.name || "Original Author",
+          username: row.profiles?.username || `creator_${String(row.creator_id || "auth").slice(0, 6)}`,
+          avatar: row.profiles?.avatar || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=85",
+          isVerified: row.profiles?.is_verified ?? true,
         },
         title: row.title || "Untitled Novel",
         slug: row.slug || row.id,
@@ -350,7 +350,7 @@ export const dbService = {
     try {
       const { data, error } = await supabase
         .from("comics")
-        .select("*, episodes(*)")
+        .select("*, episodes(*), profiles:profiles(*)")
         .order("created_at", { ascending: false });
 
       if (error || !data) {
@@ -361,10 +361,10 @@ export const dbService = {
         creatorId: row.creator_id || "creator",
         creator: {
           id: row.creator_id || "creator",
-          name: "Original Artist",
-          username: `creator_${String(row.creator_id || "auth").slice(0, 6)}`,
-          avatar: "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=400&auto=format&fit=crop&q=85",
-          isVerified: true,
+          name: row.profiles?.name || "Original Artist",
+          username: row.profiles?.username || `creator_${String(row.creator_id || "auth").slice(0, 6)}`,
+          avatar: row.profiles?.avatar || "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=400&auto=format&fit=crop&q=85",
+          isVerified: row.profiles?.is_verified ?? true,
         },
         title: row.title || "Untitled Comic",
         slug: row.slug || row.id,
@@ -415,7 +415,7 @@ export const dbService = {
     try {
       const { data, error } = await supabase
         .from("comics")
-        .select("*, episodes(*)")
+        .select("*, episodes(*), profiles:profiles(*)")
         .eq("slug", slug)
         .single();
 
@@ -426,10 +426,10 @@ export const dbService = {
         creatorId: row.creator_id || "creator",
         creator: {
           id: row.creator_id || "creator",
-          name: "Original Artist",
-          username: `creator_${String(row.creator_id || "auth").slice(0, 6)}`,
-          avatar: "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=400&auto=format&fit=crop&q=85",
-          isVerified: true,
+          name: row.profiles?.name || "Original Artist",
+          username: row.profiles?.username || `creator_${String(row.creator_id || "auth").slice(0, 6)}`,
+          avatar: row.profiles?.avatar || "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=400&auto=format&fit=crop&q=85",
+          isVerified: row.profiles?.is_verified ?? true,
         },
         title: row.title || "Untitled Comic",
         slug: row.slug || row.id,

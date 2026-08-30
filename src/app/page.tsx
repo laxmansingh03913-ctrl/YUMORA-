@@ -17,32 +17,7 @@ import { Role } from "@/lib/types";
 // ─────────────────────────────────────────────────────────────────────────────
 // STATIC HERO FALLBACKS
 // ─────────────────────────────────────────────────────────────────────────────
-const HERO_FALLBACKS = [
-  {
-    id: "h1", title: "Bound by Blood", slug: "bound-by-blood",
-    description: "Two warring bloodlines. One impossible bond. The war that will end everything has already begun inside them.",
-    coverUrl: "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=1600&auto=format&fit=crop&q=85",
-    genre: "Fantasy", rating: "4.8", views: "12.4K", tags: ["Dark Fantasy", "Romance", "Action"],
-  },
-  {
-    id: "h2", title: "Shadow's Ascent", slug: "shadows-ascent",
-    description: "From the bottom of the dungeon to the apex of power — one awakened outcast rewrites what it means to rise.",
-    coverUrl: "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=1600&auto=format&fit=crop&q=85",
-    genre: "Action", rating: "4.7", views: "9.8K", tags: ["LitRPG", "Progression", "Dungeon"],
-  },
-  {
-    id: "h3", title: "Letters Unsent", slug: "letters-unsent",
-    description: "She wrote everything she could never say. He found every word. Some love stories begin after they end.",
-    coverUrl: "https://images.unsplash.com/photo-1534447677768-be436bb09401?w=1600&auto=format&fit=crop&q=85",
-    genre: "Romance", rating: "4.6", views: "7.1K", tags: ["Contemporary", "Epistolary", "Drama"],
-  },
-  {
-    id: "h4", title: "Re:Awakening", slug: "re-awakening",
-    description: "The simulation was supposed to be a game. Three years later, no one remembers how to get out — or wants to.",
-    coverUrl: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=1600&auto=format&fit=crop&q=85",
-    genre: "Sci-Fi", rating: "4.5", views: "6.2K", tags: ["Sci-Fi", "Isekai", "Thriller"],
-  },
-];
+const HERO_FALLBACKS: any[] = [];
 
 const FORMATS = [
   { name: "Web Novels",   href: "/discover?format=web_novels",  emoji: "📖", desc: "480+ stories" },
@@ -52,13 +27,7 @@ const FORMATS = [
   { name: "Comics",       href: "/comics",                         emoji: "🎨", desc: "80+ stories"  },
 ];
 
-const EDITORIAL = [
-  { id: "e1", title: "Bound by Blood",   slug: "bound-by-blood",   coverUrl: "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=400&auto=format&fit=crop&q=80", genre: "Fantasy", rating: 4.8, reads: 12400 },
-  { id: "e2", title: "Shadow's Ascent",  slug: "shadows-ascent",   coverUrl: "https://images.unsplash.com/photo-1563089145-599997674d42?w=400&auto=format&fit=crop&q=80", genre: "Action",  rating: 4.7, reads:  9800 },
-  { id: "e3", title: "Letters Unsent",   slug: "letters-unsent",   coverUrl: "https://images.unsplash.com/photo-1534447677768-be436bb09401?w=400&auto=format&fit=crop&q=80", genre: "Romance", rating: 4.6, reads:  7100 },
-  { id: "e4", title: "Re:Awakening",     slug: "re-awakening",     coverUrl: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=400&auto=format&fit=crop&q=80", genre: "Sci-Fi",  rating: 4.5, reads:  6200 },
-  { id: "e5", title: "Path of the Wind", slug: "path-of-the-wind", coverUrl: "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=400&auto=format&fit=crop&q=80", genre: "Wuxia",   rating: 4.6, reads:  8300 },
-];
+const EDITORIAL: any[] = [];
 
 // ─── Section Header ───────────────────────────────────────────────────────────
 function SectionHeader({ eyebrow, title, href, linkLabel = "View All" }: {
@@ -200,8 +169,15 @@ export default function IndexPage() {
     setTimeout(() => setAnimating(false), 600);
   }, [animating]);
 
-  const next = useCallback(() => goTo((slideIndex + 1) % heroSlides.length), [goTo, slideIndex, heroSlides.length]);
-  const prev = useCallback(() => goTo((slideIndex - 1 + heroSlides.length) % heroSlides.length), [goTo, slideIndex, heroSlides.length]);
+  const next = useCallback(() => {
+    if (heroSlides.length === 0) return;
+    goTo((slideIndex + 1) % heroSlides.length);
+  }, [goTo, slideIndex, heroSlides.length]);
+
+  const prev = useCallback(() => {
+    if (heroSlides.length === 0) return;
+    goTo((slideIndex - 1 + heroSlides.length) % heroSlides.length);
+  }, [goTo, slideIndex, heroSlides.length]);
 
   useEffect(() => {
     if (paused || !user) return;
@@ -585,118 +561,130 @@ export default function IndexPage() {
     <div className="min-h-screen bg-white dark:bg-[#070707] text-zinc-900 dark:text-white overflow-x-hidden">
 
       {/* Hero Carousel */}
-      <section
-        className="relative w-full overflow-hidden"
-        style={{ minHeight: "calc(100vh - 64px)" }}
-        aria-label="Featured stories"
-        onTouchStart={onTouchStart}
-        onTouchEnd={onTouchEnd}
-      >
-        {/* Background slides */}
-        {heroSlides.map((s, i) => (
-          <div
-            key={s.id}
-            className={`absolute inset-0 transition-opacity duration-700 ease-in-out ${i === slideIndex ? "opacity-100" : "opacity-0"}`}
-            aria-hidden={i !== slideIndex}
-          >
-            <img
-              src={s.coverUrl} alt=""
-              className="w-full h-full object-cover"
-              style={{ transform: "scale(1.04)" }}
-              loading={i === 0 ? "eager" : "lazy"}
-            />
-            {/* Theme responsive gradient overlays */}
-            <div className="absolute inset-0 bg-gradient-to-r from-white via-white/85 to-transparent dark:from-[#070707] dark:via-[#070707]/80 dark:to-transparent" />
-            <div className="absolute inset-0 bg-gradient-to-t from-white via-white/40 to-transparent dark:from-[#070707] dark:via-[#070707]/40 dark:to-transparent" />
-            <div className="absolute inset-0 bg-gradient-to-b from-black/5 to-transparent dark:from-black/50 dark:to-transparent" />
-          </div>
-        ))}
-
-        {/* Content */}
-        <div className="relative z-10 flex flex-col justify-center px-4 sm:px-8 lg:px-12 xl:px-16 2xl:px-20 max-w-screen-2xl mx-auto" style={{ minHeight: "calc(100vh - 64px)" }}>
-          <div className="max-w-xl xl:max-w-2xl pt-12 pb-28 sm:pb-36">
-
-            <div className="flex items-center gap-2.5 mb-4 sm:mb-5">
-              <span className="w-8 h-px bg-[#D91E18]" />
-              <span className="text-[11px] sm:text-xs font-black tracking-widest text-[#D91E18] uppercase">
-                Yomika Original · {slide?.genre}
-              </span>
-            </div>
-
-            <h1
-              className="font-black leading-none tracking-tight text-zinc-900 dark:text-white uppercase mb-4 sm:mb-5"
-              style={{ fontSize: "clamp(1.8rem, 4.5vw, 3rem)", lineHeight: 1.0, textShadow: "none" }}
+      {/* Hero Carousel */}
+      {heroSlides.length > 0 ? (
+        <section
+          className="relative w-full overflow-hidden"
+          style={{ minHeight: "calc(100vh - 64px)" }}
+          aria-label="Featured stories"
+          onTouchStart={onTouchStart}
+          onTouchEnd={onTouchEnd}
+        >
+          {/* Background slides */}
+          {heroSlides.map((s, i) => (
+            <div
+              key={s.id}
+              className={`absolute inset-0 transition-opacity duration-700 ease-in-out ${i === slideIndex ? "opacity-100" : "opacity-0"}`}
+              aria-hidden={i !== slideIndex}
             >
-              {slide?.title}
-            </h1>
+              <img
+                src={s.coverUrl} alt=""
+                className="w-full h-full object-cover"
+                style={{ transform: "scale(1.04)" }}
+                loading={i === 0 ? "eager" : "lazy"}
+              />
+              {/* Theme responsive gradient overlays */}
+              <div className="absolute inset-0 bg-gradient-to-r from-white via-white/85 to-transparent dark:from-[#070707] dark:via-[#070707]/80 dark:to-transparent" />
+              <div className="absolute inset-0 bg-gradient-to-t from-white via-white/40 to-transparent dark:from-[#070707] dark:via-[#070707]/40 dark:to-transparent" />
+              <div className="absolute inset-0 bg-gradient-to-b from-black/5 to-transparent dark:from-black/50 dark:to-transparent" />
+            </div>
+          ))}
 
-            <p className="text-sm sm:text-base lg:text-[17px] text-zinc-650 dark:text-white/55 leading-relaxed mb-5 sm:mb-6 max-w-md">
-              {slide?.description}
-            </p>
+          {/* Content */}
+          <div className="relative z-10 flex flex-col justify-center px-4 sm:px-8 lg:px-12 xl:px-16 2xl:px-20 max-w-screen-2xl mx-auto" style={{ minHeight: "calc(100vh - 64px)" }}>
+            <div className="max-w-xl xl:max-w-2xl pt-12 pb-28 sm:pb-36">
 
-            <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-7 sm:mb-8">
-              <div className="flex items-center gap-1.5">
-                <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
-                <span className="text-sm font-black text-zinc-900 dark:text-white">{slide?.rating}</span>
+              <div className="flex items-center gap-2.5 mb-4 sm:mb-5">
+                <span className="w-8 h-px bg-[#D91E18]" />
+                <span className="text-[11px] sm:text-xs font-black tracking-widest text-[#D91E18] uppercase">
+                  Yomika Original · {slide?.genre}
+                </span>
               </div>
-              <span className="w-px h-3 bg-zinc-200 dark:bg-white/20" />
-              <div className="flex items-center gap-1.5 text-xs text-zinc-450 dark:text-white/35">
-                <Eye className="w-3.5 h-3.5" />{slide?.views} reads
+
+              <h1
+                className="font-black leading-none tracking-tight text-zinc-900 dark:text-white uppercase mb-4 sm:mb-5"
+                style={{ fontSize: "clamp(1.8rem, 4.5vw, 3rem)", lineHeight: 1.0, textShadow: "none" }}
+              >
+                {slide?.title}
+              </h1>
+
+              <p className="text-sm sm:text-base lg:text-[17px] text-zinc-650 dark:text-white/55 leading-relaxed mb-5 sm:mb-6 max-w-md">
+                {slide?.description}
+              </p>
+
+              <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-7 sm:mb-8">
+                <div className="flex items-center gap-1.5">
+                  <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
+                  <span className="text-sm font-black text-zinc-900 dark:text-white">{slide?.rating}</span>
+                </div>
+                <span className="w-px h-3 bg-zinc-200 dark:bg-white/20" />
+                <div className="flex items-center gap-1.5 text-xs text-zinc-450 dark:text-white/35">
+                  <Eye className="w-3.5 h-3.5" />{slide?.views} reads
+                </div>
+                {slide?.tags?.map((tag) => (
+                  <span key={tag} className="px-2.5 py-1 rounded-full text-[11px] font-semibold border border-zinc-200 dark:border-white/12 text-zinc-550 dark:text-white/50">{tag}</span>
+                ))}
               </div>
-              {slide?.tags?.map((tag) => (
-                <span key={tag} className="px-2.5 py-1 rounded-full text-[11px] font-semibold border border-zinc-200 dark:border-white/12 text-zinc-550 dark:text-white/50">{tag}</span>
+
+              <div className="flex flex-wrap items-center gap-3 sm:gap-4">
+                <button
+                  onClick={() => requireAuth(`/novels/${slide?.slug}`)}
+                  className="flex items-center gap-2.5 px-6 sm:px-8 py-3.5 sm:py-4 rounded-xl bg-[#D91E18] hover:bg-[#B71813] text-white font-black text-sm sm:text-[15px] tracking-wide transition-all shadow-[0_0_24px_rgba(217,30,24,0.45)] hover:shadow-[0_0_40px_rgba(217,30,24,0.65)] hover:scale-[1.02] active:scale-[0.98]"
+                >
+                  <Play className="w-4 h-4 fill-white" />
+                  Read Now
+                </button>
+                <button
+                  onClick={() => requireAuth("/library")}
+                  className="flex items-center gap-2.5 px-6 sm:px-8 py-3.5 sm:py-4 rounded-xl border border-zinc-250 hover:bg-zinc-50 text-zinc-800 dark:border-white/22 dark:hover:bg-white/8 dark:text-white font-bold text-sm sm:text-[15px] tracking-wide transition-all"
+                >
+                  <Plus className="w-4 h-4" />
+                  My Library
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Slide controls */}
+          <div className="absolute bottom-10 sm:bottom-12 right-4 sm:right-8 lg:right-16 xl:right-24 z-20 flex items-center gap-4">
+            <div className="flex gap-2">
+              {([prev, next] as const).map((fn, i) => (
+                <button
+                  key={i}
+                  onClick={() => handleNav(fn)}
+                  className="w-10 h-10 sm:w-11 sm:h-11 rounded-full border border-zinc-200 hover:bg-zinc-50 text-zinc-500 hover:text-zinc-800 dark:border-white/22 dark:hover:bg-white/10 dark:text-white/60 dark:hover:text-white flex items-center justify-center transition backdrop-blur-sm"
+                  aria-label={i === 0 ? "Previous" : "Next"}
+                >
+                  {i === 0 ? <ChevronLeft className="w-4 h-4 sm:w-5 sm:h-5" /> : <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5" />}
+                </button>
               ))}
             </div>
-
-            <div className="flex flex-wrap items-center gap-3 sm:gap-4">
-              <button
-                onClick={() => requireAuth(`/novels/${slide?.slug}`)}
-                className="flex items-center gap-2.5 px-6 sm:px-8 py-3.5 sm:py-4 rounded-xl bg-[#D91E18] hover:bg-[#B71813] text-white font-black text-sm sm:text-[15px] tracking-wide transition-all shadow-[0_0_24px_rgba(217,30,24,0.45)] hover:shadow-[0_0_40px_rgba(217,30,24,0.65)] hover:scale-[1.02] active:scale-[0.98]"
-              >
-                <Play className="w-4 h-4 fill-white" />
-                Read Now
-              </button>
-              <button
-                onClick={() => requireAuth("/library")}
-                className="flex items-center gap-2.5 px-6 sm:px-8 py-3.5 sm:py-4 rounded-xl border border-zinc-250 hover:bg-zinc-50 text-zinc-800 dark:border-white/22 dark:hover:bg-white/8 dark:text-white font-bold text-sm sm:text-[15px] tracking-wide transition-all"
-              >
-                <Plus className="w-4 h-4" />
-                My Library
-              </button>
+            <div className="hidden sm:flex items-center gap-3">
+              <div className="w-24 lg:w-36 h-px bg-zinc-200 dark:bg-white/15 relative overflow-hidden rounded-full">
+                <div className="absolute left-0 top-0 h-full bg-zinc-800 dark:bg-white transition-all duration-700 rounded-full" style={{ width: `${((slideIndex + 1) / heroSlides.length) * 100}%` }} />
+              </div>
+              <span className="text-sm font-black text-zinc-405 dark:text-white/45 tabular-nums">{String(slideIndex + 1).padStart(2, "0")}</span>
+            </div>
+            <div className="flex sm:hidden gap-1.5">
+              {heroSlides.map((_, i) => (
+                <button key={i} onClick={() => handleNav(() => goTo(i))} aria-label={`Slide ${i + 1}`}
+                  className={`rounded-full transition-all duration-300 ${i === slideIndex ? "w-5 h-1.5 bg-zinc-800 dark:bg-white" : "w-1.5 h-1.5 bg-zinc-300 dark:bg-white/30"}`} />
+              ))}
             </div>
           </div>
-        </div>
 
-        {/* Slide controls */}
-        <div className="absolute bottom-10 sm:bottom-12 right-4 sm:right-8 lg:right-16 xl:right-24 z-20 flex items-center gap-4">
-          <div className="flex gap-2">
-            {([prev, next] as const).map((fn, i) => (
-              <button
-                key={i}
-                onClick={() => handleNav(fn)}
-                className="w-10 h-10 sm:w-11 sm:h-11 rounded-full border border-zinc-200 hover:bg-zinc-50 text-zinc-500 hover:text-zinc-800 dark:border-white/22 dark:hover:bg-white/10 dark:text-white/60 dark:hover:text-white flex items-center justify-center transition backdrop-blur-sm"
-                aria-label={i === 0 ? "Previous" : "Next"}
-              >
-                {i === 0 ? <ChevronLeft className="w-4 h-4 sm:w-5 sm:h-5" /> : <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5" />}
-              </button>
-            ))}
+          <div className="absolute bottom-0 left-0 right-0 h-40 pointer-events-none z-10 bg-gradient-to-t from-white to-transparent dark:from-[#070707] dark:to-transparent" />
+        </section>
+      ) : (
+        <section
+          className="relative w-full h-[400px] flex items-center justify-center bg-zinc-950 text-white text-center border-b border-zinc-800"
+        >
+          <div className="space-y-4 px-6">
+            <h1 className="text-3xl font-black tracking-tight text-white uppercase">Welcome to Yomika</h1>
+            <p className="text-sm text-white/50 max-w-md mx-auto">Discover web novels, comics, and world-class creator stories originating from our platform authors.</p>
           </div>
-          <div className="hidden sm:flex items-center gap-3">
-            <div className="w-24 lg:w-36 h-px bg-zinc-200 dark:bg-white/15 relative overflow-hidden rounded-full">
-              <div className="absolute left-0 top-0 h-full bg-zinc-800 dark:bg-white transition-all duration-700 rounded-full" style={{ width: `${((slideIndex + 1) / heroSlides.length) * 100}%` }} />
-            </div>
-            <span className="text-sm font-black text-zinc-405 dark:text-white/45 tabular-nums">{String(slideIndex + 1).padStart(2, "0")}</span>
-          </div>
-          <div className="flex sm:hidden gap-1.5">
-            {heroSlides.map((_, i) => (
-              <button key={i} onClick={() => handleNav(() => goTo(i))} aria-label={`Slide ${i + 1}`}
-                className={`rounded-full transition-all duration-300 ${i === slideIndex ? "w-5 h-1.5 bg-zinc-800 dark:bg-white" : "w-1.5 h-1.5 bg-zinc-300 dark:bg-white/30"}`} />
-            ))}
-          </div>
-        </div>
-
-        <div className="absolute bottom-0 left-0 right-0 h-40 pointer-events-none z-10 bg-gradient-to-t from-white to-transparent dark:from-[#070707] dark:to-transparent" />
-      </section>
+        </section>
+      )}
 
       {/* Dynamic shelves */}
       <div className="bg-white dark:bg-[#070707] space-y-16 sm:space-y-20 pb-24">

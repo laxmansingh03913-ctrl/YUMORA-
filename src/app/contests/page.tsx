@@ -37,73 +37,7 @@ import { useContestCountdown } from "@/hooks/useContestCountdown";
 import { formatContestDeadline, getContestStatus } from "@/lib/utils/contest";
 import { dbService } from "@/lib/supabase/db";
 
-const SEEDED_CONTENDERS = [
-  {
-    id: "contender-1",
-    title: "Shadow's Ascent",
-    slug: "shadows-ascent",
-    author: "@ryu_writer",
-    authorName: "Arion Vale",
-    avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
-    coverUrl: "https://images.unsplash.com/photo-1563089145-599997674d42?w=600&auto=format&fit=crop&q=80",
-    genre: "Action / Martial Arts",
-    chaptersCount: 14,
-    rating: 4.9,
-    votes: 428,
-  },
-  {
-    id: "contender-2",
-    title: "The Last Star",
-    slug: "bound-by-blood",
-    author: "@solar_kai",
-    authorName: "DystopiaX",
-    avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80",
-    coverUrl: "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=600&auto=format&fit=crop&q=80",
-    genre: "Sci-Fi / Cyberpunk",
-    chaptersCount: 12,
-    rating: 4.8,
-    votes: 382,
-  },
-  {
-    id: "contender-3",
-    title: "Path of the Wind",
-    slug: "path-of-the-wind",
-    author: "@kenji_tales",
-    authorName: "Eldrith",
-    avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=80",
-    coverUrl: "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=600&auto=format&fit=crop&q=80",
-    genre: "Wuxia / Fantasy",
-    chaptersCount: 9,
-    rating: 4.7,
-    votes: 294,
-  },
-  {
-    id: "contender-4",
-    title: "Blood Moon Chronicles",
-    slug: "letters-unsent",
-    author: "@elena_dark",
-    authorName: "StarGazer",
-    avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&auto=format&fit=crop&q=80",
-    coverUrl: "https://images.unsplash.com/photo-1534447677768-be436bb09401?w=600&auto=format&fit=crop&q=80",
-    genre: "Dark Fantasy",
-    chaptersCount: 8,
-    rating: 4.7,
-    votes: 215,
-  },
-  {
-    id: "contender-5",
-    title: "Re:Awakening 2099",
-    slug: "re-awakening",
-    author: "@neo_story",
-    authorName: "MysticPen",
-    avatar: "https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?w=150&auto=format&fit=crop&q=80",
-    coverUrl: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=600&auto=format&fit=crop&q=80",
-    genre: "Sci-Fi / Mecha",
-    chaptersCount: 6,
-    rating: 4.6,
-    votes: 189,
-  },
-];
+const SEEDED_CONTENDERS: any[] = [];
 
 const TOURNAMENT_CATEGORIES = [
   {
