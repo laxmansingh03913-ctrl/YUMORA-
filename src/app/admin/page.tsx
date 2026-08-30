@@ -80,8 +80,8 @@ export default function AdminDashboardPage() {
 
     const cleanInputEmail = adminEmail.trim().toLowerCase();
 
-    if (adminPassword.length < 6) {
-      setAuthError("Password must be at least 6 characters long.");
+    if (adminPassword.length < 4) {
+      setAuthError("Password must be at least 4 characters long.");
       setIsAuthenticating(false);
       return;
     }
