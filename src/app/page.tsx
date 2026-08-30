@@ -14,6 +14,7 @@ import { formatNumber, formatDate } from "@/lib/utils";
 import { formatContestDeadline, getContestStatus } from "@/lib/utils/contest";
 import { Role } from "@/lib/types";
 
+
 // ─────────────────────────────────────────────────────────────────────────────
 // STATIC HERO FALLBACKS
 // ─────────────────────────────────────────────────────────────────────────────
@@ -59,8 +60,6 @@ function StoryCard({ cover, title, genre, rating, views, slug, isOriginal = fals
       <div className="relative aspect-[3/4] rounded-2xl overflow-hidden bg-zinc-100 dark:bg-zinc-900 border border-zinc-150 dark:border-white/6 group-hover:border-[#D91E18]/45 transition-all duration-300 shadow-lg">
         <img src={cover} alt={title} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" loading="lazy" />
         <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/25" />
-        
-        {/* Top Badges */}
         <div className="absolute top-2 left-2 right-2 flex items-center justify-between gap-1.5 pointer-events-none">
           {rating && (
             <div className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-black/60 backdrop-blur-sm border border-white/5">
@@ -69,26 +68,16 @@ function StoryCard({ cover, title, genre, rating, views, slug, isOriginal = fals
             </div>
           )}
           {views && (
-            <div className="px-2 py-0.5 rounded-md bg-black/60 backdrop-blur-sm border border-white/5 text-[9px] font-bold text-white/80">
-              {views}
-            </div>
+            <div className="px-2 py-0.5 rounded-md bg-black/60 backdrop-blur-sm border border-white/5 text-[9px] font-bold text-white/80">{views}</div>
           )}
         </div>
-
-        {/* Original Tag */}
         {isOriginal && (
           <span className="absolute top-2 left-2 px-2 py-0.5 rounded-md text-[9px] font-black bg-[#D91E18] text-white uppercase tracking-wider shadow-md pointer-events-none">ORIGINAL</span>
         )}
-
-        {/* Bottom overlay for weekly top */}
         <div className="absolute bottom-2.5 left-2.5 flex items-center gap-1 px-2 py-0.5 rounded-md bg-black/65 backdrop-blur-sm border border-white/5 pointer-events-none">
-          <span className="text-[9px] font-black text-amber-500 uppercase tracking-wider flex items-center gap-1">
-            👑 Weekly Top 5
-          </span>
+          <span className="text-[9px] font-black text-amber-500 uppercase tracking-wider flex items-center gap-1">👑 Weekly Top 5</span>
         </div>
       </div>
-
-      {/* Info below the card */}
       <div className="px-1 text-left">
         <p className="text-[10px] font-black text-[#D91E18] uppercase tracking-wider">{genre}</p>
         <h3 className="text-xs sm:text-sm font-black text-zinc-800 dark:text-white group-hover:text-[#D91E18] transition-colors leading-tight line-clamp-1 mt-0.5">{title}</h3>
@@ -326,37 +315,45 @@ export default function IndexPage() {
             
             {/* Left Copy block */}
             <div className="lg:col-span-7 space-y-6">
-              <div className="flex items-center gap-2">
-                <span className="w-6 h-px bg-[#D91E18]" />
-                <span className="text-[10px] sm:text-xs font-black tracking-widest text-[#D91E18] uppercase">
-                  Yomika Platform
-                </span>
-              </div>
-              <h1 className="text-4xl sm:text-5xl xl:text-6xl font-black leading-[1.0] tracking-tight uppercase text-white">
-                Stories<br />
-                worth getting<br />
-                <span className="text-[#D91E18]">lost in.</span>
-              </h1>
-              <p className="text-sm sm:text-base lg:text-lg text-white/50 leading-relaxed max-w-md">
-                Discover web novels, light novels, manga, webtoons and comics created for readers who want something different. Join the global home of original storytelling.
-              </p>
+              <FadeIn delay={0.1}>
+                <div className="flex items-center gap-2">
+                  <span className="w-6 h-px bg-[#D91E18]" />
+                  <span className="text-[10px] sm:text-xs font-black tracking-widest text-[#D91E18] uppercase">
+                    Yomika Platform
+                  </span>
+                </div>
+              </FadeIn>
+              <FadeUp delay={0.2}>
+                <h1 className="text-4xl sm:text-5xl xl:text-6xl font-black leading-[1.0] tracking-tight uppercase text-white">
+                  Stories<br />
+                  worth getting<br />
+                  <span className="text-[#D91E18]">lost in.</span>
+                </h1>
+              </FadeUp>
+              <FadeUp delay={0.35}>
+                <p className="text-sm sm:text-base lg:text-lg text-white/50 leading-relaxed max-w-md">
+                  Discover web novels, light novels, manga, webtoons and comics created for readers who want something different. Join the global home of original storytelling.
+                </p>
+              </FadeUp>
 
               {authView === "landing" && (
-                <div className="flex flex-wrap items-center gap-4 pt-2">
-                  <button
-                    onClick={() => setAuthView("signup")}
-                    className="flex items-center gap-2 px-8 py-4 rounded-xl bg-[#D91E18] hover:bg-[#B71813] text-white font-black text-sm sm:text-base tracking-wide transition shadow-[0_0_24px_rgba(217,30,24,0.4)] hover:scale-[1.02] active:scale-[0.98]"
-                  >
-                    GET STARTED
-                    <ArrowRight className="w-4 h-4" />
-                  </button>
-                  <button
-                    onClick={() => setAuthView("login")}
-                    className="px-8 py-4 rounded-xl border border-white/20 hover:border-white/50 hover:bg-white/5 text-white font-bold text-sm sm:text-base tracking-wide transition"
-                  >
-                    LOG IN
-                  </button>
-                </div>
+                <FadeUp delay={0.5}>
+                  <div className="flex flex-wrap items-center gap-4 pt-2">
+                    <button
+                      onClick={() => setAuthView("signup")}
+                      className="flex items-center gap-2 px-8 py-4 rounded-xl bg-[#D91E18] hover:bg-[#B71813] text-white font-black text-sm sm:text-base tracking-wide transition shadow-[0_0_24px_rgba(217,30,24,0.4)] hover:scale-[1.02] active:scale-[0.98]"
+                    >
+                      GET STARTED
+                      <ArrowRight className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => setAuthView("login")}
+                      className="px-8 py-4 rounded-xl border border-white/20 hover:border-white/50 hover:bg-white/5 text-white font-bold text-sm sm:text-base tracking-wide transition"
+                    >
+                      LOG IN
+                    </button>
+                  </div>
+                </FadeUp>
               )}
             </div>
 
