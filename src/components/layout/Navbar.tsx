@@ -28,7 +28,7 @@ import {
   Plus,
   Menu,
 } from "lucide-react";
-import { useAuth } from "@/context/AuthContext";
+import { useAuth, isMasterAdmin } from "@/context/AuthContext";
 import { useTheme } from "@/context/ThemeContext";
 import { useSidebar } from "@/context/SidebarContext";
 import { dataStore } from "@/lib/data/store";
@@ -581,14 +581,16 @@ export function Navbar() {
                           <span>My Library & Reading History</span>
                         </Link>
 
-                        <Link
-                          href="/admin"
-                          onClick={() => setIsUserMenuOpen(false)}
-                          className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition font-medium"
-                        >
-                          <Shield className="w-4 h-4 text-amber-500" />
-                          <span>Admin Control Center</span>
-                        </Link>
+                        {isMasterAdmin(user?.email) && (
+                          <Link
+                            href="/admin"
+                            onClick={() => setIsUserMenuOpen(false)}
+                            className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition font-medium"
+                          >
+                            <Shield className="w-4 h-4 text-amber-500" />
+                            <span>Admin Control Center</span>
+                          </Link>
+                        )}
                       </div>
 
                       {/* Sign Out */}
