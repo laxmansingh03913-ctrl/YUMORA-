@@ -4,27 +4,27 @@
 
 @layer base {
   :root {
-    --background: #FAFAF7;
-    --foreground: #111111;
+    --background: #F8FAFC;
+    --foreground: #0F172A;
     --card: #ffffff;
-    --card-foreground: #111111;
-    --border: #EAEAE5;
-    --muted: #F2F2EC;
-    --muted-foreground: #555555;
-    --accent: #D91E18;
-    --accent-hover: #B71813;
+    --card-foreground: #0F172A;
+    --border: #E2E8F0;
+    --muted: #F1F5F9;
+    --muted-foreground: #64748B;
+    --accent: #0891B2;
+    --accent-hover: #06B6D4;
   }
 
   .dark {
-    --background: #121214;
-    --foreground: #F5F5F3;
-    --card: #1A1A1E;
-    --card-foreground: #F5F5F3;
-    --border: #2B2B32;
-    --muted: #222228;
-    --muted-foreground: #9E9EA8;
-    --accent: #D91E18;
-    --accent-hover: #EF3B36;
+    --background: #0B0F19;
+    --foreground: #F8FAFC;
+    --card: #111827;
+    --card-foreground: #F8FAFC;
+    --border: #1E293B;
+    --muted: #1E293B;
+    --muted-foreground: #94A3B8;
+    --accent: #06B6D4;
+    --accent-hover: #22D3EE;
   }
 
   /* Reader themes */
@@ -140,8 +140,8 @@ body {
   transition: all 0.3s ease;
 }
 .glow-card:hover {
-  border-color: rgba(217, 30, 24, 0.4);
-  box-shadow: 0 0 25px -5px rgba(217, 30, 24, 0.15);
+  border-color: rgba(6, 182, 212, 0.4);
+  box-shadow: 0 0 25px -5px rgba(6, 182, 212, 0.15);
 }
 
 /* Skeleton Shimmer & Micro-Animations */
@@ -165,10 +165,10 @@ body {
 
 @keyframes pulseRedGlow {
   0%, 100% {
-    box-shadow: 0 0 15px rgba(217, 30, 24, 0.15);
+    box-shadow: 0 0 15px rgba(6, 182, 212, 0.15);
   }
   50% {
-    box-shadow: 0 0 30px rgba(217, 30, 24, 0.35);
+    box-shadow: 0 0 30px rgba(6, 182, 212, 0.35);
   }
 }
 
