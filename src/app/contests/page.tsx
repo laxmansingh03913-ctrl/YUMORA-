@@ -36,6 +36,19 @@ import { Contest } from "@/lib/types";
 import { useContestCountdown } from "@/hooks/useContestCountdown";
 import { formatContestDeadline, getContestStatus } from "@/lib/utils/contest";
 import { dbService } from "@/lib/supabase/db";
+import dynamic from "next/dynamic";
+
+const InteractiveTrophy = dynamic(
+  () => import("@/components/ui/InteractiveTrophy").then((mod) => mod.InteractiveTrophy),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="h-[380px] sm:h-[460px] md:h-[500px] flex items-center justify-center text-zinc-500 font-bold uppercase tracking-widest text-[11px] animate-pulse">
+        Initializing 3D Scene...
+      </div>
+    ),
+  }
+);
 
 const SEEDED_CONTENDERS: any[] = [];
 
@@ -400,25 +413,17 @@ export default function ContestsPage() {
 
           </div>
 
-          {/* Right Column: Photorealistic Seamless 3D Trophy Integration (No Box Framing) */}
-          <div className="lg:col-span-6 relative flex items-center justify-center select-none pointer-events-none">
+          {/* Right Column: Interactive Real 3D Trophy */}
+          <div className="lg:col-span-6 relative flex items-center justify-center select-none">
             {/* Subtle Radiant Atmospheric Glow Behind Trophy */}
-            <div className="w-72 h-72 sm:w-96 sm:h-96 rounded-full bg-cyan-500/10 dark:bg-cyan-600/20 blur-3xl absolute top-1/2 -translate-y-1/2 right-1/2 translate-x-1/2 -z-10 animate-pulse-red pointer-events-none" />
+            <div className="w-72 h-72 sm:w-96 sm:h-96 rounded-full bg-cyan-500/10 dark:bg-cyan-600/20 blur-3xl absolute top-1/2 -translate-y-1/2 right-1/2 translate-x-1/2 -z-10 pointer-events-none" />
 
-            {/* Seamless 3D Trophy Visual Asset */}
-            <div className="relative w-full max-w-[580px] flex items-center justify-center animate-float-slow">
-              <img
-                src="/contest-trophy.png"
-                alt="Yomika Tournament Trophy"
-                className="w-full h-auto object-contain max-h-[460px] sm:max-h-[520px] mix-blend-multiply dark:mix-blend-lighten filter contrast-[1.03] drop-shadow-[0_15px_25px_rgba(0,0,0,0.12)] dark:drop-shadow-[0_20px_35px_rgba(217,30,24,0.25)] transition duration-700 hover:scale-105"
-                style={{
-                  WebkitMaskImage: "radial-gradient(circle at center, black 38%, transparent 64%)",
-                  maskImage: "radial-gradient(circle at center, black 38%, transparent 64%)"
-                }}
-                onError={(e) => {
-                  (e.target as HTMLImageElement).src = "/contest-trophy.jpg";
-                }}
-              />
+            {/* Interactive 3D Trophy GLB Model */}
+            <div className="relative w-full">
+              <InteractiveTrophy />
+              <p className="text-center text-[10px] text-zinc-400 dark:text-zinc-600 font-medium mt-1 tracking-wider uppercase select-none">
+                Drag to rotate · 3D Interactive
+              </p>
             </div>
           </div>
 
