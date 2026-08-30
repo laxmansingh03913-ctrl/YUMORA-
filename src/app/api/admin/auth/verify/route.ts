@@ -64,7 +64,7 @@ export async function POST(request: NextRequest) {
     }
 
     // 5. Handle optional MFA verification if requested/configured
-    if (mfaCode) {
+    if (mfaCode && mfaCode.trim() !== "") {
       // Validate 6-digit MFA format
       if (!/^\d{6}$/.test(mfaCode.trim())) {
         return NextResponse.json(
