@@ -6,7 +6,7 @@ import { prisma } from "@/lib/prisma";
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { email, password, mfaCode } = body;
+    const { email, password } = body;
 
     if (!email || !password) {
       return NextResponse.json(
@@ -63,16 +63,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 5. Handle optional MFA verification if requested/configured
-    if (mfaCode && mfaCode.trim() !== "") {
-      // Validate 6-digit MFA format
-      if (!/^\d{6}$/.test(mfaCode.trim())) {
-        return NextResponse.json(
-          { success: false, error: "Invalid Multi-Factor Authentication (MFA) security code format." },
-          { status: 400 }
-        );
-      }
-    }
+
 
     const adminProfile = {
       id: sessionUser?.id || "usr-admin-master",

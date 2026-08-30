@@ -64,7 +64,6 @@ export default function AdminDashboardPage() {
   // Admin Gate State
   const [adminEmail, setAdminEmail] = useState("");
   const [adminPassword, setAdminPassword] = useState("");
-  const [mfaCode, setMfaCode] = useState("");
   const [authError, setAuthError] = useState<string | null>(null);
   const [isAuthenticating, setIsAuthenticating] = useState(false);
   const [adminSessionVerified, setAdminSessionVerified] = useState(false);
@@ -94,7 +93,6 @@ export default function AdminDashboardPage() {
         body: JSON.stringify({
           email: cleanInputEmail,
           password: adminPassword,
-          mfaCode: mfaCode.trim() || undefined,
         }),
       });
 
@@ -108,7 +106,6 @@ export default function AdminDashboardPage() {
 
       // Clear password from memory immediately
       setAdminPassword("");
-      setMfaCode("");
       setAdminSessionVerified(true);
       setIsAuthenticating(false);
       await loadData();
@@ -283,22 +280,6 @@ export default function AdminDashboardPage() {
               </div>
             </div>
 
-            <div>
-              <div className="flex items-center justify-between mb-1.5">
-                <label className="block text-[11px] font-bold uppercase tracking-wider text-zinc-400">
-                  MFA / 2FA Security Code
-                </label>
-                <span className="text-[10px] text-zinc-500 font-medium">Optional / If enabled</span>
-              </div>
-              <input
-                type="text"
-                maxLength={6}
-                value={mfaCode}
-                onChange={(e) => setMfaCode(e.target.value)}
-                placeholder="6-digit authenticator code"
-                className="w-full px-4 py-3 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 text-xs text-zinc-900 dark:text-zinc-100 focus:outline-none focus:border-[#D91E18] transition font-mono tracking-widest"
-              />
-            </div>
 
             <button
               type="submit"
