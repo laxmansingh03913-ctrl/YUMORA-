@@ -17,9 +17,9 @@ import {
 
 export function Footer() {
   return (
-    <footer className="border-t border-[#EAEAE5] dark:border-zinc-800 bg-[#FFFFFF] dark:bg-[#121214] text-zinc-600 dark:text-zinc-400 py-12 transition-colors">
+    <footer className="border-t border-border bg-card dark:bg-card text-zinc-600 dark:text-zinc-400 py-12 transition-colors">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8 lg:gap-12 pb-12 border-b border-[#EAEAE5] dark:border-zinc-800">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8 lg:gap-12 pb-12 border-b border-border">
           {/* Brand Col */}
           <div className="lg:col-span-2 space-y-4">
             <Link href="/" className="flex items-center gap-2.5 group">
@@ -42,8 +42,8 @@ export function Footer() {
             <p className="text-xs sm:text-sm text-zinc-500 dark:text-zinc-400 leading-relaxed max-w-sm">
               Yomika is a global storytelling universe where writers, manga artists, and passionate readers come together to create, discover, and experience original serial novels and webtoons.
             </p>
-            <div className="p-3 rounded-lg bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-xs flex items-center gap-2">
-              <Sparkles className="w-4 h-4 text-[#D91E18] flex-shrink-0" />
+            <div className="p-3 rounded-lg bg-muted dark:bg-muted border border-border text-xs flex items-center gap-2">
+              <Sparkles className="w-4 h-4 text-accent flex-shrink-0" />
               <span className="text-zinc-700 dark:text-zinc-300 text-[11px]">
                 Creative Pipeline: <strong>Novel → Webtoon Manga → Multimedia</strong>
               </span>

@@ -157,7 +157,7 @@ export function Sidebar() {
     <div className="flex flex-col justify-between h-full py-4 px-3 space-y-6 overflow-y-auto no-scrollbar">
       <div className="space-y-6">
         {/* Mobile Header with Yomora Brand + Close button */}
-        <div className="md:hidden flex items-center justify-between px-2 pb-3 border-b border-zinc-200 dark:border-zinc-800">
+        <div className="md:hidden flex items-center justify-between px-2 pb-3 border-b border-border">
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 rounded-xl bg-[#D91E18] text-white flex items-center justify-center font-serif font-black text-sm">
               Y
@@ -185,7 +185,7 @@ export function Sidebar() {
         </div>
 
         {/* 2. Story Formats Navigation */}
-        <div className="space-y-1 pt-2 border-t border-zinc-200/80 dark:border-zinc-800/80">
+        <div className="space-y-1 pt-2 border-t border-border/80">
           {!isCollapsed && (
             <p className="px-3 text-[10px] font-black uppercase tracking-wider text-zinc-400 dark:text-zinc-500 mb-1.5">
               Story Formats
@@ -195,7 +195,7 @@ export function Sidebar() {
         </div>
 
         {/* 3. Library & Treasury */}
-        <div className="space-y-1 pt-2 border-t border-zinc-200/80 dark:border-zinc-800/80">
+        <div className="space-y-1 pt-2 border-t border-border/80">
           {!isCollapsed && (
             <p className="px-3 text-[10px] font-black uppercase tracking-wider text-zinc-400 dark:text-zinc-500 mb-1.5">
               My Space
@@ -218,7 +218,7 @@ export function Sidebar() {
         </div>
 
         {/* 3. Creator Corner */}
-        <div className="space-y-1 pt-2 border-t border-zinc-200/80 dark:border-zinc-800/80">
+        <div className="space-y-1 pt-2 border-t border-border/80">
           {!isCollapsed && (
             <p className="px-3 text-[10px] font-black uppercase tracking-wider text-zinc-400 dark:text-zinc-500 mb-1.5">
               Creator Studio
@@ -228,7 +228,7 @@ export function Sidebar() {
         </div>
 
         {/* 4. Company & Legal */}
-        <div className="space-y-1 pt-2 border-t border-zinc-200/80 dark:border-zinc-800/80">
+        <div className="space-y-1 pt-2 border-t border-border/80">
           {!isCollapsed && (
             <p className="px-3 text-[10px] font-black uppercase tracking-wider text-zinc-400 dark:text-zinc-500 mb-1.5">
               About & Legal
@@ -239,7 +239,7 @@ export function Sidebar() {
       </div>
 
       {/* Bottom: Collapse / Expand Toggle Button (Desktop only) */}
-      <div className="hidden md:block pt-3 border-t border-zinc-200/80 dark:border-zinc-800/80">
+      <div className="hidden md:block pt-3 border-t border-border/80">
         <button
           onClick={toggleCollapse}
           className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-2xl text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-800/70 text-xs font-bold transition cursor-pointer ${
@@ -264,7 +264,7 @@ export function Sidebar() {
     <>
       {/* DESKTOP STICKY SIDEBAR */}
       <aside
-        className={`hidden md:block sticky top-16 h-[calc(100vh-64px)] flex-shrink-0 bg-white/70 dark:bg-[#121214]/70 backdrop-blur-xl border-r border-[#EAEAE5] dark:border-zinc-800/80 transition-all duration-300 z-30 ${
+        className={`hidden md:block sticky top-16 h-[calc(100vh-64px)] flex-shrink-0 bg-card/70 dark:bg-card/70 backdrop-blur-xl border-r border-border transition-all duration-300 z-30 ${
           isCollapsed ? "w-20" : "w-60"
         }`}
       >
@@ -281,7 +281,7 @@ export function Sidebar() {
           />
 
           {/* Drawer Content */}
-          <aside className="relative w-72 max-w-[80vw] h-full bg-white dark:bg-[#121214] shadow-2xl z-50 flex flex-col animate-in slide-in-from-left duration-200">
+          <aside className="relative w-72 max-w-[80vw] h-full bg-card dark:bg-card shadow-2xl z-50 flex flex-col animate-in slide-in-from-left duration-200">
             {sidebarBody}
           </aside>
         </div>

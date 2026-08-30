@@ -152,7 +152,7 @@ const SERVICES = [
 
 export default function ServicesPage() {
   return (
-    <div className="min-h-screen bg-[#FAFAF7] dark:bg-[#121214] text-[#111111] dark:text-zinc-100 transition-colors pb-24">
+    <div className="min-h-screen bg-background text-foreground transition-colors pb-24">
       {/* 1. HERO HEADER */}
       <section className="relative pt-12 sm:pt-20 pb-16 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
         <div className="text-center space-y-6 max-w-3xl mx-auto">

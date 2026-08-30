@@ -124,7 +124,7 @@ export default function RootLayout({
 
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={`${inter.variable} ${notoSansJP.variable} ${merriweather.variable} font-sans min-h-screen flex flex-col antialiased selection:bg-[#D91E18] selection:text-white bg-[#FAFAF7] text-[#111111]`}>
+      <body className={`${inter.variable} ${notoSansJP.variable} ${merriweather.variable} font-sans min-h-screen flex flex-col antialiased selection:bg-[#D91E18] selection:text-white bg-background text-foreground`}>
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}

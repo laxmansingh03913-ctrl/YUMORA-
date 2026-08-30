@@ -145,7 +145,7 @@ export function Navbar() {
 
   return (
     <>
-      <header className="sticky top-0 z-40 w-full border-b border-[#EAEAE5] dark:border-zinc-800 bg-[#FFFFFF]/95 dark:bg-[#121214]/95 backdrop-blur-md transition-colors">
+      <header className="sticky top-0 z-40 w-full border-b border-border bg-card/95 dark:bg-card/95 backdrop-blur-md transition-colors">
         <div className="w-full px-3 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-3 sm:gap-6">
           {/* ZONE 1: LEFT - Sidebar Toggle & Brand Logo */}
           <div className="flex items-center gap-2 sm:gap-3.5 flex-shrink-0">
