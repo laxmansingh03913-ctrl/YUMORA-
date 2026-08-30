@@ -27,7 +27,7 @@ import {
 } from "lucide-react";
 import { useSidebar } from "@/context/SidebarContext";
 import { useAuth } from "@/context/AuthContext";
-import { dbService } from "@/lib/supabase/db";
+import { supabase } from "@/lib/supabase/client";
 
 export function Sidebar() {
   const pathname = usePathname();
@@ -41,8 +41,12 @@ export function Sidebar() {
       setLiveCoins(null);
       return;
     }
-    dbService.getWalletBalance(user.id)
-      .then((balance) => setLiveCoins(balance))
+    supabase
+      .from("coin_wallets")
+      .select("balance")
+      .eq("user_id", user.id)
+      .maybeSingle()
+      .then(({ data }) => setLiveCoins(data?.balance ?? 0))
       .catch(() => setLiveCoins(0));
   }, [user?.id]);
 
