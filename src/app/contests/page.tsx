@@ -400,17 +400,24 @@ export default function ContestsPage() {
 
           </div>
 
-          {/* Right Column: Premium 2D Trophy Illustration Integration */}
-          <div className="lg:col-span-6 relative flex items-center justify-center select-none">
-            {/* Subtle Radiant Atmospheric Glow Behind Illustration */}
+          {/* Right Column: Photorealistic Seamless 3D Trophy Integration (No Box Framing) */}
+          <div className="lg:col-span-6 relative flex items-center justify-center select-none pointer-events-none">
+            {/* Subtle Radiant Atmospheric Glow Behind Trophy */}
             <div className="w-72 h-72 sm:w-96 sm:h-96 rounded-full bg-cyan-500/10 dark:bg-cyan-600/20 blur-3xl absolute top-1/2 -translate-y-1/2 right-1/2 translate-x-1/2 -z-10 animate-pulse-red pointer-events-none" />
 
-            {/* Premium 2D Trophy Illustration */}
-            <div className="relative w-full flex items-center justify-center overflow-hidden rounded-2xl border border-border/80 shadow-lg">
+            {/* Seamless 3D Trophy Visual Asset */}
+            <div className="relative w-full max-w-[580px] flex items-center justify-center animate-float-slow">
               <img
-                src="/contest-trophy-2d.jpg"
+                src="/contest-trophy.png"
                 alt="Yomika Tournament Trophy"
-                className="w-full h-auto object-cover transition duration-700 hover:scale-[1.01]"
+                className="w-full h-auto object-contain max-h-[460px] sm:max-h-[520px] mix-blend-multiply dark:mix-blend-lighten filter contrast-[1.03] drop-shadow-[0_15px_25px_rgba(0,0,0,0.12)] dark:drop-shadow-[0_20px_35px_rgba(217,30,24,0.25)] transition duration-700 hover:scale-105"
+                style={{
+                  WebkitMaskImage: "radial-gradient(circle at center, black 38%, transparent 64%)",
+                  maskImage: "radial-gradient(circle at center, black 38%, transparent 64%)"
+                }}
+                onError={(e) => {
+                  (e.target as HTMLImageElement).src = "/contest-trophy.jpg";
+                }}
               />
             </div>
           </div>
