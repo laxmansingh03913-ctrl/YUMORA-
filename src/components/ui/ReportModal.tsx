@@ -1,8 +1,8 @@
 "use client";
 
 import React, { useState } from "react";
-import { X, ShieldAlert, CheckCircle } from "lucide-react";
-import { dataStore } from "@/lib/data/store";
+import { X, ShieldAlert, CheckCircle, AlertCircle, Loader2 } from "lucide-react";
+import { useAuth } from "@/context/AuthContext";
 import { ContentType, ReportItem } from "@/lib/types";
 
 interface ReportModalProps {
@@ -22,32 +22,57 @@ export function ReportModal({
   contentType,
   creatorName,
 }: ReportModalProps) {
+  const { user, openAuthModal } = useAuth();
   const [reason, setReason] = useState<ReportItem["reason"]>("Copyright Infringement");
   const [description, setDescription] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   if (!isOpen) return null;
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    dataStore.addReport({
-      id: `rep-${Date.now()}`,
-      reporterName: "Community Member",
-      contentId,
-      contentTitle,
-      contentType,
-      creatorName,
-      reason,
-      description,
-      status: "PENDING",
-      createdAt: new Date().toISOString(),
-    });
-    setIsSubmitted(true);
-    setTimeout(() => {
-      setIsSubmitted(false);
-      setDescription("");
-      onClose();
-    }, 1800);
+    if (!user) {
+      openAuthModal("signup");
+      return;
+    }
+
+    setIsSubmitting(true);
+    setError(null);
+
+    try {
+      const response = await fetch("/api/reports", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          contentId,
+          contentType,
+          reason,
+          description,
+        }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || "Failed to submit report. Please try again.");
+      }
+
+      setIsSubmitted(true);
+      setTimeout(() => {
+        setIsSubmitted(false);
+        setDescription("");
+        onClose();
+      }, 2000);
+    } catch (err: any) {
+      console.error("[REPORT SUBMIT ERROR]", err);
+      setError(err.message || "Failed to submit report.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -124,19 +149,35 @@ export function ReportModal({
               />
             </div>
 
+            {error && (
+              <div className="p-3 bg-red-950/40 border border-red-800/40 text-red-200 text-xs rounded-xl flex items-center gap-2 animate-in fade-in slide-in-from-top-1">
+                <AlertCircle className="w-4 h-4 shrink-0 text-red-400" />
+                <span>{error}</span>
+              </div>
+            )}
+
             <div className="flex gap-2 pt-2">
               <button
                 type="button"
                 onClick={onClose}
-                className="flex-1 py-2.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-300 font-semibold text-xs transition"
+                disabled={isSubmitting}
+                className="flex-1 py-2.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-300 font-semibold text-xs transition disabled:opacity-50"
               >
                 Cancel
               </button>
               <button
                 type="submit"
-                className="flex-1 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-semibold text-xs shadow-lg shadow-rose-600/20 transition"
+                disabled={isSubmitting}
+                className="flex-1 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-semibold text-xs shadow-lg shadow-rose-600/20 transition flex items-center justify-center gap-1.5 disabled:opacity-50"
               >
-                Submit Report
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="w-3.5 h-3.5 animate-spin text-white" />
+                    <span>Submitting...</span>
+                  </>
+                ) : (
+                  "Submit Report"
+                )}
               </button>
             </div>
           </form>
