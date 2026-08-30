@@ -135,10 +135,10 @@ export default function CreatorUploadWizardPage() {
   useEffect(() => {
     const allNovels = dataStore.getNovels();
     const allComics = dataStore.getComics();
-    const myNovels = user ? allNovels.filter((n) => n.creatorId === user.id) : allNovels;
-    const myComics = user ? allComics.filter((c) => c.creatorId === user.id) : allComics;
-    setUserNovels(myNovels.length > 0 ? myNovels : allNovels);
-    setUserComics(myComics.length > 0 ? myComics : allComics);
+    const myNovels = user ? allNovels.filter((n) => n.creatorId === user.id) : [];
+    const myComics = user ? allComics.filter((c) => c.creatorId === user.id) : [];
+    setUserNovels(myNovels);
+    setUserComics(myComics);
   }, [user]);
 
   // Content Medium
