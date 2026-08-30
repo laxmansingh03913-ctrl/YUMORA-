@@ -62,7 +62,7 @@ export default function AdminDashboardPage() {
   } | null>(null);
 
   // Admin Gate State
-  const [adminEmail, setAdminEmail] = useState("megwansiabhishek7@gmail.com");
+  const [adminEmail, setAdminEmail] = useState("");
   const [adminPassword, setAdminPassword] = useState("");
   const [mfaCode, setMfaCode] = useState("");
   const [authError, setAuthError] = useState<string | null>(null);
@@ -217,10 +217,7 @@ export default function AdminDashboardPage() {
                 Master Admin Access Only
               </h2>
               <p className="text-xs text-zinc-500 leading-relaxed max-w-xs mx-auto">
-                Authorized access only for designated administrator:{" "}
-                <span className="font-mono text-zinc-800 dark:text-zinc-200 font-bold">
-                  {MASTER_ADMIN_EMAIL}
-                </span>
+                Authorized access only for designated administrator.
               </p>
             </div>
           </div>
@@ -265,7 +262,7 @@ export default function AdminDashboardPage() {
                 required
                 value={adminEmail}
                 onChange={(e) => setAdminEmail(e.target.value)}
-                placeholder="megwansiabhishek7@gmail.com"
+                placeholder="admin@yomika.site"
                 className="w-full px-4 py-3 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 text-xs font-medium text-zinc-900 dark:text-zinc-100 focus:outline-none focus:border-[#D91E18] transition font-mono"
               />
             </div>
