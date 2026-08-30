@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabase } from "@/lib/supabase/client";
-import { isEmailServerAdmin } from "@/lib/auth/server";
+import { isEmailServerAdmin, generateAdminSessionToken } from "@/lib/auth/server";
 import { prisma } from "@/lib/prisma";
 
 export async function POST(request: NextRequest) {
@@ -56,17 +56,14 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // 4. Verify Administrator Role authorization on server
-    const isAuthorizedAdmin =
-      isMasterAdminEmail ||
-      (sessionUser?.user_metadata?.role === "ADMIN") ||
-      (sessionUser?.app_metadata?.role === "ADMIN");
+    // 4. Verify Administrator Role authorization on server (Strict Owner Only check)
+    const isAuthorizedAdmin = isMasterAdminEmail;
 
-    if (!isAuthorizedAdmin && !sessionUser) {
+    if (!isAuthorizedAdmin) {
       return NextResponse.json(
         {
           success: false,
-          error: "Access Denied: This account does not have administrator privileges.",
+          error: "Access Denied: This account does not have platform owner privileges.",
         },
         { status: 403 }
       );
@@ -93,6 +90,8 @@ export async function POST(request: NextRequest) {
       lastAuthenticatedAt: new Date().toISOString(),
     };
 
+    const sessionToken = generateAdminSessionToken(cleanEmail);
+
     const response = NextResponse.json({
       success: true,
       user: adminProfile,
@@ -101,7 +100,7 @@ export async function POST(request: NextRequest) {
     });
 
     // Set secure server-side admin cookie for subsequent requests
-    response.cookies.set("youmika_admin_auth", "true", {
+    response.cookies.set("youmika_admin_auth", sessionToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
