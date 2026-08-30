@@ -157,6 +157,10 @@ export default function ContestsPage() {
   const { user, requireAuth } = useAuth();
   const [contest, setContest] = useState<Contest>(() => dataStore.getActiveContest());
   const [novels, setNovels] = useState(() => dataStore.getNovels());
+  
+  // Real-time live submissions state
+  const [submissions, setSubmissions] = useState<any[]>([]);
+  const [loadingSubmissions, setLoadingSubmissions] = useState(true);
 
   // Real-time live countdown hook
   const countdown = useContestCountdown(contest);
@@ -188,6 +192,19 @@ export default function ContestsPage() {
         const live = supabaseContests[0];
         setContest(live);
         dataStore.saveContest(live);
+
+        // Fetch entries submitted to this active contest from Supabase Postgres
+        fetch(`/api/contests/submissions?contestId=${live.id}`)
+          .then((res) => res.json())
+          .then((data) => {
+            if (data.success) {
+              setSubmissions(data.submissions);
+            }
+          })
+          .catch((err) => console.error("[FETCH SUBMISSIONS ERROR]", err))
+          .finally(() => setLoadingSubmissions(false));
+      } else {
+        setLoadingSubmissions(false);
       }
     });
   }, []);
@@ -215,22 +232,22 @@ export default function ContestsPage() {
     }
   }, [selectedNovelId, selectedStory]);
 
-  // Combine user novels with tournament entries
+  // Combine user novels/submissions with tournament entries
   const allEntries = [
-    ...novels.map((n, idx) => ({
+    ...submissions.map((n) => ({
       id: n.id,
       title: n.title,
       slug: n.slug,
-      author: `@${n.creator.username || n.creator.name.toLowerCase().replace(/\s+/g, "_")}`,
-      authorName: n.creator.name || "Creator",
-      avatar: n.creator.avatar,
+      author: n.author,
+      authorName: n.authorName,
+      avatar: n.avatar,
       coverUrl: n.coverUrl,
       genre: n.genre,
-      chaptersCount: n.chaptersCount || 3,
-      rating: n.rating || 4.8,
-      votes: (votes[n.id] || 0) + (120 - idx * 12),
+      chaptersCount: n.chaptersCount,
+      rating: n.rating,
+      votes: (votes[n.id] || 0) + n.votes,
     })),
-    ...SEEDED_CONTENDERS,
+    ...SEEDED_CONTENDERS.filter(sc => !submissions.some(sub => sub.id === sc.id)),
   ].sort((a, b) => (votes[b.id] || b.votes) - (votes[a.id] || a.votes));
 
   // Compute live faction scores dynamically based on the active vote counts
@@ -266,18 +283,34 @@ export default function ContestsPage() {
     }
   };
 
-  const handleVote = (entryId: string) => {
+  const handleVote = async (entryId: string) => {
     if (votedIds.includes(entryId)) return;
+
+    // Optimistic UI update
     setVotes((prev) => ({ ...prev, [entryId]: (prev[entryId] || 0) + 1 }));
     setVotedIds((prev) => [...prev, entryId]);
+
     try {
       confetti({ particleCount: 60, spread: 70, origin: { y: 0.7 } });
     } catch {
       // ignore
     }
+
+    try {
+      await fetch("/api/contests/vote", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          contestId: contest.id,
+          novelId: entryId,
+        }),
+      });
+    } catch (err) {
+      console.error("[VOTE SYNC ERROR]", err);
+    }
   };
 
-  const handleEntrySubmit = (e: React.FormEvent) => {
+  const handleEntrySubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmissionError(null);
 
@@ -287,25 +320,51 @@ export default function ContestsPage() {
     }
 
     const creatorId = user?.id || selectedStory.creatorId || "creator-current";
-    const result = dataStore.submitContestEntry(contest.id, selectedStory.id, creatorId);
 
-    if (!result.success) {
-      setSubmissionError(result.error || "Submission failed.");
-      return;
-    }
-
-    setIsSubmitted(true);
     try {
-      confetti({ particleCount: 140, spread: 80, origin: { y: 0.5 } });
-    } catch {
-      // ignore
+      const res = await fetch("/api/contests/submit", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          contestId: contest.id,
+          novelId: selectedStory.id,
+          creatorId,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok || !data.success) {
+        setSubmissionError(data.error || "Submission failed.");
+        return;
+      }
+
+      setIsSubmitted(true);
+      try {
+        confetti({ particleCount: 140, spread: 80, origin: { y: 0.5 } });
+      } catch {
+        // ignore
+      }
+
+      setTimeout(() => {
+        setIsSubmitModalOpen(false);
+        setIsSubmitted(false);
+        setSubmissionStep(1);
+        
+        // Reload submissions list
+        fetch(`/api/contests/submissions?contestId=${contest.id}`)
+          .then((r) => r.json())
+          .then((d) => {
+            if (d.success) {
+              setSubmissions(d.submissions);
+            }
+          })
+          .catch((err) => console.error(err));
+      }, 2500);
+    } catch (err: any) {
+      console.error("[SUBMIT ENTRY ERROR]", err);
+      setSubmissionError("Network error during submission. Please try again.");
     }
-    setTimeout(() => {
-      setIsSubmitModalOpen(false);
-      setIsSubmitted(false);
-      setSubmissionStep(1);
-      setContest(dataStore.getActiveContest());
-    }, 2500);
   };
 
   const authorAvatars = [

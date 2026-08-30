@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import {
   Users,
@@ -182,7 +182,8 @@ export default function CommunityPage() {
   const [activeTab, setActiveTab] = useState<CommunityTab>("discussions");
 
   // Discussions State
-  const [posts, setPosts] = useState<CommunityPost[]>(() => dataStore.getCommunityPosts());
+  const [posts, setPosts] = useState<CommunityPost[]>([]);
+  const [loadingPosts, setLoadingPosts] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState("All Categories");
   const [isCreatingPost, setIsCreatingPost] = useState(false);
   const [title, setTitle] = useState("");
@@ -192,6 +193,10 @@ export default function CommunityPage() {
   const [upvotedIds, setUpvotedIds] = useState<string[]>([]);
   const [expandedThreadId, setExpandedThreadId] = useState<string | null>(null);
   const [threadReplyInput, setThreadReplyInput] = useState<{ [postId: string]: string }>({});
+  
+  // Database-backed replies/comments state
+  const [threadComments, setThreadComments] = useState<{ [postId: string]: any[] }>({});
+  const [loadingComments, setLoadingComments] = useState<{ [postId: string]: boolean }>({});
 
   // AMA State
   const [amaQuestions, setAmaQuestions] = useState<AmaQuestion[]>(INITIAL_AMA_QUESTIONS);
@@ -205,63 +210,144 @@ export default function CommunityPage() {
   const [fanArt, setFanArt] = useState<FanArtItem[]>(INITIAL_FAN_ART);
   const [likedArtIds, setLikedArtIds] = useState<string[]>([]);
 
+  // Fetch posts on mount
+  useEffect(() => {
+    const fetchPosts = async () => {
+      try {
+        const res = await fetch("/api/community/posts");
+        const data = await res.json();
+        if (data.success) {
+          setPosts(data.posts);
+        }
+      } catch (err) {
+        console.error("[FETCH POSTS ERROR]", err);
+      } finally {
+        setLoadingPosts(false);
+      }
+    };
+    fetchPosts();
+  }, []);
+
   const filteredPosts = posts.filter((p) => {
     if (selectedCategory === "All Categories") return true;
     return p.category === selectedCategory;
   });
 
-  const handleUpvote = (postId: string) => {
+  const handleUpvote = async (postId: string) => {
+    if (!user) return;
     const isUpvoted = upvotedIds.includes(postId);
+    const direction = isUpvoted ? "down" : "up";
     const delta = isUpvoted ? -1 : 1;
+
+    // Optimistic UI Update
     setUpvotedIds((prev) =>
       isUpvoted ? prev.filter((id) => id !== postId) : [...prev, postId]
     );
     setPosts((prev) =>
       prev.map((p) => (p.id === postId ? { ...p, upvotes: p.upvotes + delta } : p))
     );
+
+    try {
+      await fetch(`/api/community/posts/${postId}/upvote`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ direction }),
+      });
+    } catch (err) {
+      console.error("[UPVOTE SYNC ERROR]", err);
+    }
   };
 
-  const handleCreatePost = (e: React.FormEvent) => {
+  const handleCreatePost = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim() || !content.trim()) return;
 
-    const newPost: CommunityPost = {
-      id: `post-${Date.now()}`,
-      userId: user?.id || `usr-${Date.now()}`,
-      user: {
-        name: user?.name || "Storyteller",
-        username: user?.username || "storyteller",
-        avatar:
-          user?.avatar ||
-          "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300&auto=format&fit=crop&q=80",
-        badge:
-          user?.role === "ADMIN"
-            ? "Official Team"
-            : user?.role === "CREATOR"
-            ? "Author"
-            : "Reader",
-      },
-      category,
-      title: title.trim(),
-      content: content.trim(),
-      tags: tagsInput
-        .split(",")
-        .map((t) => t.trim())
-        .filter(Boolean),
-      upvotes: 1,
-      commentsCount: 0,
-      views: 1,
-      isPinned: false,
-      createdAt: new Date().toISOString(),
-    };
+    const tags = tagsInput
+      .split(",")
+      .map((t) => t.trim())
+      .filter(Boolean);
 
-    dataStore.addCommunityPost(newPost);
-    setPosts([newPost, ...posts]);
-    setTitle("");
-    setContent("");
-    setTagsInput("");
-    setIsCreatingPost(false);
+    try {
+      const res = await fetch("/api/community/posts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          category,
+          title: title.trim(),
+          content: content.trim(),
+          tags,
+        }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setPosts([data.post, ...posts]);
+        setTitle("");
+        setContent("");
+        setTagsInput("");
+        setIsCreatingPost(false);
+      } else {
+        alert(data.error || "Failed to submit post.");
+      }
+    } catch (err) {
+      console.error("[CREATE POST ERROR]", err);
+    }
   };
+
+  const handleExpandThread = async (postId: string) => {
+    const isExpanded = expandedThreadId === postId;
+    if (isExpanded) {
+      setExpandedThreadId(null);
+      return;
+    }
+
+    setExpandedThreadId(postId);
+
+    if (!threadComments[postId]) {
+      setLoadingComments((prev) => ({ ...prev, [postId]: true }));
+      try {
+        const res = await fetch(`/api/community/posts/${postId}/comments`);
+        const data = await res.json();
+        if (data.success) {
+          setThreadComments((prev) => ({ ...prev, [postId]: data.comments }));
+        }
+      } catch (err) {
+        console.error("[FETCH COMMENTS ERROR]", err);
+      } finally {
+        setLoadingComments((prev) => ({ ...prev, [postId]: false }));
+      }
+    }
+  };
+
+  const handlePostReply = async (postId: string) => {
+    const text = threadReplyInput[postId];
+    if (!text?.trim()) return;
+
+    try {
+      const res = await fetch(`/api/community/posts/${postId}/comments`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setThreadComments((prev) => ({
+          ...prev,
+          [postId]: [...(prev[postId] || []), data.comment],
+        }));
+        setThreadReplyInput({ ...threadReplyInput, [postId]: "" });
+        setPosts((prev) =>
+          prev.map((p) =>
+            p.id === postId ? { ...p, commentsCount: p.commentsCount + 1 } : p
+          )
+        );
+      } else {
+        alert(data.error || "Failed to post comment.");
+      }
+    } catch (err) {
+      console.error("[POST REPLY ERROR]", err);
+    }
+  };
+
 
   // Submit Question to AMA
   const handleAskAma = (e: React.FormEvent) => {
@@ -503,142 +589,172 @@ export default function CommunityPage() {
 
           {/* Discussion Threads List */}
           <div className="space-y-4">
-            {filteredPosts.map((post) => {
-              const isUpvoted = upvotedIds.includes(post.id);
-              const isExpanded = expandedThreadId === post.id;
+            {loadingPosts ? (
+              <div className="p-12 text-center text-sm text-zinc-400">
+                Loading discussion threads...
+              </div>
+            ) : filteredPosts.length === 0 ? (
+              <div className="p-12 text-center text-sm text-zinc-500 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-3xl">
+                No discussion threads found in this category. Be the first to publish one!
+              </div>
+            ) : (
+              filteredPosts.map((post) => {
+                const isUpvoted = upvotedIds.includes(post.id);
+                const isExpanded = expandedThreadId === post.id;
 
-              return (
-                <div
-                  key={post.id}
-                  className={`p-6 rounded-3xl bg-white dark:bg-zinc-900 border transition ${
-                    post.isPinned
-                      ? "border-rose-500/40 bg-rose-950/10 dark:bg-rose-950/20"
-                      : "border-zinc-200 dark:border-zinc-800 hover:border-zinc-400 dark:hover:border-zinc-700"
-                  }`}
-                >
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="flex items-center gap-3">
-                      <img
-                        src={post.user.avatar}
-                        alt={post.user.name}
-                        className="w-10 h-10 rounded-full object-cover ring-2 ring-rose-500/30"
-                      />
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <span className="font-bold text-sm text-zinc-900 dark:text-zinc-100">
-                            {post.user.name}
-                          </span>
-                          {post.user.badge && (
-                            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-indigo-100 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400">
-                              {post.user.badge}
-                            </span>
-                          )}
-                          <span className="text-xs text-zinc-400">@{post.user.username}</span>
-                        </div>
-                        <span className="text-[11px] text-zinc-400 font-medium">
-                          {formatDate(post.createdAt)} in{" "}
-                          <strong className="text-rose-500">{post.category}</strong>
-                        </span>
-                      </div>
-                    </div>
-
-                    {post.isPinned && (
-                      <span className="px-2 py-0.5 rounded-full bg-rose-500/10 text-rose-500 text-[10px] font-black uppercase flex items-center gap-1">
-                        <Pin className="w-3 h-3" /> Pinned
-                      </span>
-                    )}
-                  </div>
-
-                  <div className="mt-4 space-y-2">
-                    <h3 className="font-extrabold text-base text-zinc-900 dark:text-zinc-100">
-                      {post.title}
-                    </h3>
-                    <p className="text-xs sm:text-sm text-zinc-600 dark:text-zinc-300 leading-relaxed whitespace-pre-line">
-                      {post.content}
-                    </p>
-
-                    {post.tags && post.tags.length > 0 && (
-                      <div className="flex flex-wrap gap-1.5 pt-1">
-                        {post.tags.map((t) => (
-                          <span
-                            key={t}
-                            className="px-2 py-0.5 rounded-md bg-zinc-100 dark:bg-zinc-800 text-[10px] font-bold text-zinc-500"
-                          >
-                            #{t}
-                          </span>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Actions & Upvote */}
-                  <div className="flex items-center justify-between pt-4 mt-4 border-t border-zinc-100 dark:border-zinc-800/80 text-xs">
-                    <div className="flex items-center gap-4">
-                      <button
-                        onClick={() => handleUpvote(post.id)}
-                        className={`flex items-center gap-1.5 font-bold transition cursor-pointer ${
-                          isUpvoted
-                            ? "text-rose-500"
-                            : "text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-200"
-                        }`}
-                      >
-                        <ThumbsUp className={`w-4 h-4 ${isUpvoted ? "fill-current" : ""}`} />
-                        <span>{post.upvotes} Upvotes</span>
-                      </button>
-
-                      <button
-                        onClick={() =>
-                          setExpandedThreadId(isExpanded ? null : post.id)
-                        }
-                        className="flex items-center gap-1.5 font-bold text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-200 transition cursor-pointer"
-                      >
-                        <MessageSquare className="w-4 h-4" />
-                        <span>{post.commentsCount || 0} Replies</span>
-                      </button>
-                    </div>
-
-                    <span className="text-[11px] text-zinc-400">
-                      {post.views || 1} Views
-                    </span>
-                  </div>
-
-                  {/* Inline Thread Reply Expansion */}
-                  {isExpanded && (
-                    <div className="mt-4 pt-4 border-t border-zinc-200 dark:border-zinc-800 space-y-3 animate-in fade-in">
-                      <div className="p-3 rounded-2xl bg-zinc-50 dark:bg-zinc-950 text-xs text-zinc-500 text-center">
-                        No replies yet. Be the first to start the conversation!
-                      </div>
-
-                      <div className="flex gap-2">
-                        <input
-                          type="text"
-                          value={threadReplyInput[post.id] || ""}
-                          onChange={(e) =>
-                            setThreadReplyInput({
-                              ...threadReplyInput,
-                              [post.id]: e.target.value,
-                            })
-                          }
-                          placeholder="Write a constructive reply..."
-                          className="flex-1 px-3.5 py-2 rounded-xl bg-zinc-100 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 text-xs text-zinc-900 dark:text-zinc-100 focus:outline-none focus:border-rose-500"
+                return (
+                  <div
+                    key={post.id}
+                    className={`p-6 rounded-3xl bg-white dark:bg-zinc-900 border transition ${
+                      post.isPinned
+                        ? "border-rose-500/40 bg-rose-950/10 dark:bg-rose-950/20"
+                        : "border-zinc-200 dark:border-zinc-800 hover:border-zinc-400 dark:hover:border-zinc-700"
+                    }`}
+                  >
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="flex items-center gap-3">
+                        <img
+                          src={post.user.avatar}
+                          alt={post.user.name}
+                          className="w-10 h-10 rounded-full object-cover ring-2 ring-rose-500/30"
                         />
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <span className="font-bold text-sm text-zinc-900 dark:text-zinc-100">
+                              {post.user.name}
+                            </span>
+                            {post.user.badge && (
+                              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-indigo-100 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400">
+                                {post.user.badge}
+                              </span>
+                            )}
+                            <span className="text-xs text-zinc-400">@{post.user.username}</span>
+                          </div>
+                          <span className="text-[11px] text-zinc-400 font-medium">
+                            {formatDate(post.createdAt)} in{" "}
+                            <strong className="text-rose-500">{post.category}</strong>
+                          </span>
+                        </div>
+                      </div>
+
+                      {post.isPinned && (
+                        <span className="px-2 py-0.5 rounded-full bg-rose-500/10 text-rose-500 text-[10px] font-black uppercase flex items-center gap-1">
+                          <Pin className="w-3 h-3" /> Pinned
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="mt-4 space-y-2">
+                      <h3 className="font-extrabold text-base text-zinc-900 dark:text-zinc-100">
+                        {post.title}
+                      </h3>
+                      <p className="text-xs sm:text-sm text-zinc-600 dark:text-zinc-300 leading-relaxed whitespace-pre-line">
+                        {post.content}
+                      </p>
+
+                      {post.tags && post.tags.length > 0 && (
+                        <div className="flex flex-wrap gap-1.5 pt-1">
+                          {post.tags.map((t) => (
+                            <span
+                              key={t}
+                              className="px-2 py-0.5 rounded-md bg-zinc-100 dark:bg-zinc-800 text-[10px] font-bold text-zinc-500"
+                            >
+                              #{t}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Actions & Upvote */}
+                    <div className="flex items-center justify-between pt-4 mt-4 border-t border-zinc-100 dark:border-zinc-800/80 text-xs">
+                      <div className="flex items-center gap-4">
                         <button
-                          onClick={() => {
-                            if (!threadReplyInput[post.id]?.trim()) return;
-                            alert("Reply posted successfully!");
-                            setThreadReplyInput({ ...threadReplyInput, [post.id]: "" });
-                          }}
-                          className="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs transition cursor-pointer flex items-center gap-1"
+                          onClick={() => handleUpvote(post.id)}
+                          className={`flex items-center gap-1.5 font-bold transition cursor-pointer ${
+                            isUpvoted
+                              ? "text-rose-500"
+                              : "text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-200"
+                          }`}
                         >
-                          <Send className="w-3.5 h-3.5" />
-                          <span>Reply</span>
+                          <ThumbsUp className={`w-4 h-4 ${isUpvoted ? "fill-current" : ""}`} />
+                          <span>{post.upvotes} Upvotes</span>
+                        </button>
+
+                        <button
+                          onClick={() => handleExpandThread(post.id)}
+                          className="flex items-center gap-1.5 font-bold text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-200 transition cursor-pointer"
+                        >
+                          <MessageSquare className="w-4 h-4" />
+                          <span>{post.commentsCount || 0} Replies</span>
                         </button>
                       </div>
+
+                      <span className="text-[11px] text-zinc-400">
+                        {post.views || 1} Views
+                      </span>
                     </div>
-                  )}
-                </div>
-              );
-            })}
+
+                    {/* Inline Thread Reply Expansion */}
+                    {isExpanded && (
+                      <div className="mt-4 pt-4 border-t border-zinc-200 dark:border-zinc-800 space-y-3 animate-in fade-in">
+                        {loadingComments[post.id] ? (
+                          <div className="p-3 text-center text-xs text-zinc-400">
+                            Loading replies...
+                          </div>
+                        ) : (
+                          <div className="space-y-3">
+                            {(!threadComments[post.id] || threadComments[post.id].length === 0) ? (
+                              <div className="p-3 rounded-2xl bg-zinc-50 dark:bg-zinc-950 text-xs text-zinc-500 text-center">
+                                No replies yet. Be the first to start the conversation!
+                              </div>
+                            ) : (
+                              threadComments[post.id].map((comment) => (
+                                <div key={comment.id} className="p-3.5 rounded-2xl bg-zinc-50 dark:bg-zinc-950/40 border border-zinc-100 dark:border-zinc-800/40 space-y-1">
+                                  <div className="flex items-center justify-between text-[11px] text-zinc-400">
+                                    <div className="flex items-center gap-1.5 font-semibold">
+                                      <span className="text-zinc-700 dark:text-zinc-200">{comment.user.name}</span>
+                                      <span className="px-1.5 py-0.5 rounded bg-zinc-200 dark:bg-zinc-800 text-[9px] font-bold text-zinc-500">{comment.user.badge}</span>
+                                      <span className="text-zinc-500 font-normal">@{comment.user.username}</span>
+                                    </div>
+                                    <span>{formatDate(comment.createdAt)}</span>
+                                  </div>
+                                  <p className="text-xs text-zinc-700 dark:text-zinc-300 leading-relaxed pl-0.5">
+                                    {comment.text}
+                                  </p>
+                                </div>
+                              ))
+                            )}
+                          </div>
+                        )}
+
+                        <div className="flex gap-2 pt-2">
+                          <input
+                            type="text"
+                            value={threadReplyInput[post.id] || ""}
+                            onChange={(e) =>
+                              setThreadReplyInput({
+                                ...threadReplyInput,
+                                [post.id]: e.target.value,
+                              })
+                            }
+                            placeholder="Write a constructive reply..."
+                            className="flex-1 px-3.5 py-2 rounded-xl bg-zinc-100 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 text-xs text-zinc-900 dark:text-zinc-100 focus:outline-none focus:border-rose-500 placeholder-zinc-400 dark:placeholder-zinc-600"
+                          />
+                          <button
+                            onClick={() => handlePostReply(post.id)}
+                            className="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs transition cursor-pointer flex items-center gap-1"
+                          >
+                            <Send className="w-3.5 h-3.5" />
+                            <span>Reply</span>
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })
+            )}
           </div>
         </div>
       )}

@@ -44,6 +44,7 @@ import {
 import confetti from "canvas-confetti";
 import { useAuth } from "@/context/AuthContext";
 import { dataStore } from "@/lib/data/store";
+import { dbService } from "@/lib/supabase/db";
 import { formatNumber, formatDate } from "@/lib/utils";
 import { Novel, Comic, MonetizationEligibility, MonetizationTier, PayoutRequest } from "@/lib/types";
 import { PayoutSlipModal } from "@/components/creator/PayoutSlipModal";
@@ -176,6 +177,35 @@ export default function CreatorDashboardPage() {
       const userComics = dataStore.getComics().filter((c) => c.creatorId === user.id);
       setNovels(userNovels);
       setComics(userComics);
+
+      // Fetch authoritative wallet balance from Supabase Database
+      dbService.getWalletBalance(user.id).then((balanceCoins) => {
+        if (balanceCoins !== undefined) {
+          const balanceUSD = balanceCoins / 100;
+          setAvailableBalance(balanceUSD);
+          localStorage.setItem(`yumora_wallet_balance_${user.id}`, balanceUSD.toString());
+        }
+      });
+
+      // Fetch real payout request history from Database
+      fetch("/api/creator/payouts")
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.success) {
+            const mappedHistory = data.payouts.map((row: any) => ({
+              id: row.id,
+              referenceId: row.referenceId || "YM-PENDING",
+              amount: row.amountUsd,
+              method: row.method,
+              destination: row.details,
+              date: new Date(row.createdAt).toISOString().split("T")[0],
+              status: row.status === "PENDING" ? "PROCESSING" : row.status,
+            }));
+            setPayoutHistory(mappedHistory);
+            localStorage.setItem(`yumora_payout_history_${user.id}`, JSON.stringify(mappedHistory));
+          }
+        })
+        .catch((err) => console.error("[PAYOUTS HISTORY FETCH ERROR]", err));
     }
   }, [user]);
 
@@ -256,7 +286,7 @@ export default function CreatorDashboardPage() {
     showToast("✅ Payout account settings saved securely.");
   };
 
-  const handleWithdrawalSubmit = (e: React.FormEvent) => {
+  const handleWithdrawalSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const amount = parseFloat(withdrawAmountInput);
 
@@ -272,24 +302,46 @@ export default function CreatorDashboardPage() {
 
     setIsProcessingWithdraw(true);
 
-    setTimeout(() => {
+    const destinationLabel =
+      payoutSettings.method === "UPI"
+        ? `UPI: ${payoutSettings.upiId}`
+        : payoutSettings.method === "BANK"
+        ? `${payoutSettings.bankName} (${payoutSettings.bankAccountNumber.slice(-4)})`
+        : `PayPal: ${payoutSettings.paypalEmail}`;
+
+    try {
+      const res = await fetch("/api/creator/payouts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          amountUsd: amount,
+          method: (payoutSettings.method === "STRIPE" ? "BANK" : payoutSettings.method) as "UPI" | "BANK" | "PAYPAL",
+          details: destinationLabel,
+          accountHolderName: payoutSettings.bankAccountHolder || user?.name || "Creator",
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok || !data.success) {
+        alert(data.error || "Withdrawal request failed.");
+        setIsProcessingWithdraw(false);
+        return;
+      }
+
+      const row = data.payoutRequest;
+
+      // Update local wallet balance state
       const remainingBalance = Math.max(0, availableBalance - amount);
       setAvailableBalance(remainingBalance);
 
-      const destinationLabel =
-        payoutSettings.method === "UPI"
-          ? `UPI: ${payoutSettings.upiId}`
-          : payoutSettings.method === "BANK"
-          ? `${payoutSettings.bankName} (${payoutSettings.bankAccountNumber.slice(-4)})`
-          : `PayPal: ${payoutSettings.paypalEmail}`;
-
       const newRecord: PayoutRecord = {
-        id: `pay-${Date.now()}`,
-        referenceId: `YM-PAY-${Math.floor(10000 + Math.random() * 90000)}`,
-        amount: amount,
-        method: payoutSettings.method,
-        destination: destinationLabel,
-        date: new Date().toISOString().split("T")[0],
+        id: row.id,
+        referenceId: row.referenceId || "YM-PENDING",
+        amount: row.amountUsd,
+        method: row.method,
+        destination: row.details,
+        date: new Date(row.createdAt).toISOString().split("T")[0],
         status: "PROCESSING",
       };
 
@@ -299,20 +351,8 @@ export default function CreatorDashboardPage() {
       if (user?.id) {
         localStorage.setItem(`yumora_wallet_balance_${user.id}`, remainingBalance.toString());
         localStorage.setItem(`yumora_payout_history_${user.id}`, JSON.stringify(updatedHistory));
-
-        dataStore.createPayoutRequest({
-          creatorId: user.id,
-          creatorName: user.name,
-          creatorEmail: user.email,
-          amountInr: Math.round(amount * 83),
-          amountUsd: amount,
-          method: (payoutSettings.method === "STRIPE" ? "BANK" : payoutSettings.method) as "UPI" | "BANK" | "PAYPAL",
-          details: destinationLabel,
-          accountHolderName: payoutSettings.bankAccountHolder || user.name,
-        });
       }
 
-      setIsProcessingWithdraw(false);
       setIsWithdrawModalOpen(false);
       setWithdrawAmountInput("");
 
@@ -323,7 +363,12 @@ export default function CreatorDashboardPage() {
       }
 
       showToast(`🎉 Withdrawal requested: $${amount.toFixed(2)} USD transferred to ${destinationLabel}`);
-    }, 1200);
+    } catch (err: any) {
+      console.error("[WITHDRAW SUBMIT ERROR]", err);
+      alert("Network error during withdrawal. Please try again.");
+    } finally {
+      setIsProcessingWithdraw(false);
+    }
   };
 
   // Derive Initials for fallback

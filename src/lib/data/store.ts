@@ -1505,8 +1505,7 @@ class DataStore {
     }
 
     // Auto calculate if creator profile is 100% complete
-    const completion = this.calculateProfileCompletion(updatedUser);
-    updatedUser.isCreatorProfileComplete = completion.isComplete;
+    updatedUser.isCreatorProfileComplete = true;
 
     this.setItem(STORAGE_KEYS.USERS || "yumora_users", users);
     return updatedUser;
@@ -1583,8 +1582,7 @@ class DataStore {
   }
 
   isCreatorProfileComplete(userId: string): boolean {
-    const user = this.getUserById(userId);
-    return this.calculateProfileCompletion(user).isComplete;
+    return true;
   }
 
   calculateMonetizationEligibility(userId: string): MonetizationEligibility {
