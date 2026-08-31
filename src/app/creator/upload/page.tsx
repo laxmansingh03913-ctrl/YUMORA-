@@ -196,7 +196,7 @@ export default function CreatorUploadWizardPage() {
   const [chapterTitle, setChapterTitle] = useState("Chapter 1");
   const [chapterContent, setChapterContent] = useState("");
   const [novelChaptersMap, setNovelChaptersMap] = useState<
-    Record<number, { title: string; content: string }>
+    Record<number, { id?: string; title: string; content: string }>
   >({
     1: { title: "Chapter 1", content: "" },
   });
@@ -204,10 +204,11 @@ export default function CreatorUploadWizardPage() {
   // Switch between chapters cleanly - saves current and opens blank or existing chapter
   const switchChapter = (newNum: number) => {
     if (newNum < 1) return;
-    // 1. Save current chapter
+    // 1. Save current chapter (preserve the id if it exists)
     const updatedMap = {
       ...novelChaptersMap,
       [chapterNumber]: {
+        id: novelChaptersMap[chapterNumber]?.id,
         title: chapterTitle || `Chapter ${chapterNumber}`,
         content: chapterContent,
       },
@@ -230,6 +231,7 @@ export default function CreatorUploadWizardPage() {
     setNovelChaptersMap((prev) => ({
       ...prev,
       [chapterNumber]: {
+        id: prev[chapterNumber]?.id,
         title: chapterTitle || `Chapter ${chapterNumber}`,
         content: newContent,
       },
@@ -241,6 +243,7 @@ export default function CreatorUploadWizardPage() {
     setNovelChaptersMap((prev) => ({
       ...prev,
       [chapterNumber]: {
+        id: prev[chapterNumber]?.id,
         title: newTitle,
         content: chapterContent,
       },
@@ -248,7 +251,8 @@ export default function CreatorUploadWizardPage() {
   };
 
   // Handler for selecting an existing series to add a chapter to
-  const handleSelectExistingSeries = (seriesId: string, type: "NOVEL" | "COMIC") => {
+  // Fetches latest data from DB API to ensure real chapter content is loaded
+  const handleSelectExistingSeries = async (seriesId: string, type: "NOVEL" | "COMIC") => {
     setSelectedSeriesId(seriesId);
     setSelectedSeriesType(type);
     setUploadMode("ADD_CHAPTER");
@@ -274,7 +278,22 @@ export default function CreatorUploadWizardPage() {
         setStep(3); // Jump right to Content Studio!
       }
     } else {
-      const novel = dataStore.getNovels().find((n) => n.id === seriesId);
+      // Try to fetch latest novel data from API (includes real chapter content from DB)
+      let novel = dataStore.getNovels().find((n) => n.id === seriesId);
+      try {
+        const res = await fetch(`/api/novels/${encodeURIComponent(novel?.slug || seriesId)}`);
+        if (res.ok) {
+          const data = await res.json();
+          if (data.success && data.novel) {
+            novel = data.novel;
+            // Update local cache with fresh data
+            dataStore.saveNovel(data.novel);
+          }
+        }
+      } catch {
+        // Fallback to local cache if API fails
+      }
+
       if (novel) {
         setTitle(novel.title);
         setDescription(novel.description);
@@ -285,11 +304,12 @@ export default function CreatorUploadWizardPage() {
         setFormatChoice("NOVEL");
         setReadingDirection("LTR");
 
-        // Populate novelChaptersMap with all existing chapters
-        const existingChaptersMap: Record<number, { title: string; content: string }> = {};
+        // Populate novelChaptersMap with all chapters - including real DB content and IDs
+        const existingChaptersMap: Record<number, { id?: string; title: string; content: string }> = {};
         if (novel.chapters && novel.chapters.length > 0) {
           novel.chapters.forEach((ch) => {
             existingChaptersMap[ch.chapterNumber] = {
+              id: ch.id, // Preserve DB chapter ID for proper upsert (edit existing chapter)
               title: ch.title || `Chapter ${ch.chapterNumber}`,
               content: ch.content || "",
             };
@@ -919,8 +939,15 @@ export default function CreatorUploadWizardPage() {
       } else {
         // Pure Text Serialized Novel
         if (uploadMode === "ADD_CHAPTER" && selectedSeriesId) {
-          setCloudPublishStatus(`Adding Chapter ${chapterNumber} to existing novel...`);
-          const chapterId = `ch-${selectedSeriesId}-${chapterNumber}-${Date.now()}`;
+          // Use existing chapter id if we're editing an existing chapter, else generate a new one
+          const existingChapterId = novelChaptersMap[chapterNumber]?.id;
+          const isEditingExisting = Boolean(existingChapterId);
+          const chapterId = existingChapterId || `ch-${selectedSeriesId}-${chapterNumber}-${Date.now()}`;
+          setCloudPublishStatus(
+            isEditingExisting
+              ? `Updating Chapter ${chapterNumber} content...`
+              : `Adding Chapter ${chapterNumber} to existing novel...`
+          );
           const newChapter: Chapter = {
             id: chapterId,
             novelId: selectedSeriesId,
