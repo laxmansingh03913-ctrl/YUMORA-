@@ -1943,18 +1943,41 @@ export default function CreatorUploadWizardPage() {
                       {/* Insert Light Novel Art */}
                       <button
                         type="button"
-                        onClick={() =>
-                          insertMarkdown(
-                            "\n\n![Illustration: Epic Moment](",
-                            ")\n\n",
-                            "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=1000&auto=format&fit=crop&q=85"
-                          )
-                        }
+                        onClick={async () => {
+                          const fileInput = document.createElement("input");
+                          fileInput.type = "file";
+                          fileInput.accept = "image/*";
+                          fileInput.onchange = async (event: any) => {
+                            const file = event.target.files?.[0];
+                            if (!file) return;
+                            
+                            try {
+                              setCloudPublishStatus("Uploading illustration...");
+                              const result = await compressImageToWebP(file, { maxWidth: 1200, maxHeight: 1800, quality: 0.85 });
+                              const uploadedUrl = await uploadDataUrlToSupabase(
+                                "comics",
+                                `illustrations/novel-art-${Date.now()}.webp`,
+                                result.dataUrl
+                              );
+                              
+                              insertMarkdown(
+                                "\n\n![Illustration: Epic Moment](",
+                                ")\n\n",
+                                uploadedUrl
+                              );
+                            } catch (err) {
+                              alert("Failed to upload image. Please try again.");
+                            } finally {
+                              setCloudPublishStatus(null);
+                            }
+                          };
+                          fileInput.click();
+                        }}
                         className="px-2.5 py-1.5 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 text-amber-500 dark:text-amber-400 font-bold text-xs flex items-center gap-1.5 transition border border-amber-500/30 cursor-pointer"
-                        title="Insert Light Novel Splash Illustration (![Caption](url))"
+                        title="Upload & Insert Light Novel Splash Illustration"
                       >
                         <ImageIcon className="w-3.5 h-3.5" />
-                        <span>Insert Artwork</span>
+                        <span>Upload Artwork</span>
                       </button>
 
                       {/* Insert LitRPG System Window */}
