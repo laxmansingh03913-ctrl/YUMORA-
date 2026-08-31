@@ -36,6 +36,7 @@ import { Contest } from "@/lib/types";
 import { useContestCountdown } from "@/hooks/useContestCountdown";
 import { formatContestDeadline, getContestStatus } from "@/lib/utils/contest";
 import { dbService } from "@/lib/supabase/db";
+import { supabase } from "@/lib/supabase/client";
 import dynamic from "next/dynamic";
 
 const InteractiveTrophy = dynamic(
@@ -269,9 +270,15 @@ export default function ContestsPage() {
     const creatorId = user?.id || selectedStory.creatorId || "creator-current";
 
     try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData?.session?.access_token;
+
       const res = await fetch("/api/contests/submit", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          ...(token ? { "Authorization": `Bearer ${token}` } : {})
+        },
         body: JSON.stringify({
           contestId: contest.id,
           novelId: selectedStory.id,

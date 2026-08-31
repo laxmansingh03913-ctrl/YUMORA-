@@ -45,6 +45,7 @@ import confetti from "canvas-confetti";
 import { useAuth } from "@/context/AuthContext";
 import { dataStore } from "@/lib/data/store";
 import { dbService } from "@/lib/supabase/db";
+import { supabase } from "@/lib/supabase/client";
 import { formatNumber, formatDate } from "@/lib/utils";
 import { Novel, Comic, MonetizationEligibility, MonetizationTier, PayoutRequest } from "@/lib/types";
 import { PayoutSlipModal } from "@/components/creator/PayoutSlipModal";
@@ -168,43 +169,49 @@ export default function CreatorDashboardPage() {
         }
       });
 
-      // Fetch authoritative payout settings from Database
-      fetch("/api/creator/payout-settings")
-        .then((res) => res.json())
-        .then((data) => {
-          if (data.success && data.settings) {
-            setPayoutSettings(data.settings);
-            setEditMethod(data.settings.method);
-            setEditBankHolder(data.settings.bankAccountHolder);
-            setEditBankName(data.settings.bankName);
-            setEditBankNumber(data.settings.bankAccountNumber);
-            setEditBankIfsc(data.settings.bankIfscSwift);
-            setEditBankCountry(data.settings.bankCountry);
-            setEditUpiId(data.settings.upiId);
-            setEditPaypalEmail(data.settings.paypalEmail);
-            setEditAutoPayout(data.settings.autoPayoutEnabled);
-          }
-        })
-        .catch((err) => console.error("[PAYOUT SETTINGS FETCH ERROR]", err));
+      // Fetch authoritative payout settings & history with token authentication
+      supabase.auth.getSession().then(({ data: sessionData }) => {
+        const token = sessionData?.session?.access_token;
+        const headers: Record<string, string> = token ? { "Authorization": `Bearer ${token}` } : {};
 
-      // Fetch real payout request history from Database
-      fetch("/api/creator/payouts")
-        .then((res) => res.json())
-        .then((data) => {
-          if (data.success) {
-            const mappedHistory = data.payouts.map((row: any) => ({
-              id: row.id,
-              referenceId: row.referenceId || "YM-PENDING",
-              amount: row.amountUsd,
-              method: row.method,
-              destination: row.details,
-              date: new Date(row.createdAt).toISOString().split("T")[0],
-              status: row.status === "PENDING" ? "PROCESSING" : row.status,
-            }));
-            setPayoutHistory(mappedHistory);
-          }
-        })
-        .catch((err) => console.error("[PAYOUTS HISTORY FETCH ERROR]", err));
+        // Fetch authoritative payout settings from Database
+        fetch("/api/creator/payout-settings", { headers })
+          .then((res) => res.json())
+          .then((data) => {
+            if (data.success && data.settings) {
+              setPayoutSettings(data.settings);
+              setEditMethod(data.settings.method);
+              setEditBankHolder(data.settings.bankAccountHolder);
+              setEditBankName(data.settings.bankName);
+              setEditBankNumber(data.settings.bankAccountNumber);
+              setEditBankIfsc(data.settings.bankIfscSwift);
+              setEditBankCountry(data.settings.bankCountry);
+              setEditUpiId(data.settings.upiId);
+              setEditPaypalEmail(data.settings.paypalEmail);
+              setEditAutoPayout(data.settings.autoPayoutEnabled);
+            }
+          })
+          .catch((err) => console.error("[PAYOUT SETTINGS FETCH ERROR]", err));
+
+        // Fetch real payout request history from Database
+        fetch("/api/creator/payouts", { headers })
+          .then((res) => res.json())
+          .then((data) => {
+            if (data.success) {
+              const mappedHistory = data.payouts.map((row: any) => ({
+                id: row.id,
+                referenceId: row.referenceId || "YM-PENDING",
+                amount: row.amountUsd,
+                method: row.method,
+                destination: row.details,
+                date: new Date(row.createdAt).toISOString().split("T")[0],
+                status: row.status === "PENDING" ? "PROCESSING" : row.status,
+              }));
+              setPayoutHistory(mappedHistory);
+            }
+          })
+          .catch((err) => console.error("[PAYOUTS HISTORY FETCH ERROR]", err));
+      });
     }
   }, [user]);
 
@@ -282,18 +289,24 @@ export default function CreatorDashboardPage() {
       localStorage.setItem(`yumora_payout_settings_${user.id}`, JSON.stringify(updated));
 
       // Save payout settings to database!
-      fetch("/api/creator/payout-settings", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(updated),
-      })
-        .then((res) => res.json())
-        .then((data) => {
-          if (!data.success) {
-            console.warn("DB payout settings save failed:", data.error);
-          }
+      supabase.auth.getSession().then(({ data: sessionData }) => {
+        const token = sessionData?.session?.access_token;
+        fetch("/api/creator/payout-settings", {
+          method: "POST",
+          headers: { 
+            "Content-Type": "application/json",
+            ...(token ? { "Authorization": `Bearer ${token}` } : {})
+          },
+          body: JSON.stringify(updated),
         })
-        .catch((err) => console.error("[PAYOUT SETTINGS SAVE ERROR]", err));
+          .then((res) => res.json())
+          .then((data) => {
+            if (!data.success) {
+              console.warn("DB payout settings save failed:", data.error);
+            }
+          })
+          .catch((err) => console.error("[PAYOUT SETTINGS SAVE ERROR]", err));
+      });
     }
     setIsSettingsModalOpen(false);
     showToast("✅ Payout account settings saved securely.");
@@ -323,9 +336,15 @@ export default function CreatorDashboardPage() {
         : `PayPal: ${payoutSettings.paypalEmail}`;
 
     try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData?.session?.access_token;
+
       const res = await fetch("/api/creator/payouts", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          ...(token ? { "Authorization": `Bearer ${token}` } : {})
+        },
         body: JSON.stringify({
           amountUsd: amount,
           method: (payoutSettings.method === "STRIPE" ? "BANK" : payoutSettings.method) as "UPI" | "BANK" | "PAYPAL",
