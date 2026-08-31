@@ -131,7 +131,7 @@ export function Navbar() {
           () => {}
         );
     }
-  }, [user, isCoinShopOpen]);
+  }, [user, isCoinShopOpen, isSidebarCoinShopOpen]);
 
   // Don't render full navbar on pure reading chapter route for maximum immersion
   const isReadingChapter = pathname.includes("/chapter/");
@@ -259,7 +259,9 @@ export function Navbar() {
               className="p-2 rounded-xl text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-900 transition"
               title="Toggle Theme"
             >
-              {resolvedTheme === "dark" ? (
+              {!mounted ? (
+                <div className="w-4 h-4" />
+              ) : resolvedTheme === "dark" ? (
                 <Sun className="w-4 h-4 text-amber-400" />
               ) : (
                 <Moon className="w-4 h-4 text-zinc-700" />

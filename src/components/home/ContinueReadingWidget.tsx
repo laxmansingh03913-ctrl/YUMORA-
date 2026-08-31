@@ -15,15 +15,17 @@ import {
 import { dataStore } from "@/lib/data/store";
 import { ReadingProgress } from "@/lib/types";
 import { formatDate } from "@/lib/utils";
+import { useAuth } from "@/context/AuthContext";
 
 export function ContinueReadingWidget() {
+  const { user } = useAuth();
   const [mounted, setMounted] = useState(false);
   const [progressList, setProgressList] = useState<ReadingProgress[]>([]);
 
   useEffect(() => {
     setMounted(true);
     setProgressList(dataStore.getRecentReadingProgressList());
-  }, []);
+  }, [user]);
 
   if (!mounted || progressList.length === 0) {
     return null;

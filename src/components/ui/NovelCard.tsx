@@ -20,6 +20,11 @@ export function NovelCard({ novel, variant = "standard", rank }: NovelCardProps)
   const [isLiked, setIsLiked] = useState(() => dataStore.isLiked(novel.id));
   const [likesCount, setLikesCount] = useState(novel.likesCount || 0);
 
+  React.useEffect(() => {
+    setIsBookmarked(dataStore.isBookmarked(novel.id));
+    setIsLiked(dataStore.isLiked(novel.id));
+  }, [user, novel.id]);
+
   const formatInfo = getStoryFormat(novel);
 
   const creator = novel.creator || {
