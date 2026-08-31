@@ -686,6 +686,15 @@ export default function CreatorUploadWizardPage() {
 
   // Save Draft to localStorage
   const handleSaveDraft = () => {
+    const currentSavedChapters = {
+      ...novelChaptersMap,
+      [chapterNumber]: {
+        id: novelChaptersMap[chapterNumber]?.id,
+        title: chapterTitle || `Chapter ${chapterNumber}`,
+        content: chapterContent,
+      },
+    };
+
     const draft = {
       formatChoice,
       readingDirection,
@@ -703,6 +712,10 @@ export default function CreatorUploadWizardPage() {
       chapterNumber,
       chapterTitle,
       chapterContent,
+      novelChaptersMap: currentSavedChapters,
+      selectedSeriesId,
+      selectedSeriesType,
+      uploadMode,
       pages,
       savedAt: new Date().toISOString(),
     };
