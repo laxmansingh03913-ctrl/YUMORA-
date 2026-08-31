@@ -211,7 +211,8 @@ export default function NovelDetailPage({ params }: PageProps) {
   };
 
   const chapters = Array.isArray(novel.chapters) ? novel.chapters : [];
-  const nextChapterToRead = readingProgress ? readingProgress.chapterNumber : 1;
+  const firstAvailableChapter = chapters.length > 0 ? chapters[0].chapterNumber : 1;
+  const nextChapterToRead = readingProgress ? readingProgress.chapterNumber : firstAvailableChapter;
   const similarNovels = dataStore
     .getNovels()
     .filter((n) => n.id !== novel.id && (n.genre === novel.genre || n.secondaryGenre === novel.genre))
@@ -411,7 +412,7 @@ export default function NovelDetailPage({ params }: PageProps) {
                   <span>
                     {readingProgress
                       ? `Continue Chapter ${readingProgress.chapterNumber}`
-                      : "Start Reading Ch. 1"}
+                      : `Start Reading Ch. ${firstAvailableChapter}`}
                   </span>
                   <ChevronRight className="w-4 h-4" />
                 </button>
