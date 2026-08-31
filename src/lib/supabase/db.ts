@@ -667,6 +667,9 @@ export const dbService = {
         .update(dbUpdates)
         .eq("id", userId);
 
+      if (error) {
+        console.error("[db.updateProfile] Supabase error:", error.message, error.details, error.hint);
+      }
       return !error;
     } catch {
       return false;

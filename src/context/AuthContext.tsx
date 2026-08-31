@@ -88,6 +88,33 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
 
     if (profile) {
+      // Merge with any locally cached edits the user may have just saved
+      // (protects against TOKEN_REFRESHED overwriting recent profile updates)
+      try {
+        const cached = localStorage.getItem("yumora_active_user");
+        if (cached) {
+          const cachedProfile: UserProfile = JSON.parse(cached);
+          // Only merge if it's the same user and cached data is more recent
+          if (cachedProfile.id === supaUser.id) {
+            // Prefer cached values for user-editable fields
+            profile = {
+              ...profile,
+              name: cachedProfile.name || profile.name,
+              bio: cachedProfile.bio ?? profile.bio,
+              avatar: cachedProfile.avatar || profile.avatar,
+              banner: cachedProfile.banner ?? profile.banner,
+              country: cachedProfile.country || profile.country,
+              website: cachedProfile.website ?? profile.website,
+              twitter: cachedProfile.twitter ?? profile.twitter,
+              primaryGenres: cachedProfile.primaryGenres?.length ? cachedProfile.primaryGenres : profile.primaryGenres,
+              preferredTypes: cachedProfile.preferredTypes?.length ? cachedProfile.preferredTypes : profile.preferredTypes,
+            };
+          }
+        }
+      } catch {
+        // ignore localStorage errors
+      }
+
       // Keep admin authorization in sync
       if (isAdminUser && profile.role !== "ADMIN") {
         profile = { ...profile, role: "ADMIN", isVerified: true };
@@ -400,10 +427,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // ignore
     }
     // 2. Persist to DB using correct snake_case column mapping
+    console.log("[updateProfile] Saving to DB:", updated);
     const saved = await dbService.updateProfile(user.id, updated);
+    console.log("[updateProfile] DB save result:", saved);
     if (!saved) {
-      // fallback: full upsert if partial update failed
-      await dbService.upsertProfile(merged);
+      console.warn("[updateProfile] updateProfile failed, trying upsert fallback...");
+      const upserted = await dbService.upsertProfile(merged);
+      console.log("[updateProfile] upsert result:", upserted);
     }
     dataStore.updateUserProfile(user.id, merged);
   };
