@@ -18,16 +18,15 @@ export async function POST(request: NextRequest) {
 
     // 2. Identify Authenticated User
     const authUser = await getAuthenticatedServerUser(request);
-    const userId = authUser?.id || body.userId;
-    const userEmail = authUser?.email || body.userEmail || "";
-    const userName = authUser?.name || body.userName || "Yomika Storyteller";
-
-    if (!userId) {
+    if (!authUser) {
       return NextResponse.json(
-        { error: "Authentication required to initiate payment order." },
+        { error: "Authentication required to initiate payment order. Please log in." },
         { status: 401 }
       );
     }
+    const userId = authUser.id;
+    const userEmail = authUser.email || "";
+    const userName = authUser.name || "Yomika Storyteller";
 
     const keyId = process.env.RAZORPAY_KEY_ID || process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID;
     const keySecret = process.env.RAZORPAY_KEY_SECRET;

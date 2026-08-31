@@ -318,6 +318,49 @@ class DataStore {
     return this.getItem<string[]>(STORAGE_KEYS.BOOKMARKS, []);
   }
 
+  async syncBookmarksFromDb(userId: string): Promise<void> {
+    try {
+      if (!userId) return;
+      const dbBookmarks = await dbService.getUserBookmarks(userId);
+      if (dbBookmarks) {
+        this.setItem(STORAGE_KEYS.BOOKMARKS, dbBookmarks);
+      }
+    } catch (e) {
+      console.warn("Error syncing bookmarks from DB:", e);
+    }
+  }
+
+  async syncLikesFromDb(userId: string): Promise<void> {
+    try {
+      if (!userId) return;
+      const dbLikes = await dbService.getUserLikes(userId);
+      if (dbLikes) {
+        this.setItem(STORAGE_KEYS.LIKES, dbLikes);
+      }
+    } catch (e) {
+      console.warn("Error syncing likes from DB:", e);
+    }
+  }
+
+  async syncFollowsFromDb(userId: string): Promise<void> {
+    try {
+      if (!userId) return;
+      const dbFollows = await dbService.getUserFollows(userId);
+      if (dbFollows) {
+        this.setItem(STORAGE_KEYS.FOLLOWS, dbFollows);
+        const relations = dbFollows.map((followingId) => ({
+          id: `follow-${userId}-${followingId}`,
+          followerId: userId,
+          followingId: followingId,
+          createdAt: new Date().toISOString(),
+        }));
+        this.setItem(STORAGE_KEYS.FOLLOW_RELATIONS, relations);
+      }
+    } catch (e) {
+      console.warn("Error syncing follows from DB:", e);
+    }
+  }
+
   toggleBookmark(contentId: string, userId?: string, type: "NOVEL" | "COMIC" = "NOVEL"): boolean {
     const bookmarks = this.getBookmarks();
     const index = bookmarks.indexOf(contentId);

@@ -40,6 +40,15 @@ export interface UserProfile {
   coins?: number;
   totalTipsReceived?: number;
   createdAt: string;
+  payoutMethod?: string;
+  payoutBankHolder?: string;
+  payoutBankName?: string;
+  payoutBankNumber?: string;
+  payoutBankIfsc?: string;
+  payoutBankCountry?: string;
+  payoutUpiId?: string;
+  payoutPaypalEmail?: string;
+  payoutAutoEnabled?: boolean;
 }
 
 export interface MonetizationEligibility {

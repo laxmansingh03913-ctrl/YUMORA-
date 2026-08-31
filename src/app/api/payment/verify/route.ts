@@ -60,16 +60,15 @@ export async function POST(request: NextRequest) {
 
     // 3. Authenticate User
     const authUser = await getAuthenticatedServerUser(request);
-    const userId = authUser?.id || body.userId;
-    const userEmail = authUser?.email || body.userEmail;
-    const userName = authUser?.name || body.userName || "Yomika Storyteller";
-
-    if (!userId) {
+    if (!authUser) {
       return NextResponse.json(
-        { success: false, error: "Unauthorized: User session required to credit coins." },
+        { success: false, error: "Unauthorized: User session required to credit coins. Please log in." },
         { status: 401 }
       );
     }
+    const userId = authUser.id;
+    const userEmail = authUser.email;
+    const userName = authUser.name || "Yomika Storyteller";
 
     const keySecret = process.env.RAZORPAY_KEY_SECRET;
     const isLiveConfigured =

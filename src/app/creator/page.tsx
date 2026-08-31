@@ -168,6 +168,25 @@ export default function CreatorDashboardPage() {
         }
       });
 
+      // Fetch authoritative payout settings from Database
+      fetch("/api/creator/payout-settings")
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.success && data.settings) {
+            setPayoutSettings(data.settings);
+            setEditMethod(data.settings.method);
+            setEditBankHolder(data.settings.bankAccountHolder);
+            setEditBankName(data.settings.bankName);
+            setEditBankNumber(data.settings.bankAccountNumber);
+            setEditBankIfsc(data.settings.bankIfscSwift);
+            setEditBankCountry(data.settings.bankCountry);
+            setEditUpiId(data.settings.upiId);
+            setEditPaypalEmail(data.settings.paypalEmail);
+            setEditAutoPayout(data.settings.autoPayoutEnabled);
+          }
+        })
+        .catch((err) => console.error("[PAYOUT SETTINGS FETCH ERROR]", err));
+
       // Fetch real payout request history from Database
       fetch("/api/creator/payouts")
         .then((res) => res.json())
@@ -261,6 +280,20 @@ export default function CreatorDashboardPage() {
     setPayoutSettings(updated);
     if (user?.id) {
       localStorage.setItem(`yumora_payout_settings_${user.id}`, JSON.stringify(updated));
+
+      // Save payout settings to database!
+      fetch("/api/creator/payout-settings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(updated),
+      })
+        .then((res) => res.json())
+        .then((data) => {
+          if (!data.success) {
+            console.warn("DB payout settings save failed:", data.error);
+          }
+        })
+        .catch((err) => console.error("[PAYOUT SETTINGS SAVE ERROR]", err));
     }
     setIsSettingsModalOpen(false);
     showToast("✅ Payout account settings saved securely.");

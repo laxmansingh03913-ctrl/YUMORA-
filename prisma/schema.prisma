@@ -45,6 +45,15 @@ model User {
   payoutRequests              PayoutRequest[]
   readingProgress             ReadingProgress[]
   reportsFiled                Report[]
+  payout_method               String?             @default("UPI") @map("payout_method")
+  payout_bank_holder          String?             @map("payout_bank_holder")
+  payout_bank_name            String?             @map("payout_bank_name")
+  payout_bank_number          String?             @map("payout_bank_number")
+  payout_bank_ifsc            String?             @map("payout_bank_ifsc")
+  payout_bank_country         String?             @map("payout_bank_country")
+  payout_upi_id               String?             @map("payout_upi_id")
+  payout_paypal_email         String?             @map("payout_paypal_email")
+  payout_auto_enabled         Boolean?            @default(false) @map("payout_auto_enabled")
 
   @@map("profiles")
 }

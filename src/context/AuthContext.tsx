@@ -165,6 +165,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           if (isSubscribed) {
             setUser(profile);
             dataStore.syncReadingProgressFromDb(profile.id).catch(() => {});
+            dataStore.syncBookmarksFromDb(profile.id).catch(() => {});
+            dataStore.syncLikesFromDb(profile.id).catch(() => {});
+            dataStore.syncFollowsFromDb(profile.id).catch(() => {});
             try {
               localStorage.setItem("yumora_active_user", JSON.stringify(profile));
             } catch {
@@ -197,6 +200,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (isSubscribed) {
           setUser(profile);
           dataStore.syncReadingProgressFromDb(profile.id).catch(() => {});
+          dataStore.syncBookmarksFromDb(profile.id).catch(() => {});
+          dataStore.syncLikesFromDb(profile.id).catch(() => {});
+          dataStore.syncFollowsFromDb(profile.id).catch(() => {});
           try {
             localStorage.setItem("yumora_active_user", JSON.stringify(profile));
           } catch {

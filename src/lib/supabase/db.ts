@@ -77,6 +77,15 @@ export function mapProfileFromDb(row: any): UserProfile | null {
         ? row.total_tips_received ?? row.totalTipsReceived
         : 0,
     createdAt: row.created_at || row.createdAt || new Date().toISOString(),
+    payoutMethod: row.payout_method || "UPI",
+    payoutBankHolder: row.payout_bank_holder || "",
+    payoutBankName: row.payout_bank_name || "",
+    payoutBankNumber: row.payout_bank_number || "",
+    payoutBankIfsc: row.payout_bank_ifsc || "",
+    payoutBankCountry: row.payout_bank_country || "",
+    payoutUpiId: row.payout_upi_id || "",
+    payoutPaypalEmail: row.payout_paypal_email || "",
+    payoutAutoEnabled: Boolean(row.payout_auto_enabled),
   };
 }
 
@@ -663,6 +672,15 @@ export const dbService = {
       if (updates.isCreatorProfileComplete !== undefined) dbUpdates.is_creator_profile_complete = updates.isCreatorProfileComplete;
       if (updates.preferredTypes !== undefined)     dbUpdates.preferred_types = updates.preferredTypes;
       if (updates.primaryGenres !== undefined)      dbUpdates.primary_genres = updates.primaryGenres;
+      if (updates.payoutMethod !== undefined)       dbUpdates.payout_method = updates.payoutMethod;
+      if (updates.payoutBankHolder !== undefined)   dbUpdates.payout_bank_holder = updates.payoutBankHolder;
+      if (updates.payoutBankName !== undefined)     dbUpdates.payout_bank_name = updates.payoutBankName;
+      if (updates.payoutBankNumber !== undefined)   dbUpdates.payout_bank_number = updates.payoutBankNumber;
+      if (updates.payoutBankIfsc !== undefined)     dbUpdates.payout_bank_ifsc = updates.payoutBankIfsc;
+      if (updates.payoutBankCountry !== undefined)  dbUpdates.payout_bank_country = updates.payoutBankCountry;
+      if (updates.payoutUpiId !== undefined)        dbUpdates.payout_upi_id = updates.payoutUpiId;
+      if (updates.payoutPaypalEmail !== undefined)  dbUpdates.payout_paypal_email = updates.payoutPaypalEmail;
+      if (updates.payoutAutoEnabled !== undefined)  dbUpdates.payout_auto_enabled = updates.payoutAutoEnabled;
 
       if (Object.keys(dbUpdates).length === 0) return true;
 
@@ -710,6 +728,15 @@ export const dbService = {
       if (profile.totalReads !== undefined)         row.total_reads = profile.totalReads;
       if (profile.preferredTypes !== undefined)     row.preferred_types = profile.preferredTypes;
       if (profile.primaryGenres !== undefined)      row.primary_genres = profile.primaryGenres;
+      if (profile.payoutMethod !== undefined)       row.payout_method = profile.payoutMethod;
+      if (profile.payoutBankHolder !== undefined)   row.payout_bank_holder = profile.payoutBankHolder;
+      if (profile.payoutBankName !== undefined)     row.payout_bank_name = profile.payoutBankName;
+      if (profile.payoutBankNumber !== undefined)   row.payout_bank_number = profile.payoutBankNumber;
+      if (profile.payoutBankIfsc !== undefined)     row.payout_bank_ifsc = profile.payoutBankIfsc;
+      if (profile.payoutBankCountry !== undefined)  row.payout_bank_country = profile.payoutBankCountry;
+      if (profile.payoutUpiId !== undefined)        row.payout_upi_id = profile.payoutUpiId;
+      if (profile.payoutPaypalEmail !== undefined)  row.payout_paypal_email = profile.payoutPaypalEmail;
+      if (profile.payoutAutoEnabled !== undefined)  row.payout_auto_enabled = profile.payoutAutoEnabled;
 
       const { error } = await supabase
         .from("profiles")
