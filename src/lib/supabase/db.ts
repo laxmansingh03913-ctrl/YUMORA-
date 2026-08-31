@@ -886,6 +886,65 @@ export const dbService = {
             [field]: validTargetId,
           },
         ]);
+
+        // Send database notification to the creator
+        try {
+          let creatorId = "";
+          let title = "";
+          let contentUrl = "";
+
+          if (type === "NOVEL") {
+            const { data: novel } = await supabase
+              .from("novels")
+              .select("creator_id, title, slug")
+              .eq("id", validTargetId)
+              .maybeSingle();
+            if (novel) {
+              creatorId = novel.creator_id;
+              title = novel.title;
+              contentUrl = `/novels/${novel.slug}`;
+            }
+          } else {
+            const { data: comic } = await supabase
+              .from("comics")
+              .select("creator_id, title, slug")
+              .eq("id", validTargetId)
+              .maybeSingle();
+            if (comic) {
+              creatorId = comic.creator_id;
+              title = comic.title;
+              contentUrl = `/comics/${comic.slug}`;
+            }
+          }
+
+          if (creatorId && creatorId !== validUserId) {
+            const { data: sender } = await supabase
+              .from("profiles")
+              .select("name, avatar")
+              .eq("id", validUserId)
+              .maybeSingle();
+            
+            const senderName = sender?.name || "A Reader";
+            const senderAvatar = sender?.avatar || "/hero-character.png";
+
+            await supabase.from("notifications").insert([
+              {
+                user_id: creatorId,
+                title: "New Library Bookmark! 📚",
+                message: `${senderName} bookmarked your story "${title}"!`,
+                type: "BOOKMARK",
+                content_id: validTargetId,
+                content_type: type,
+                content_url: contentUrl,
+                creator_name: senderName,
+                creator_avatar: senderAvatar,
+              },
+            ]);
+          }
+        } catch (notifErr) {
+          console.warn("[BOOKMARK NOTIFICATION ERROR]", notifErr);
+        }
+
         return true;
       }
     } catch {
@@ -934,6 +993,65 @@ export const dbService = {
             target_type: targetType || "STORY",
           },
         ]);
+
+        // Send database notification to the creator
+        try {
+          let creatorId = "";
+          let title = "";
+          let contentUrl = "";
+
+          if (targetType === "NOVEL" || targetType === "STORY") {
+            const { data: novel } = await supabase
+              .from("novels")
+              .select("creator_id, title, slug")
+              .eq("id", validTargetId)
+              .maybeSingle();
+            if (novel) {
+              creatorId = novel.creator_id;
+              title = novel.title;
+              contentUrl = `/novels/${novel.slug}`;
+            }
+          } else if (targetType === "COMIC") {
+            const { data: comic } = await supabase
+              .from("comics")
+              .select("creator_id, title, slug")
+              .eq("id", validTargetId)
+              .maybeSingle();
+            if (comic) {
+              creatorId = comic.creator_id;
+              title = comic.title;
+              contentUrl = `/comics/${comic.slug}`;
+            }
+          }
+
+          if (creatorId && creatorId !== validUserId) {
+            const { data: sender } = await supabase
+              .from("profiles")
+              .select("name, avatar")
+              .eq("id", validUserId)
+              .maybeSingle();
+            
+            const senderName = sender?.name || "A Reader";
+            const senderAvatar = sender?.avatar || "/hero-character.png";
+
+            await supabase.from("notifications").insert([
+              {
+                user_id: creatorId,
+                title: "New Story Like! ❤️",
+                message: `${senderName} liked your story "${title}"!`,
+                type: "LIKE",
+                content_id: validTargetId,
+                content_type: targetType || "NOVEL",
+                content_url: contentUrl,
+                creator_name: senderName,
+                creator_avatar: senderAvatar,
+              },
+            ]);
+          }
+        } catch (notifErr) {
+          console.warn("[LIKE NOTIFICATION ERROR]", notifErr);
+        }
+
         return true;
       }
     } catch {
@@ -1017,6 +1135,32 @@ export const dbService = {
             following_id: validFollowing,
           },
         ]);
+
+        // Send database notification to the user being followed
+        try {
+          const { data: sender } = await supabase
+            .from("profiles")
+            .select("name, avatar")
+            .eq("id", validFollower)
+            .maybeSingle();
+
+          const senderName = sender?.name || "A Reader";
+          const senderAvatar = sender?.avatar || "/hero-character.png";
+
+          await supabase.from("notifications").insert([
+            {
+              user_id: validFollowing,
+              title: "New Follower! 👤",
+              message: `${senderName} started following your profile!`,
+              type: "FOLLOW",
+              creator_name: senderName,
+              creator_avatar: senderAvatar,
+            },
+          ]);
+        } catch (notifErr) {
+          console.warn("[FOLLOW NOTIFICATION ERROR]", notifErr);
+        }
+
         return true;
       }
     } catch {
@@ -1239,6 +1383,31 @@ export const dbService = {
         type: "TIP_RECEIVED",
         description: `Received ${amount} coins tip from reader: ${message || "Support"}`,
       });
+
+      // Create a database notification for the creator
+      try {
+        const { data: sender } = await supabase
+          .from("profiles")
+          .select("name, avatar")
+          .eq("id", validFromUser)
+          .maybeSingle();
+
+        const senderName = sender?.name || "A Reader";
+        const senderAvatar = sender?.avatar || "/hero-character.png";
+
+        await supabase.from("notifications").insert([
+          {
+            user_id: validToCreator,
+            title: "Received a Tip! 🪙",
+            message: `${senderName} tipped you ${amount} coins: "${message || "Support"}"`,
+            type: "TIP",
+            creator_name: senderName,
+            creator_avatar: senderAvatar,
+          },
+        ]);
+      } catch (notifErr) {
+        console.warn("[TIP NOTIFICATION ERROR]", notifErr);
+      }
 
       const remaining = senderBalance - amount;
       return { success: true, remainingCoins: remaining };

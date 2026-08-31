@@ -45,6 +45,7 @@ model User {
   payoutRequests              PayoutRequest[]
   readingProgress             ReadingProgress[]
   reportsFiled                Report[]
+  notifications               Notification[]
   payout_method               String?             @default("UPI") @map("payout_method")
   payout_bank_holder          String?             @map("payout_bank_holder")
   payout_bank_name            String?             @map("payout_bank_name")
@@ -428,4 +429,24 @@ enum user_role {
   READER
   CREATOR
   ADMIN
+}
+
+model Notification {
+  id            String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId        String    @map("user_id") @db.Uuid
+  title         String
+  message       String
+  type          String    // e.g. "VOTE", "LIKE", "BOOKMARK", "TIP", "FOLLOW", "SYSTEM"
+  contentId     String?   @map("content_id")
+  contentType   String?   @map("content_type")
+  contentUrl    String?   @map("content_url")
+  creatorAvatar String?   @map("creator_avatar")
+  creatorName   String?   @map("creator_name")
+  isRead        Boolean   @default(false) @map("is_read")
+  createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([userId], map: "idx_notifications_user_id")
+  @@index([createdAt(sort: Desc)], map: "idx_notifications_created_at")
+  @@map("notifications")
 }

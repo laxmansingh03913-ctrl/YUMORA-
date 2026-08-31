@@ -133,6 +133,110 @@ export function Navbar() {
     }
   }, [user, isCoinShopOpen, isSidebarCoinShopOpen]);
 
+  const [dbNotifications, setDbNotifications] = useState<any[]>([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  const fetchDbNotifications = async () => {
+    if (!user?.id) return;
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData?.session?.access_token;
+      
+      const res = await fetch("/api/notifications", {
+        headers: token ? { "Authorization": `Bearer ${token}` } : {},
+      });
+      const data = await res.json();
+      if (data.success && Array.isArray(data.notifications)) {
+        setDbNotifications(data.notifications);
+        setUnreadCount(data.notifications.filter((n: any) => !n.isRead).length);
+      }
+    } catch (err) {
+      console.warn("[FETCH DB NOTIFICATIONS ERROR]", err);
+    }
+  };
+
+  useEffect(() => {
+    if (user?.id) {
+      fetchDbNotifications();
+    }
+  }, [user, isNotifsOpen]);
+
+  const handleMarkAllRead = async () => {
+    if (!user?.id) return;
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData?.session?.access_token;
+
+      const res = await fetch("/api/notifications", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { "Authorization": `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({ id: "all" }),
+      });
+      if (res.ok) {
+        fetchDbNotifications();
+      }
+    } catch (err) {
+      console.error("[MARK ALL READ ERROR]", err);
+    }
+  };
+
+  const handleClearAll = async () => {
+    if (!user?.id) return;
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData?.session?.access_token;
+
+      const res = await fetch("/api/notifications?id=all", {
+        method: "DELETE",
+        headers: token ? { "Authorization": `Bearer ${token}` } : {},
+      });
+      if (res.ok) {
+        fetchDbNotifications();
+      }
+    } catch (err) {
+      console.error("[CLEAR ALL ERROR]", err);
+    }
+  };
+
+  const handleMarkSingleRead = async (id: string) => {
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData?.session?.access_token;
+
+      await fetch("/api/notifications", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { "Authorization": `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({ id }),
+      });
+      fetchDbNotifications();
+    } catch (err) {
+      console.error("[MARK SINGLE READ ERROR]", err);
+    }
+  };
+
+  const handleDeleteSingle = async (id: string) => {
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData?.session?.access_token;
+
+      const res = await fetch(`/api/notifications?id=${id}`, {
+        method: "DELETE",
+        headers: token ? { "Authorization": `Bearer ${token}` } : {},
+      });
+      if (res.ok) {
+        fetchDbNotifications();
+      }
+    } catch (err) {
+      console.error("[DELETE SINGLE ERROR]", err);
+    }
+  };
+
   // Don't render full navbar on pure reading chapter route for maximum immersion
   const isReadingChapter = pathname.includes("/chapter/");
 
@@ -269,173 +373,160 @@ export function Navbar() {
             </button>
 
             {/* Notifications (Logged in only) */}
-            {user && (() => {
-              const notifs = mounted ? dataStore.getNotifications(user.id) : [];
-              const unreadCount = mounted ? notifs.filter((n) => !n.isRead).length : 0;
+            {user && (
+              <div className="relative" ref={notifsRef}>
+                <button
+                  onClick={() => setIsNotifsOpen(!isNotifsOpen)}
+                  aria-label="Notifications"
+                  className="p-2 rounded-xl text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-900 transition relative cursor-pointer"
+                  title="Notifications"
+                >
+                  <Bell className="w-4 h-4" />
+                  {mounted && unreadCount > 0 && (
+                    <span className="absolute top-1 right-1 px-1 min-w-4 h-4 rounded-full bg-[#D91E18] text-white text-[9px] font-black flex items-center justify-center ring-2 ring-white dark:ring-zinc-950 animate-pulse">
+                      {unreadCount > 9 ? "9+" : unreadCount}
+                    </span>
+                  )}
+                </button>
 
-              return (
-                <div className="relative" ref={notifsRef}>
-                  <button
-                    onClick={() => setIsNotifsOpen(!isNotifsOpen)}
-                    aria-label="Notifications"
-                    className="p-2 rounded-xl text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-900 transition relative cursor-pointer"
-                    title="Notifications"
+                {isNotifsOpen && (
+                  <div
+                    className="absolute right-0 top-full mt-2 w-80 sm:w-96 max-w-[calc(100vw-24px)] rounded-3xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-2xl p-4 z-50 animate-in fade-in space-y-3 origin-top-right"
                   >
-                    <Bell className="w-4 h-4" />
-                    {mounted && unreadCount > 0 && (
-                      <span className="absolute top-1 right-1 px-1 min-w-4 h-4 rounded-full bg-[#D91E18] text-white text-[9px] font-black flex items-center justify-center ring-2 ring-white dark:ring-zinc-950 animate-pulse">
-                        {unreadCount > 9 ? "9+" : unreadCount}
-                      </span>
-                    )}
-                  </button>
-
-                  {isNotifsOpen && (
-                    <div
-                      className="absolute right-0 top-full mt-2 w-80 sm:w-96 max-w-[calc(100vw-24px)] rounded-3xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-2xl p-4 z-50 animate-in fade-in space-y-3 origin-top-right"
-                    >
-                      {/* Header */}
-                      <div className="flex items-center justify-between pb-2 border-b border-zinc-100 dark:border-zinc-800">
-                        <div className="flex items-center gap-2">
-                          <span className="font-black text-xs sm:text-sm text-zinc-900 dark:text-zinc-100">
-                            Activity & Alerts
+                    {/* Header */}
+                    <div className="flex items-center justify-between pb-2 border-b border-zinc-100 dark:border-zinc-800">
+                      <div className="flex items-center gap-2">
+                        <span className="font-black text-xs sm:text-sm text-zinc-900 dark:text-zinc-100">
+                          Activity & Alerts
+                        </span>
+                        {unreadCount > 0 && (
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#D91E18]/10 text-[#D91E18]">
+                            {unreadCount} new
                           </span>
-                          {unreadCount > 0 && (
-                            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#D91E18]/10 text-[#D91E18]">
-                              {unreadCount} new
-                            </span>
-                          )}
-                        </div>
-
-                        <div className="flex items-center gap-2">
-                          {unreadCount > 0 && (
-                            <button
-                              onClick={() => {
-                                dataStore.markAllNotificationsRead(user.id);
-                                // Trigger re-render
-                                setMounted((prev) => !prev);
-                                setTimeout(() => setMounted(true), 10);
-                              }}
-                              className="text-[10px] text-[#D91E18] hover:text-[#B71813] font-bold flex items-center gap-1 cursor-pointer"
-                              title="Mark all as read"
-                            >
-                              <CheckCircle2 className="w-3 h-3" />
-                              <span>Mark all read</span>
-                            </button>
-                          )}
-                          {notifs.length > 0 && (
-                            <button
-                              onClick={() => {
-                                dataStore.clearAllNotifications(user.id);
-                                setMounted((prev) => !prev);
-                                setTimeout(() => setMounted(true), 10);
-                              }}
-                              className="text-[10px] text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 font-medium cursor-pointer"
-                              title="Clear all notifications"
-                            >
-                              Clear
-                            </button>
-                          )}
-                        </div>
+                        )}
                       </div>
 
-                      {/* Notification Items List */}
-                      <div className="max-h-80 overflow-y-auto space-y-2 text-xs divide-y divide-zinc-100 dark:divide-zinc-800/60 scrollbar-thin">
-                        {notifs.length === 0 ? (
-                          <div className="py-8 text-center space-y-2">
-                            <Bell className="w-8 h-8 text-zinc-400 mx-auto opacity-50" />
-                            <p className="text-xs font-bold text-zinc-700 dark:text-zinc-300">
-                              No notifications yet
-                            </p>
-                            <p className="text-[11px] text-zinc-500 max-w-[200px] mx-auto">
-                              Follow creators or stories to get instant updates on new chapters & discussions.
-                            </p>
-                          </div>
-                        ) : (
-                          notifs.map((n) => {
-                            // Badge Icon by type
-                            let badgeColor = "bg-rose-500 text-white";
-                            let BadgeIcon = Sparkles;
-                            if (n.type === "CHAPTER_RELEASE" || n.type === "EPISODE_RELEASE") {
-                              badgeColor = "bg-indigo-600 text-white";
-                              BadgeIcon = BookOpen;
-                            } else if (n.type === "NEW_FOLLOWER") {
-                              badgeColor = "bg-emerald-600 text-white";
-                              BadgeIcon = Users;
-                            } else if (n.type === "LIKE") {
-                              badgeColor = "bg-rose-600 text-white";
-                              BadgeIcon = Heart;
-                            }
-
-                            return (
-                              <div
-                                key={n.id}
-                                className={`pt-2.5 first:pt-0 pb-1 flex items-start gap-3 rounded-2xl p-2 transition group ${
-                                  !n.isRead
-                                    ? "bg-zinc-50 dark:bg-zinc-800/40"
-                                    : "opacity-75 hover:opacity-100 hover:bg-zinc-50/50 dark:hover:bg-zinc-800/20"
-                                }`}
-                              >
-                                {/* Creator Avatar with Badge */}
-                                <div className="relative flex-shrink-0 mt-0.5">
-                                  <img
-                                    src={n.creatorAvatar || "/hero-character.png"}
-                                    alt={n.creatorName || "Alert"}
-                                    className="w-9 h-9 rounded-full object-cover border border-zinc-200 dark:border-zinc-700"
-                                  />
-                                  <span
-                                    className={`absolute -bottom-1 -right-1 w-4 h-4 rounded-full flex items-center justify-center ring-2 ring-white dark:ring-zinc-900 ${badgeColor}`}
-                                  >
-                                    <BadgeIcon className="w-2.5 h-2.5" />
-                                  </span>
-                                </div>
-
-                                <Link
-                                  href={n.contentUrl || "/"}
-                                  onClick={() => {
-                                    dataStore.markNotificationRead(n.id);
-                                    setIsNotifsOpen(false);
-                                  }}
-                                  className="min-w-0 flex-1 space-y-0.5"
-                                >
-                                  <div className="flex items-center justify-between gap-1">
-                                    <p className="font-bold text-zinc-900 dark:text-zinc-100 text-xs truncate">
-                                      {n.title}
-                                    </p>
-                                    {!n.isRead && (
-                                      <span className="w-2 h-2 rounded-full bg-[#D91E18] flex-shrink-0" />
-                                    )}
-                                  </div>
-                                  <p className="text-[11px] text-zinc-600 dark:text-zinc-400 line-clamp-2 leading-relaxed">
-                                    {n.message}
-                                  </p>
-                                  <p className="text-[9px] text-zinc-400 font-medium pt-0.5">
-                                    {formatDate(n.createdAt)}
-                                  </p>
-                                </Link>
-
-                                {/* Delete / Dismiss single notif */}
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    dataStore.deleteNotification(n.id);
-                                    setMounted((prev) => !prev);
-                                    setTimeout(() => setMounted(true), 10);
-                                  }}
-                                  className="opacity-0 group-hover:opacity-100 p-1 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 transition"
-                                  title="Dismiss notification"
-                                >
-                                  <X className="w-3.5 h-3.5" />
-                                </button>
-                              </div>
-                            );
-                          })
+                      <div className="flex items-center gap-2">
+                        {unreadCount > 0 && (
+                          <button
+                            onClick={handleMarkAllRead}
+                            className="text-[10px] text-[#D91E18] hover:text-[#B71813] font-bold flex items-center gap-1 cursor-pointer"
+                            title="Mark all as read"
+                          >
+                            <CheckCircle2 className="w-3 h-3" />
+                            <span>Mark all read</span>
+                          </button>
+                        )}
+                        {dbNotifications.length > 0 && (
+                          <button
+                            onClick={handleClearAll}
+                            className="text-[10px] text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 font-medium cursor-pointer"
+                            title="Clear all notifications"
+                          >
+                            Clear
+                          </button>
                         )}
                       </div>
                     </div>
-                  )}
-                </div>
-              );
-            })()}
+
+                    {/* Notification Items List */}
+                    <div className="max-h-80 overflow-y-auto space-y-2 text-xs divide-y divide-zinc-100 dark:divide-zinc-800/60 scrollbar-thin">
+                      {dbNotifications.length === 0 ? (
+                        <div className="py-8 text-center space-y-2">
+                          <Bell className="w-8 h-8 text-zinc-400 mx-auto opacity-50" />
+                          <p className="text-xs font-bold text-zinc-700 dark:text-zinc-300">
+                            No notifications yet
+                          </p>
+                          <p className="text-[11px] text-zinc-500 max-w-[200px] mx-auto">
+                            Follow creators or stories to get instant updates on new chapters & discussions.
+                          </p>
+                        </div>
+                      ) : (
+                        dbNotifications.map((n) => {
+                          // Badge Icon by type
+                          let badgeColor = "bg-rose-500 text-white";
+                          let BadgeIcon = Sparkles;
+                          if (n.type === "CHAPTER_RELEASE" || n.type === "EPISODE_RELEASE") {
+                            badgeColor = "bg-indigo-600 text-white";
+                            BadgeIcon = BookOpen;
+                          } else if (n.type === "NEW_FOLLOWER" || n.type === "FOLLOW") {
+                            badgeColor = "bg-emerald-600 text-white";
+                            BadgeIcon = Users;
+                          } else if (n.type === "LIKE") {
+                            badgeColor = "bg-rose-600 text-white";
+                            BadgeIcon = Heart;
+                          } else if (n.type === "VOTE") {
+                            badgeColor = "bg-amber-500 text-white";
+                            BadgeIcon = Trophy;
+                          }
+
+                          return (
+                            <div
+                              key={n.id}
+                              className={`pt-2.5 first:pt-0 pb-1 flex items-start gap-3 rounded-2xl p-2 transition group ${
+                                !n.isRead
+                                  ? "bg-zinc-50 dark:bg-zinc-800/40"
+                                  : "opacity-75 hover:opacity-100 hover:bg-zinc-50/50 dark:hover:bg-zinc-800/20"
+                              }`}
+                            >
+                              {/* Creator Avatar with Badge */}
+                              <div className="relative flex-shrink-0 mt-0.5">
+                                <img
+                                  src={n.creatorAvatar || "/hero-character.png"}
+                                  alt={n.creatorName || "Alert"}
+                                  className="w-9 h-9 rounded-full object-cover border border-zinc-200 dark:border-zinc-700"
+                                />
+                                <span
+                                  className={`absolute -bottom-1 -right-1 w-4 h-4 rounded-full flex items-center justify-center ring-2 ring-white dark:ring-zinc-900 ${badgeColor}`}
+                                >
+                                  <BadgeIcon className="w-2.5 h-2.5" />
+                                </span>
+                              </div>
+
+                              <Link
+                                href={n.contentUrl || "/"}
+                                onClick={() => {
+                                  handleMarkSingleRead(n.id);
+                                  setIsNotifsOpen(false);
+                                }}
+                                className="min-w-0 flex-1 space-y-0.5"
+                              >
+                                <div className="flex items-center justify-between gap-1">
+                                  <p className="font-bold text-zinc-900 dark:text-zinc-100 text-xs truncate">
+                                    {n.title}
+                                  </p>
+                                  {!n.isRead && (
+                                    <span className="w-2 h-2 rounded-full bg-[#D91E18] flex-shrink-0" />
+                                  )}
+                                </div>
+                                <p className="text-[11px] text-zinc-600 dark:text-zinc-400 line-clamp-2 leading-relaxed">
+                                  {n.message}
+                                </p>
+                                <p className="text-[9px] text-zinc-400 font-medium pt-0.5">
+                                  {formatDate(n.createdAt)}
+                                </p>
+                              </Link>
+
+                              {/* Delete / Dismiss single notif */}
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleDeleteSingle(n.id);
+                                }}
+                                className="opacity-0 group-hover:opacity-100 p-1 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 transition"
+                                title="Dismiss notification"
+                              >
+                                <X className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          );
+                        })
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* User Profile / Auth Buttons */}
             {user ? (
