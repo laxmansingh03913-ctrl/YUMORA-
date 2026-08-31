@@ -97,7 +97,11 @@ export async function GET(req: NextRequest) {
     if (format && format !== "all") {
       if (novelFormats.includes(format)) {
         includeComics = false;
-        novelsQuery = novelsQuery.eq("sub_type", storyFormatMap[format]);
+        if (format === "light_novels") {
+          novelsQuery = novelsQuery.in("sub_type", ["LIGHT_NOVEL", "ILLUSTRATED_NOVEL"]);
+        } else {
+          novelsQuery = novelsQuery.eq("sub_type", storyFormatMap[format]);
+        }
       } else if (comicFormats.includes(format)) {
         includeNovels = false;
         comicsQuery = comicsQuery.eq("sub_type", storyFormatMap[format]);
@@ -139,7 +143,7 @@ export async function GET(req: NextRequest) {
       language: row.language || "en",
       status: row.status,
       contentRating: row.content_rating,
-      storyFormat: row.sub_type,
+      storyFormat: row.sub_type === "ILLUSTRATED_NOVEL" ? "LIGHT_NOVEL" : row.sub_type,
       isEditorPick: row.is_editor_pick,
       reads: row.reads || 0,
       rating: row.rating || 5.0,
