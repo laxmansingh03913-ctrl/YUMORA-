@@ -425,11 +425,11 @@ export default function ChapterReaderPage({ params }: ReaderPageProps) {
             {chapter.title}
           </h1>
           <div className="flex items-center justify-center gap-4 text-xs opacity-60">
-            <span>By {novel.creator.name}</span>
+            <span>By {novel.creator?.name || "Author"}</span>
             <span>•</span>
-            <span>{chapter.wordCount.toLocaleString()} words</span>
+            <span>{(chapter.wordCount ?? 0).toLocaleString()} words</span>
             <span>•</span>
-            <span>{chapter.readTimeMinutes} min read</span>
+            <span>{chapter.readTimeMinutes ?? 1} min read</span>
           </div>
         </div>
 
@@ -449,7 +449,7 @@ export default function ChapterReaderPage({ params }: ReaderPageProps) {
                     </div>
                     <h2 className="text-xl sm:text-2xl font-black text-white">{ch.title}</h2>
                     <p className="text-xs text-zinc-400">
-                      Chapter {ch.chapterNumber} • {ch.wordCount.toLocaleString()} words
+                      Chapter {ch.chapterNumber} • {(ch.wordCount ?? 0).toLocaleString()} words
                     </p>
                   </div>
                 )}
