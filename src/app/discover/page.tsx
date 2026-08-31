@@ -518,6 +518,7 @@ function DiscoverPageContent() {
                 reads: work.reads || 0,
                 rating: work.rating || 5.0,
                 likesCount: work.likesCount || 0,
+                episodesCount: work.episodesCount || 0,
                 createdAt: work.createdAt,
                 creator: {
                   name: work.creatorName || "Creator",
@@ -542,6 +543,7 @@ function DiscoverPageContent() {
               reads: work.reads || 0,
               rating: work.rating || 5.0,
               likesCount: work.likesCount || 0,
+              chaptersCount: work.chaptersCount || 0,
               createdAt: work.createdAt,
               creator: {
                 name: work.creatorName || "Creator",

@@ -939,29 +939,61 @@ export default function CreatorUploadWizardPage() {
       } else {
         // Pure Text Serialized Novel
         if (uploadMode === "ADD_CHAPTER" && selectedSeriesId) {
-          // Use existing chapter id if we're editing an existing chapter, else generate a new one
-          const existingChapterId = novelChaptersMap[chapterNumber]?.id;
-          const isEditingExisting = Boolean(existingChapterId);
-          const chapterId = existingChapterId || `ch-${selectedSeriesId}-${chapterNumber}-${Date.now()}`;
-          setCloudPublishStatus(
-            isEditingExisting
-              ? `Updating Chapter ${chapterNumber} content...`
-              : `Adding Chapter ${chapterNumber} to existing novel...`
-          );
-          const newChapter: Chapter = {
-            id: chapterId,
-            novelId: selectedSeriesId,
-            chapterNumber,
-            title: chapterTitle || `Chapter ${chapterNumber}`,
-            content: chapterContent,
-            status: "PUBLISHED",
-            wordCount,
-            isFree: true,
-            readTimeMinutes: readTime,
-            publishedAt: new Date().toISOString(),
+          // Collect all written chapters from novelChaptersMap including current active chapter
+          const allSavedChapters = {
+            ...novelChaptersMap,
+            [chapterNumber]: {
+              id: novelChaptersMap[chapterNumber]?.id,
+              title: chapterTitle || `Chapter ${chapterNumber}`,
+              content: chapterContent,
+            },
           };
-          await dbService.insertChapter(newChapter, selectedSeriesId);
-          dataStore.addChapter(selectedSeriesId, newChapter);
+
+          const chaptersToSave = Object.entries(allSavedChapters)
+            .filter(([_, data]) => data.content && data.content.trim().length > 0)
+            .map(([numStr, data], idx) => {
+              const num = parseInt(numStr, 10);
+              const words = data.content.trim().split(/\s+/).filter(Boolean).length;
+              const existingChapterId = data.id;
+              const chapterId = existingChapterId || `ch-${selectedSeriesId}-${num}-${Date.now() + idx}`;
+              return {
+                id: chapterId,
+                novelId: selectedSeriesId,
+                chapterNumber: num,
+                title: data.title || `Chapter ${num}`,
+                content: data.content,
+                status: "PUBLISHED" as const,
+                wordCount: words,
+                readTimeMinutes: Math.max(1, Math.ceil(words / 200)),
+                isFree: true,
+                publishedAt: new Date().toISOString(),
+              };
+            })
+            .sort((a, b) => a.chapterNumber - b.chapterNumber);
+
+          // If no chapters had content in map, fallback to current active
+          if (chaptersToSave.length === 0) {
+            const chapterId = novelChaptersMap[chapterNumber]?.id || `ch-${selectedSeriesId}-${chapterNumber}-${Date.now()}`;
+            chaptersToSave.push({
+              id: chapterId,
+              novelId: selectedSeriesId,
+              chapterNumber,
+              title: chapterTitle || `Chapter ${chapterNumber}`,
+              content: chapterContent,
+              status: "PUBLISHED" as const,
+              wordCount,
+              readTimeMinutes: readTime,
+              isFree: true,
+              publishedAt: new Date().toISOString(),
+            });
+          }
+
+          for (let i = 0; i < chaptersToSave.length; i++) {
+            const ch = chaptersToSave[i];
+            setCloudPublishStatus(`Saving Chapter ${ch.chapterNumber} (${i + 1}/${chaptersToSave.length}) to Cloud Database...`);
+            await dbService.insertChapter(ch, selectedSeriesId);
+            dataStore.addChapter(selectedSeriesId, ch);
+          }
         } else {
           setCloudPublishStatus("Saving novel manuscript to Supabase Cloud Database...");
           const novelId = `novel-${Date.now()}`;
