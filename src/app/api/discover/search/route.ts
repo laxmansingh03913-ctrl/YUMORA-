@@ -20,10 +20,10 @@ export async function GET(req: NextRequest) {
     const limit = Math.min(parseInt(searchParams.get("limit") || "60"), 100);
     const offset = parseInt(searchParams.get("offset") || "0");
 
-    // Build novels query - include chapters count
+    // Build novels query — use chapters_count column directly (more reliable than join with RLS)
     let novelsQuery = supabase
       .from("novels")
-      .select("*, profiles:profiles(name, username, avatar), chapters(id)", { count: "exact" });
+      .select("*, profiles:profiles(name, username, avatar)", { count: "exact" });
 
     // Build comics query
     let comicsQuery = supabase
@@ -148,7 +148,7 @@ export async function GET(req: NextRequest) {
       reads: row.reads || 0,
       rating: row.rating || 5.0,
       likesCount: row.likes_count || 0,
-      chaptersCount: Array.isArray(row.chapters) ? row.chapters.length : 0,
+      chaptersCount: row.chapters_count || 0,
       createdAt: row.created_at,
       creatorName: row.profiles?.name || "Creator",
       creatorUsername: row.profiles?.username || "creator",
