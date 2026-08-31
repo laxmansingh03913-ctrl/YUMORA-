@@ -315,45 +315,37 @@ export default function IndexPage() {
             
             {/* Left Copy block */}
             <div className="lg:col-span-7 space-y-6">
-              <FadeIn delay={0.1}>
-                <div className="flex items-center gap-2">
-                  <span className="w-6 h-px bg-[#D91E18]" />
-                  <span className="text-[10px] sm:text-xs font-black tracking-widest text-[#D91E18] uppercase">
-                    Yomika Platform
-                  </span>
-                </div>
-              </FadeIn>
-              <FadeUp delay={0.2}>
-                <h1 className="text-4xl sm:text-5xl xl:text-6xl font-black leading-[1.0] tracking-tight uppercase text-white">
-                  Stories<br />
-                  worth getting<br />
-                  <span className="text-[#D91E18]">lost in.</span>
-                </h1>
-              </FadeUp>
-              <FadeUp delay={0.35}>
-                <p className="text-sm sm:text-base lg:text-lg text-white/50 leading-relaxed max-w-md">
-                  Discover web novels, light novels, manga, webtoons and comics created for readers who want something different. Join the global home of original storytelling.
-                </p>
-              </FadeUp>
+              <div className="flex items-center gap-2">
+                <span className="w-6 h-px bg-[#D91E18]" />
+                <span className="text-[10px] sm:text-xs font-black tracking-widest text-[#D91E18] uppercase">
+                  Yomika Platform
+                </span>
+              </div>
+              <h1 className="text-4xl sm:text-5xl xl:text-6xl font-black leading-[1.0] tracking-tight uppercase text-white">
+                Stories<br />
+                worth getting<br />
+                <span className="text-[#D91E18]">lost in.</span>
+              </h1>
+              <p className="text-sm sm:text-base lg:text-lg text-white/50 leading-relaxed max-w-md">
+                Discover web novels, light novels, manga, webtoons and comics created for readers who want something different. Join the global home of original storytelling.
+              </p>
 
               {authView === "landing" && (
-                <FadeUp delay={0.5}>
-                  <div className="flex flex-wrap items-center gap-4 pt-2">
-                    <button
-                      onClick={() => setAuthView("signup")}
-                      className="flex items-center gap-2 px-8 py-4 rounded-xl bg-[#D91E18] hover:bg-[#B71813] text-white font-black text-sm sm:text-base tracking-wide transition shadow-[0_0_24px_rgba(217,30,24,0.4)] hover:scale-[1.02] active:scale-[0.98]"
-                    >
-                      GET STARTED
-                      <ArrowRight className="w-4 h-4" />
-                    </button>
-                    <button
-                      onClick={() => setAuthView("login")}
-                      className="px-8 py-4 rounded-xl border border-white/20 hover:border-white/50 hover:bg-white/5 text-white font-bold text-sm sm:text-base tracking-wide transition"
-                    >
-                      LOG IN
-                    </button>
-                  </div>
-                </FadeUp>
+                <div className="flex flex-wrap items-center gap-4 pt-2">
+                  <button
+                    onClick={() => setAuthView("signup")}
+                    className="flex items-center gap-2 px-8 py-4 rounded-xl bg-[#D91E18] hover:bg-[#B71813] text-white font-black text-sm sm:text-base tracking-wide transition shadow-[0_0_24px_rgba(217,30,24,0.4)] hover:scale-[1.02] active:scale-[0.98]"
+                  >
+                    GET STARTED
+                    <ArrowRight className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={() => setAuthView("login")}
+                    className="px-8 py-4 rounded-xl border border-white/20 hover:border-white/50 hover:bg-white/5 text-white font-bold text-sm sm:text-base tracking-wide transition"
+                  >
+                    LOG IN
+                  </button>
+                </div>
               )}
             </div>
 
