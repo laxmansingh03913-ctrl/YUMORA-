@@ -466,7 +466,7 @@ export default function ChapterReaderPage({ params }: ReaderPageProps) {
                     const globalParagraphIdx = chIdx * 100 + idx;
                     const isSpeakingThis =
                       isAudiobookOpen && activeAudioParagraphIdx === globalParagraphIdx;
-                    const imgMatch = paragraph.trim().match(/^!\[(.*?)\]\((.*?)\)$/);
+                    const hasImage = paragraph.includes("![") && paragraph.includes("](");
                     const isSystemBox =
                       paragraph.trim().startsWith("[") &&
                       paragraph.includes("]") &&
@@ -481,26 +481,48 @@ export default function ChapterReaderPage({ params }: ReaderPageProps) {
                         paragraph.includes("MATCH") ||
                         paragraph.includes("Do you accept"));
 
-                    if (imgMatch) {
-                      const [, caption, src] = imgMatch;
+                    if (hasImage) {
+                      const parts = paragraph.split(/(!\[.*?\]\(.*?\))/g);
                       return (
-                        <div
-                          key={idx}
-                          className="my-8 space-y-2 text-center select-none not-prose"
-                        >
-                          <div className="relative rounded-3xl overflow-hidden shadow-2xl border border-white/10 max-h-[600px] mx-auto group">
-                            <img
-                              src={src}
-                              alt={caption || "Light Novel Illustration"}
-                              className="w-full h-full object-cover max-h-[550px] transition duration-500 group-hover:scale-105"
-                            />
-                            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent pointer-events-none" />
-                          </div>
-                          {caption && (
-                            <p className="text-xs text-zinc-400 italic font-sans tracking-wide">
-                              ✦ {caption} ✦
-                            </p>
-                          )}
+                        <div key={idx} id={`novel-p-${globalParagraphIdx}`} className="space-y-4">
+                          {parts.map((part, partIdx) => {
+                            const inlineImgMatch = part.match(/^!\[(.*?)\]\((.*?)\)$/);
+                            if (inlineImgMatch) {
+                              const [, caption, src] = inlineImgMatch;
+                              return (
+                                <div key={partIdx} className="my-8 space-y-2 text-center select-none not-prose">
+                                  <div className="relative rounded-3xl overflow-hidden shadow-2xl border border-white/10 max-h-[600px] mx-auto group">
+                                    <img
+                                      src={src}
+                                      alt={caption || "Light Novel Illustration"}
+                                      className="w-full h-full object-cover max-h-[550px] transition duration-500 group-hover:scale-105"
+                                    />
+                                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent pointer-events-none" />
+                                  </div>
+                                  {caption && (
+                                    <p className="text-xs text-zinc-400 italic font-sans tracking-wide">
+                                      ✦ {caption} ✦
+                                    </p>
+                                  )}
+                                </div>
+                              );
+                            }
+                            if (part.trim()) {
+                              return (
+                                <p
+                                  key={partIdx}
+                                  className={`indent-4 sm:indent-6 transition-all duration-300 ${
+                                    isSpeakingThis
+                                      ? "bg-rose-500/15 border-l-4 border-rose-500 pl-4 py-2 rounded-r-2xl shadow-sm ring-1 ring-rose-500/20"
+                                      : ""
+                                  }`}
+                                >
+                                  {renderParagraphContent(part)}
+                                </p>
+                              );
+                            }
+                            return null;
+                          })}
                         </div>
                       );
                     }
