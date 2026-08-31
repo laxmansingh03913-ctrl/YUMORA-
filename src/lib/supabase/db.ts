@@ -313,13 +313,16 @@ export const dbService = {
 
   async insertChapter(chapter: Partial<Chapter>, novelId: string): Promise<Chapter | null> {
     try {
+      const validNovelId = ensureUuid(novelId);
+      const validChapterId = ensureUuid(chapter.id);
+
       const { data, error } = await supabase
         .from("chapters")
         .upsert(
           [
             {
-              id: chapter.id,
-              novel_id: novelId,
+              id: validChapterId,
+              novel_id: validNovelId,
               chapter_number: chapter.chapterNumber,
               title: chapter.title,
               content: chapter.content,
@@ -340,7 +343,8 @@ export const dbService = {
         return null;
       }
       return data as unknown as Chapter;
-    } catch {
+    } catch (e) {
+      console.warn("Supabase insert chapter exception:", e);
       return null;
     }
   },
