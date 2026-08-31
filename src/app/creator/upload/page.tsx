@@ -284,6 +284,21 @@ export default function CreatorUploadWizardPage() {
         setTagInput(novel.tags.join(", "));
         setFormatChoice("NOVEL");
         setReadingDirection("LTR");
+
+        // Populate novelChaptersMap with all existing chapters
+        const existingChaptersMap: Record<number, { title: string; content: string }> = {};
+        if (novel.chapters && novel.chapters.length > 0) {
+          novel.chapters.forEach((ch) => {
+            existingChaptersMap[ch.chapterNumber] = {
+              title: ch.title || `Chapter ${ch.chapterNumber}`,
+              content: ch.content || "",
+            };
+          });
+        } else {
+          existingChaptersMap[1] = { title: "Chapter 1", content: "" };
+        }
+        setNovelChaptersMap(existingChaptersMap);
+
         const nextChNum =
           novel.chapters && novel.chapters.length > 0
             ? Math.max(...novel.chapters.map((c) => c.chapterNumber)) + 1
@@ -1136,7 +1151,9 @@ export default function CreatorUploadWizardPage() {
                   setUploadMode("NEW_SERIES");
                   setSelectedSeriesId("");
                   setChapterNumber(1);
-                  setChapterTitle("");
+                  setChapterTitle("Chapter 1");
+                  setChapterContent("");
+                  setNovelChaptersMap({ 1: { title: "Chapter 1", content: "" } });
                 }}
                 className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 ${
                   uploadMode === "NEW_SERIES"
