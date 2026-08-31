@@ -321,13 +321,15 @@ export default function ContestsPage() {
     }
   };
 
-  const authorAvatars = [
-    { name: "Arion Vale", avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80" },
-    { name: "DystopiaX", avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80" },
-    { name: "Eldrith", avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=80" },
-    { name: "StarGazer", avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&auto=format&fit=crop&q=80" },
-    { name: "MysticPen", avatar: "https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?w=150&auto=format&fit=crop&q=80" },
-  ];
+  const authorAvatars = submissions.length > 0
+    ? submissions.slice(0, 5).map((s) => ({ name: s.authorName, avatar: s.avatar }))
+    : [
+        { name: "Arion Vale", avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80" },
+        { name: "DystopiaX", avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80" },
+        { name: "Eldrith", avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=80" },
+        { name: "StarGazer", avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&auto=format&fit=crop&q=80" },
+        { name: "MysticPen", avatar: "https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?w=150&auto=format&fit=crop&q=80" },
+      ];
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-10 bg-white dark:bg-zinc-950 min-h-screen text-[#111111] dark:text-zinc-100 font-sans">
@@ -384,7 +386,7 @@ export default function ContestsPage() {
                 </div>
                 <div>
                   <p className="text-[11px] sm:text-xs font-black text-[#111111] dark:text-white">
-                    {contest.submissionCount || allEntries.length || 14}
+                    {submissions.length}
                   </p>
                   <p className="text-[9px] text-zinc-400 font-bold uppercase tracking-tight">Authors Entered</p>
                 </div>
@@ -529,7 +531,7 @@ export default function ContestsPage() {
         <div className="lg:col-span-5 p-6 rounded-2xl bg-white dark:bg-zinc-900 border border-[#EAEAE5] dark:border-zinc-800 shadow-2xs space-y-5 flex flex-col justify-between">
           <div className="flex items-center justify-between">
             <h2 className="text-xs font-black text-[#111111] dark:text-white uppercase tracking-widest">
-              {contest.submissionCount || allEntries.length || 14} AUTHORS ENTERED
+              {submissions.length} {submissions.length === 1 ? "AUTHOR" : "AUTHORS"} ENTERED
             </h2>
             <Link href="/community" className="text-xs font-black text-[#D91E18] hover:underline inline-flex items-center gap-1 group">
               <span>VIEW ALL</span>
