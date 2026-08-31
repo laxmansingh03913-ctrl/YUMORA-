@@ -6,6 +6,7 @@ import { BookOpen, Search, Sparkles, Filter, TrendingUp, PenTool } from "lucide-
 import { dataStore } from "@/lib/data/store";
 import { NovelCard } from "@/components/ui/NovelCard";
 import { Novel } from "@/lib/types";
+import { dbService } from "@/lib/supabase/db";
 
 export default function NovelsPage() {
   const [selectedGenre, setSelectedGenre] = useState<string>("All");

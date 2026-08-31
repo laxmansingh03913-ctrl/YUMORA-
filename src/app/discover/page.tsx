@@ -160,6 +160,9 @@ function DiscoverPageContent() {
 
         if (res.ok && data.success) {
           setServerResults(data.results || []);
+          if (data.formatCounts) {
+            setServerFormatCounts(data.formatCounts);
+          }
           setTotalCounts({
             novelCount: data.novelCount || 0,
             comicCount: data.comicCount || 0,
@@ -182,17 +185,17 @@ function DiscoverPageContent() {
     };
   }, [searchQuery, selectedFormat, selectedGenre, selectedLanguage, selectedStatus, selectedRating, sortBy, activeTab]);
 
-  // Format counts from server results
-  const formatCounts = useMemo(() => {
-    return {
-      all: totalCounts.total,
-      web_novels: serverResults.filter((w) => w.storyFormat === "WEB_NOVEL").length,
-      light_novels: serverResults.filter((w) => w.storyFormat === "LIGHT_NOVEL").length,
-      manga: serverResults.filter((w) => w.storyFormat === "MANGA").length,
-      webtoons: serverResults.filter((w) => w.storyFormat === "WEBTOON").length,
-      comics: serverResults.filter((w) => w.storyFormat === "COMIC").length,
-    };
-  }, [serverResults, totalCounts]);
+  const [serverFormatCounts, setServerFormatCounts] = useState<{
+    all: number;
+    web_novels: number;
+    light_novels: number;
+    manga: number;
+    webtoons: number;
+    comics: number;
+  }>({ all: 0, web_novels: 0, light_novels: 0, manga: 0, webtoons: 0, comics: 0 });
+
+  // Sync format counts whenever API responds
+  const formatCounts = serverFormatCounts;
 
   // filteredWorks = server results (already filtered/sorted by API)
   const filteredWorks = serverResults;

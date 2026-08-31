@@ -12,7 +12,8 @@ import { useAuth } from "@/context/AuthContext";
 import { ContinueReadingWidget } from "@/components/home/ContinueReadingWidget";
 import { formatNumber, formatDate } from "@/lib/utils";
 import { formatContestDeadline, getContestStatus } from "@/lib/utils/contest";
-import { Role } from "@/lib/types";
+import { Role, Novel } from "@/lib/types";
+import { dbService } from "@/lib/supabase/db";
 
 
 // ─────────────────────────────────────────────────────────────────────────────
