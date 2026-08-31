@@ -392,14 +392,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const updateProfile = async (updated: Partial<UserProfile>) => {
     if (!user) return;
     const merged: UserProfile = { ...user, ...updated };
+    // 1. Optimistically update local state + localStorage immediately
     setUser(merged);
     try {
       localStorage.setItem("yumora_active_user", JSON.stringify(merged));
     } catch {
       // ignore
     }
-    dataStore.updateUserProfile(user.id, updated);
-    await dbService.upsertProfile(merged);
+    // 2. Persist to DB using correct snake_case column mapping
+    const saved = await dbService.updateProfile(user.id, updated);
+    if (!saved) {
+      // fallback: full upsert if partial update failed
+      await dbService.upsertProfile(merged);
+    }
+    dataStore.updateUserProfile(user.id, merged);
   };
 
   return (

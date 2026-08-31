@@ -639,9 +639,32 @@ export const dbService = {
 
   async updateProfile(userId: string, updates: Partial<UserProfile>): Promise<boolean> {
     try {
+      // Map camelCase UserProfile fields → snake_case DB columns
+      const dbUpdates: Record<string, unknown> = {};
+      if (updates.name !== undefined)          dbUpdates.name = updates.name;
+      if (updates.username !== undefined)      dbUpdates.username = updates.username;
+      if (updates.avatar !== undefined)        dbUpdates.avatar = updates.avatar;
+      if (updates.banner !== undefined)        dbUpdates.banner = updates.banner;
+      if (updates.bio !== undefined)           dbUpdates.bio = updates.bio;
+      if (updates.country !== undefined)       dbUpdates.country = updates.country;
+      if (updates.website !== undefined)       dbUpdates.website = updates.website;
+      if (updates.twitter !== undefined)       dbUpdates.twitter = updates.twitter;
+      if (updates.role !== undefined)          dbUpdates.role = updates.role;
+      if (updates.isVerified !== undefined)    dbUpdates.is_verified = updates.isVerified;
+      if (updates.monetizationTier !== undefined)   dbUpdates.monetization_tier = updates.monetizationTier;
+      if (updates.monetizationStatus !== undefined) dbUpdates.monetization_status = updates.monetizationStatus;
+      if (updates.followersCount !== undefined)     dbUpdates.followers_count = updates.followersCount;
+      if (updates.followingCount !== undefined)     dbUpdates.following_count = updates.followingCount;
+      if (updates.totalReads !== undefined)         dbUpdates.total_reads = updates.totalReads;
+      if (updates.isCreatorProfileComplete !== undefined) dbUpdates.is_creator_profile_complete = updates.isCreatorProfileComplete;
+      if (updates.preferredTypes !== undefined)     dbUpdates.preferred_types = updates.preferredTypes;
+      if (updates.primaryGenres !== undefined)      dbUpdates.primary_genres = updates.primaryGenres;
+
+      if (Object.keys(dbUpdates).length === 0) return true;
+
       const { error } = await supabase
         .from("profiles")
-        .update(updates)
+        .update(dbUpdates)
         .eq("id", userId);
 
       return !error;
@@ -653,31 +676,37 @@ export const dbService = {
   async upsertProfile(profile: Partial<UserProfile>): Promise<boolean> {
     try {
       if (!profile.id) return false;
+
+      // Build the DB row — only include defined values, never overwrite with hardcoded defaults
+      const row: Record<string, unknown> = {
+        id: profile.id,
+        // Required fields with minimal fallbacks
+        username: profile.username || `user_${profile.id.slice(0, 6)}`,
+        name: profile.name || "Creator",
+        email: profile.email || "",
+        role: profile.role || "CREATOR",
+      };
+
+      // Optional fields — only set if defined so we don't clobber existing DB data
+      if (profile.avatar !== undefined)        row.avatar = profile.avatar;
+      if (profile.banner !== undefined)        row.banner = profile.banner;
+      if (profile.bio !== undefined)           row.bio = profile.bio;
+      if (profile.country !== undefined)       row.country = profile.country;
+      if (profile.website !== undefined)       row.website = profile.website;
+      if (profile.twitter !== undefined)       row.twitter = profile.twitter;
+      if (profile.isVerified !== undefined)    row.is_verified = profile.isVerified;
+      if (profile.isCreatorProfileComplete !== undefined) row.is_creator_profile_complete = profile.isCreatorProfileComplete;
+      if (profile.monetizationTier !== undefined)   row.monetization_tier = profile.monetizationTier;
+      if (profile.monetizationStatus !== undefined) row.monetization_status = profile.monetizationStatus;
+      if (profile.followersCount !== undefined)     row.followers_count = profile.followersCount;
+      if (profile.followingCount !== undefined)     row.following_count = profile.followingCount;
+      if (profile.totalReads !== undefined)         row.total_reads = profile.totalReads;
+      if (profile.preferredTypes !== undefined)     row.preferred_types = profile.preferredTypes;
+      if (profile.primaryGenres !== undefined)      row.primary_genres = profile.primaryGenres;
+
       const { error } = await supabase
         .from("profiles")
-        .upsert(
-          [
-            {
-              id: profile.id,
-              username: profile.username || `user_${profile.id.slice(0, 6)}`,
-              name: profile.name || "Creator",
-              email: profile.email || "",
-              role: profile.role || "CREATOR",
-              avatar: profile.avatar,
-              banner: profile.banner,
-              bio: profile.bio || "Storyteller on Yomika.",
-              country: profile.country || "Global",
-              is_verified: profile.isVerified || false,
-              is_creator_profile_complete: profile.isCreatorProfileComplete || false,
-              monetization_tier: profile.monetizationTier || "NONE",
-              monetization_status: profile.monetizationStatus || "NOT_APPLIED",
-              followers_count: profile.followersCount || 0,
-              following_count: profile.followingCount || 0,
-              total_reads: profile.totalReads || 0,
-            },
-          ],
-          { onConflict: "id" }
-        );
+        .upsert([row], { onConflict: "id" });
 
       return !error;
     } catch {
