@@ -168,7 +168,7 @@ export default function ChapterReaderPage({ params }: ReaderPageProps) {
     let isCurrent = true;
     setMounted(true);
     const found = dataStore.getNovelBySlug(novelSlug);
-    if (found) {
+    if (found && Array.isArray(found.chapters) && found.chapters.length > 0) {
       setNovel(found);
       setIsBookmarked(dataStore.isBookmarked(found.id));
       setComments(dataStore.getComments(`${found.id}-ch-${chapterNumber}`));
