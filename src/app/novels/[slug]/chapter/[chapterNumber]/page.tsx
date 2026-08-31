@@ -198,17 +198,18 @@ export default function ChapterReaderPage({ params }: ReaderPageProps) {
     };
   }, [novelSlug, chapterNumber, saveProgress]);
 
-  if (!novel || !chapter) {
-    if (!mounted) {
-      return (
-        <div className="min-h-screen bg-zinc-950 flex items-center justify-center text-zinc-400">
-          <div className="flex flex-col items-center gap-3">
-            <div className="w-8 h-8 border-2 border-rose-500 border-t-transparent rounded-full animate-spin" />
-            <p className="text-sm font-medium">Loading chapter...</p>
-          </div>
+  if (!mounted) {
+    return (
+      <div className="min-h-screen bg-zinc-950 flex items-center justify-center text-zinc-400">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-8 h-8 border-2 border-rose-500 border-t-transparent rounded-full animate-spin" />
+          <p className="text-sm font-medium">Loading chapter...</p>
         </div>
-      );
-    }
+      </div>
+    );
+  }
+
+  if (!novel || !chapter) {
     return (
       <div className="min-h-screen bg-zinc-950 flex flex-col items-center justify-center p-6 text-center">
         <div className="w-16 h-16 rounded-2xl bg-zinc-900 border border-zinc-800 flex items-center justify-center mb-4 text-zinc-400">
