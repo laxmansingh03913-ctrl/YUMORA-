@@ -73,7 +73,7 @@ export default function ComicsPage() {
                 href={`/comics/${comics[0]?.slug}`}
                 className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-[#D91E18] hover:bg-[#B71813] text-white font-black text-xs shadow-xs transition"
               >
-                <span>Read Chapter 1 →</span>
+                <span>Read Episode 1 →</span>
               </Link>
             </div>
           </div>

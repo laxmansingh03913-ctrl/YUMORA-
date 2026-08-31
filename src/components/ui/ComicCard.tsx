@@ -82,7 +82,7 @@ export function ComicCard({ comic, rank }: ComicCardProps) {
                 <CheckCircle2 className="w-3 h-3 text-[#D91E18] flex-shrink-0" />
               )}
             </Link>
-            <span>{comic.episodesCount || comic.episodes?.length || 1} Ch</span>
+            <span>{comic.episodesCount ?? comic.episodes?.length ?? 1} Ep</span>
           </div>
           <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1 line-clamp-2 leading-relaxed">
             {comic.description}
