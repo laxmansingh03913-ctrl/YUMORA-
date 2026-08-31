@@ -570,11 +570,8 @@ export default function CreatorProfilePage({ params }: CreatorProfileProps) {
         quality: 0.9,
       });
 
-      const updated = dataStore.updateUserProfile(user.id, {
-        avatar: result.dataUrl,
-      });
-
-      updateProfile(updated);
+      const avatarUpdate = { avatar: result.dataUrl };
+      updateProfile(avatarUpdate);
       setAvatarError(false);
       try {
         confetti({ particleCount: 50, spread: 60, origin: { y: 0.7 } });
@@ -594,11 +591,9 @@ export default function CreatorProfilePage({ params }: CreatorProfileProps) {
   // Custom Banner Save Handler
   const handleSaveBanner = (newBannerUrl: string) => {
     if (!user) return;
-    const updated = dataStore.updateUserProfile(user.id, {
-      banner: newBannerUrl,
-    });
-    updateProfile(updated);
-    setAsyncCreator(updated);
+    const bannerUpdate = { banner: newBannerUrl };
+    updateProfile(bannerUpdate);
+    setAsyncCreator((prev: any) => prev ? { ...prev, banner: newBannerUrl } : prev);
     showToast("✓ Profile banner updated successfully!");
   };
 
@@ -607,16 +602,16 @@ export default function CreatorProfilePage({ params }: CreatorProfileProps) {
     e.preventDefault();
     if (!user) return;
 
-    const updated = dataStore.updateUserProfile(user.id, {
+    const profileUpdate = {
       name: editName.trim(),
       bio: editBio.trim(),
       country: editCountry.trim(),
       website: editWebsite.trim(),
       twitter: editTwitter.trim(),
       primaryGenres: editGenres,
-    });
+    };
 
-    updateProfile(updated);
+    updateProfile(profileUpdate);
     setIsEditModalOpen(false);
     showToast("✓ Public profile updated successfully!");
   };

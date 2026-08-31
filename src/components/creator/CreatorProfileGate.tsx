@@ -134,11 +134,7 @@ export function CreatorProfileGate({ onProfileCompleted }: CreatorProfileGatePro
         quality: 0.9,
       });
 
-      const updated = dataStore.updateUserProfile(user.id, {
-        avatar: result.dataUrl,
-      });
-
-      updateProfile(updated);
+      updateProfile({ avatar: result.dataUrl });
       setAvatarError(false);
       try {
         confetti({ particleCount: 50, spread: 60, origin: { y: 0.7 } });
@@ -170,7 +166,7 @@ export function CreatorProfileGate({ onProfileCompleted }: CreatorProfileGatePro
         name.trim() || username.trim()
       )}&backgroundColor=e11d48,4f46e5&textColor=ffffff`;
 
-    const updated = dataStore.updateUserProfile(user.id, {
+    const profileUpdate = {
       username: username.trim().toLowerCase(),
       name: name.trim(),
       avatar: resolvedAvatar,
@@ -179,11 +175,11 @@ export function CreatorProfileGate({ onProfileCompleted }: CreatorProfileGatePro
       preferredTypes,
       primaryGenres,
       agreedToCreatorTerms: true,
-      role: "CREATOR",
-    });
+      role: "CREATOR" as const,
+    };
 
-    // Update session user in AuthContext
-    updateProfile(updated);
+    // Update session user in AuthContext + persist to DB
+    updateProfile(profileUpdate);
 
     if (is100PercentComplete) {
       try {
