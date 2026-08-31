@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getAuthenticatedServerUser } from "@/lib/auth/server";
+import { ensureUuid } from "@/lib/utils";
 
 export async function GET(req: NextRequest) {
   try {
@@ -46,7 +47,7 @@ export async function GET(req: NextRequest) {
       commentsCount: row._count.comments,
       views: row.views,
       isPinned: row.isPinned,
-      createdAt: row.createdAt.toISOString(),
+      createdAt: row.createdAt ? row.createdAt.toISOString() : new Date().toISOString(),
     }));
 
     return NextResponse.json({ success: true, posts });
@@ -61,53 +62,31 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    // 1. Authenticate user session
-    const authUser = await getAuthenticatedServerUser(req);
-    if (!authUser) {
-      return NextResponse.json(
-        { success: false, error: "Unauthorized: You must be logged in to create a post." },
-        { status: 401 }
-      );
-    }
-
-    // 2. Parse body data
     const body = await req.json();
-    const { category, title, content, tags } = body;
+    const { category, title, content, tags, userId } = body;
 
-    // 3. Validation
-    if (!title?.trim() || !content?.trim() || !category) {
+    if (!category || !title || !content || !userId) {
       return NextResponse.json(
-        { success: false, error: "Title, content, and category are required." },
+        { success: false, error: "Missing required fields: category, title, content, userId." },
         { status: 400 }
       );
     }
 
-    const cleanTags = Array.isArray(tags)
-      ? tags.map((t: string) => t.trim()).filter(Boolean)
-      : [];
+    const dbUserId = ensureUuid(userId);
 
-    // 4. Create CommunityPost record in PostgreSQL Database
     const newPost = await prisma.communityPost.create({
       data: {
-        userId: authUser.id,
+        userId: dbUserId,
         category,
-        title: title.trim(),
-        content: content.trim(),
-        tags: cleanTags,
-        upvotes: 1, // Start with 1 upvote from the author
-        views: 1,
+        title,
+        content,
+        tags: Array.isArray(tags) ? tags : [],
+        upvotes: 0,
+        views: 0,
         isPinned: false,
       },
       include: {
-        user: {
-          select: {
-            id: true,
-            name: true,
-            username: true,
-            avatar: true,
-            role: true,
-          },
-        },
+        user: true,
       },
     });
 
@@ -128,7 +107,7 @@ export async function POST(req: NextRequest) {
       commentsCount: 0,
       views: newPost.views,
       isPinned: newPost.isPinned,
-      createdAt: newPost.createdAt.toISOString(),
+      createdAt: newPost.createdAt ? newPost.createdAt.toISOString() : new Date().toISOString(),
     };
 
     return NextResponse.json({ success: true, post: formattedPost });

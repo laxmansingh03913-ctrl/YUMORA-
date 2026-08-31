@@ -40,7 +40,7 @@ export async function GET(
       },
       text: row.text,
       upvotes: row.upvotes,
-      createdAt: row.createdAt.toISOString(),
+      createdAt: row.createdAt ? row.createdAt.toISOString() : new Date().toISOString(),
     }));
 
     return NextResponse.json({ success: true, comments });
@@ -115,7 +115,7 @@ export async function POST(
       },
       text: newComment.text,
       upvotes: newComment.upvotes,
-      createdAt: newComment.createdAt.toISOString(),
+      createdAt: newComment.createdAt ? newComment.createdAt.toISOString() : new Date().toISOString(),
     };
 
     return NextResponse.json({ success: true, comment: formattedComment });

@@ -124,10 +124,12 @@ export function Navbar() {
         .select("balance")
         .eq("user_id", user.id)
         .maybeSingle()
-        .then(({ data }) => {
-          setDbCoins(data?.balance ?? 0);
-        })
-        .catch(() => {});
+        .then(
+          ({ data }) => {
+            setDbCoins(data?.balance ?? 0);
+          },
+          () => {}
+        );
     }
   }, [user, isCoinShopOpen]);
 

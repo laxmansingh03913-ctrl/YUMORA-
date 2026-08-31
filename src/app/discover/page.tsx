@@ -22,7 +22,7 @@ import {
 } from "lucide-react";
 import { NovelCard } from "@/components/ui/NovelCard";
 import { ComicCard } from "@/components/ui/ComicCard";
-import { StoryFormat, StoryFormatInfo, getStoryFormat } from "@/lib/types";
+import { StoryFormat, StoryFormatInfo, getStoryFormat, Novel, Comic } from "@/lib/types";
 
 const ALL_GENRES = [
   "All Genres",
@@ -61,7 +61,7 @@ const FORMAT_FILTERS: {
   id: DiscoverFormat;
   label: string;
   shortLabel: string;
-  icon: React.ElementType;
+  icon: any;
   badge: string;
 }[] = [
   { id: "all", label: "All Formats", shortLabel: "All", icon: Layers, badge: "ALL" },
@@ -279,7 +279,7 @@ function DiscoverPageContent() {
           {FORMAT_FILTERS.map((fmt) => {
             const Icon = fmt.icon;
             const isSelected = selectedFormat === fmt.id;
-            const count = formatCounts[fmt.id];
+            const count = (formatCounts as any)[fmt.id];
 
             return (
               <button

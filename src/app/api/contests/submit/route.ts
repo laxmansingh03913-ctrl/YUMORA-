@@ -46,7 +46,7 @@ export async function POST(req: NextRequest) {
     }
 
     const serverCurrentTime = Date.now();
-    const computedStatus = getContestStatus(contest, serverCurrentTime);
+    const computedStatus = getContestStatus(contest as any, serverCurrentTime);
 
     if (computedStatus === "ENDED") {
       return NextResponse.json(

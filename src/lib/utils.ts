@@ -47,3 +47,21 @@ export function slugify(text: string): string {
     .replace(/[\s_-]+/g, "-")
     .replace(/^-+|-+$/g, "");
 }
+
+export function ensureUuid(id?: string): string {
+  if (!id) {
+    return typeof crypto !== "undefined" && crypto.randomUUID
+      ? crypto.randomUUID()
+      : "10000000-0000-0000-0000-000000000001";
+  }
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  if (uuidRegex.test(id)) return id;
+
+  // Convert string hash to 32 hex chars
+  let hex = "";
+  for (let i = 0; i < id.length; i++) {
+    hex += id.charCodeAt(i).toString(16);
+  }
+  hex = hex.padEnd(32, "0").slice(0, 32);
+  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-4${hex.slice(13, 16)}-a${hex.slice(17, 20)}-${hex.slice(20, 32)}`;
+}

@@ -27,7 +27,7 @@ export async function GET(
           chapters: {
             orderBy: { chapterNumber: "asc" },
           },
-          creator: true,
+          profiles: true,
         },
       });
 
@@ -37,12 +37,12 @@ export async function GET(
           creatorId: dbNovel.creatorId,
           creator: {
             id: dbNovel.creatorId,
-            name: dbNovel.creator?.name || "Author",
-            username: dbNovel.creator?.username || `author_${dbNovel.creatorId.slice(0, 6)}`,
+            name: dbNovel.profiles?.name || "Author",
+            username: dbNovel.profiles?.username || `author_${dbNovel.creatorId.slice(0, 6)}`,
             avatar:
-              dbNovel.creator?.avatar ||
+              dbNovel.profiles?.avatar ||
               "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=85",
-            isVerified: Boolean(dbNovel.creator?.isVerified),
+            isVerified: Boolean(dbNovel.profiles?.isVerified),
           },
           title: dbNovel.title,
           slug: dbNovel.slug,

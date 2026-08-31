@@ -46,8 +46,10 @@ export function Sidebar() {
       .select("balance")
       .eq("user_id", user.id)
       .maybeSingle()
-      .then(({ data }) => setLiveCoins(data?.balance ?? 0))
-      .catch(() => setLiveCoins(0));
+      .then(
+        ({ data }) => setLiveCoins(data?.balance ?? 0),
+        () => setLiveCoins(0)
+      );
   }, [user?.id]);
 
   // Hide sidebar inside immersive reader
@@ -90,7 +92,7 @@ export function Sidebar() {
     item: { name: string; href?: string; icon: React.ElementType; badge?: string; action?: () => void },
     isAction = false
   ) => {
-    const Icon = item.icon;
+    const Icon = item.icon as any;
     const isActive = item.href ? (item.href === "/" ? pathname === "/" : pathname.startsWith(item.href)) : false;
 
     const content = (

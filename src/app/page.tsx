@@ -610,7 +610,7 @@ export default function IndexPage() {
                 <div className="flex items-center gap-1.5 text-xs text-zinc-450 dark:text-white/35">
                   <Eye className="w-3.5 h-3.5" />{slide?.views} reads
                 </div>
-                {slide?.tags?.map((tag) => (
+                {slide?.tags?.map((tag: string) => (
                   <span key={tag} className="px-2.5 py-1 rounded-full text-[11px] font-semibold border border-zinc-200 dark:border-white/12 text-zinc-550 dark:text-white/50">{tag}</span>
                 ))}
               </div>

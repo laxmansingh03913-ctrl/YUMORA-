@@ -26,7 +26,7 @@ export async function GET(req: NextRequest) {
         id: { in: novelIds },
       },
       include: {
-        creator: {
+        profiles: {
           select: {
             id: true,
             name: true,
@@ -47,8 +47,8 @@ export async function GET(req: NextRequest) {
       const novel = novels.find((n) => n.id === sub.contentId);
       if (!novel) return null;
 
-      const authorName = novel.creator?.name || "Creator";
-      const authorUsername = novel.creator?.username || authorName.toLowerCase().replace(/\s+/g, "_");
+      const authorName = novel.profiles?.name || "Creator";
+      const authorUsername = novel.profiles?.username || authorName.toLowerCase().replace(/\s+/g, "_");
 
       return {
         id: novel.id,
@@ -57,10 +57,10 @@ export async function GET(req: NextRequest) {
         slug: novel.slug,
         author: `@${authorUsername}`,
         authorName,
-        avatar: novel.creator?.avatar || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300&auto=format&fit=crop&q=80",
+        avatar: novel.profiles?.avatar || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300&auto=format&fit=crop&q=80",
         coverUrl: novel.coverUrl,
         genre: novel.genre,
-        chaptersCount: novel._count.chapters || 2,
+        chaptersCount: novel._count?.chapters || 2,
         rating: 4.8, // Fallback standard rating
         votes: sub.votes,
         status: sub.status,
