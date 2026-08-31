@@ -627,14 +627,6 @@ export const dbService = {
     }
   },
 
-  async deleteComic(comicId: string): Promise<boolean> {
-    try {
-      const { error } = await supabase.from("comics").delete().eq("id", comicId);
-      return !error;
-    } catch {
-      return false;
-    }
-  },
 
   async deleteNovel(novelId: string, creatorId?: string, penaltyCoins: number = 50): Promise<boolean> {
     try {

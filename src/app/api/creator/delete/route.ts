@@ -93,34 +93,44 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Apply Creator Penalty (Deduct coins and log notification) if creatorId provided
+    // Apply Creator Penalty (Deduct coins from CoinWallet and log notification) if creatorId provided
     if (creatorId && penaltyCoins > 0) {
       const validCreatorId = ensureUuid(creatorId);
       try {
-        const creator = await prisma.user.findUnique({
-          where: { id: validCreatorId },
+        const wallet = await prisma.coinWallet.findUnique({
+          where: { userId: validCreatorId },
         });
 
-        if (creator) {
-          const currentCoins = creator.coins || 0;
-          const newCoins = Math.max(0, currentCoins - penaltyCoins);
+        if (wallet) {
+          const currentBalance = wallet.balance || 0;
+          const newBalance = Math.max(0, currentBalance - penaltyCoins);
 
-          await prisma.user.update({
-            where: { id: validCreatorId },
-            data: { coins: newCoins },
+          await prisma.coinWallet.update({
+            where: { userId: validCreatorId },
+            data: { balance: newBalance },
           });
 
-          // Create notification for creator
-          await prisma.notification.create({
+          // Record coin transaction
+          await prisma.coin_transactions.create({
             data: {
-              userId: validCreatorId,
-              title: "Content Permanently Deleted",
-              message: `"${titleDeleted}" was permanently erased from the Yomika database. A deletion penalty of ${penaltyCoins} coins was deducted.`,
-              type: "SYSTEM",
-              link: "/creator",
+              user_id: validCreatorId,
+              amount: -penaltyCoins,
+              type: "PENALTY",
+              description: `Penalty for deleting "${titleDeleted}"`,
             },
           });
         }
+
+        // Create notification for creator
+        await prisma.notification.create({
+          data: {
+            userId: validCreatorId,
+            title: "Content Permanently Deleted",
+            message: `"${titleDeleted}" was permanently erased from the Yomika database. A deletion penalty of ${penaltyCoins} coins was deducted.`,
+            type: "SYSTEM",
+            contentUrl: "/creator",
+          },
+        });
       } catch (penaltyErr) {
         console.warn("[CREATOR DELETION PENALTY ERROR]", penaltyErr);
       }
