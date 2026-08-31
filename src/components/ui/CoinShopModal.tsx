@@ -21,6 +21,7 @@ import {
 import { dataStore, COIN_PACKAGES } from "@/lib/data/store";
 import { useAuth } from "@/context/AuthContext";
 import { CoinPackage } from "@/lib/types";
+import { dbService } from "@/lib/supabase/db";
 
 interface CoinShopModalProps {
   isOpen: boolean;
@@ -223,6 +224,16 @@ export function CoinShopModal({ isOpen, onClose, onCoinsUpdated }: CoinShopModal
       await new Promise((resolve) => setTimeout(resolve, 800));
 
       const newBalance = dataStore.addCoins(user.id, totalCoinsInPack);
+
+      // Record simulated transaction in database
+      dbService
+        .recordCoinTransaction({
+          userId: user.id,
+          amount: totalCoinsInPack,
+          type: "COIN_PURCHASE_SIMULATED",
+          description: `Simulated purchase of ${selectedPack.label} (${totalCoinsInPack} coins) for ₹${selectedPack.priceInr}`,
+        })
+        .catch((err) => console.warn("Simulated payment database sync failed:", err));
 
       dataStore.addNotification({
         id: `notif-topup-${Date.now()}`,

@@ -164,6 +164,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           const profile = await syncSupabaseProfile(data.session.user);
           if (isSubscribed) {
             setUser(profile);
+            dataStore.syncReadingProgressFromDb(profile.id).catch(() => {});
             try {
               localStorage.setItem("yumora_active_user", JSON.stringify(profile));
             } catch {
@@ -195,6 +196,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const profile = await syncSupabaseProfile(session.user);
         if (isSubscribed) {
           setUser(profile);
+          dataStore.syncReadingProgressFromDb(profile.id).catch(() => {});
           try {
             localStorage.setItem("yumora_active_user", JSON.stringify(profile));
           } catch {

@@ -780,6 +780,34 @@ class DataStore {
     return this.getItem<Record<string, ReadingProgress>>(STORAGE_KEYS.READING_PROGRESS, {});
   }
 
+  async syncReadingProgressFromDb(userId: string): Promise<void> {
+    try {
+      if (!userId) return;
+      const dbProgress = await dbService.getAllReadingProgress(userId);
+      if (dbProgress && dbProgress.length > 0) {
+        const map = this.getReadingProgressMap();
+        dbProgress.forEach((p) => {
+          const local = map[p.contentId];
+          if (!local || new Date(p.lastReadAt).getTime() > new Date(local.lastReadAt).getTime()) {
+            const novel = this.getNovelBySlug(p.contentId) || this.getNovelById(p.contentId);
+            const comic = this.getComicBySlug(p.contentId) || this.getComicById(p.contentId);
+            
+            map[p.contentId] = {
+              ...p,
+              contentTitle: novel?.title || comic?.title || p.contentTitle || "Untitled Story",
+              coverUrl: novel?.coverUrl || comic?.coverUrl || p.coverUrl || "/hero-character.png",
+              creatorName: novel?.creator?.name || comic?.creator?.name || p.creatorName || "Creator",
+              contentSlug: novel?.slug || comic?.slug || p.contentId,
+            };
+          }
+        });
+        this.setItem(STORAGE_KEYS.READING_PROGRESS, map);
+      }
+    } catch (e) {
+      console.warn("Error syncing reading progress from DB:", e);
+    }
+  }
+
   saveReadingProgress(progress: ReadingProgress, userId?: string): void {
     const resolvedUserId = userId || progress.userId;
     const map = this.getReadingProgressMap();

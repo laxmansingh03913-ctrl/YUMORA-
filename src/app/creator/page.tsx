@@ -114,13 +114,7 @@ export default function CreatorDashboardPage() {
 
   // Real calculated balance (zero mock offset)
   const initialBalance = totalReads > 0 ? Number(((totalReads / 1000) * 2.85).toFixed(2)) : 0;
-  const [availableBalance, setAvailableBalance] = useState<number>(() => {
-    if (typeof window !== "undefined" && user?.id) {
-      const saved = localStorage.getItem(`yumora_wallet_balance_${user.id}`);
-      if (saved) return parseFloat(saved);
-    }
-    return initialBalance;
-  });
+  const [availableBalance, setAvailableBalance] = useState<number>(0);
 
   const [payoutSettings, setPayoutSettings] = useState<PayoutSettings>(() => {
     if (typeof window !== "undefined" && user?.id) {
@@ -136,19 +130,7 @@ export default function CreatorDashboardPage() {
     return DEFAULT_PAYOUT_SETTINGS;
   });
 
-  const [payoutHistory, setPayoutHistory] = useState<PayoutRecord[]>(() => {
-    if (typeof window !== "undefined" && user?.id) {
-      const saved = localStorage.getItem(`yumora_payout_history_${user.id}`);
-      if (saved) {
-        try {
-          return JSON.parse(saved);
-        } catch {
-          // ignore
-        }
-      }
-    }
-    return DEFAULT_PAYOUT_HISTORY;
-  });
+  const [payoutHistory, setPayoutHistory] = useState<PayoutRecord[]>([]);
 
   // Modal States
   const [isWithdrawModalOpen, setIsWithdrawModalOpen] = useState(false);
@@ -183,7 +165,6 @@ export default function CreatorDashboardPage() {
         if (balanceCoins !== undefined) {
           const balanceUSD = balanceCoins / 100;
           setAvailableBalance(balanceUSD);
-          localStorage.setItem(`yumora_wallet_balance_${user.id}`, balanceUSD.toString());
         }
       });
 
@@ -202,7 +183,6 @@ export default function CreatorDashboardPage() {
               status: row.status === "PENDING" ? "PROCESSING" : row.status,
             }));
             setPayoutHistory(mappedHistory);
-            localStorage.setItem(`yumora_payout_history_${user.id}`, JSON.stringify(mappedHistory));
           }
         })
         .catch((err) => console.error("[PAYOUTS HISTORY FETCH ERROR]", err));
@@ -347,11 +327,6 @@ export default function CreatorDashboardPage() {
 
       const updatedHistory = [newRecord, ...payoutHistory];
       setPayoutHistory(updatedHistory);
-
-      if (user?.id) {
-        localStorage.setItem(`yumora_wallet_balance_${user.id}`, remainingBalance.toString());
-        localStorage.setItem(`yumora_payout_history_${user.id}`, JSON.stringify(updatedHistory));
-      }
 
       setIsWithdrawModalOpen(false);
       setWithdrawAmountInput("");

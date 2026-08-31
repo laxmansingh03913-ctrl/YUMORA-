@@ -998,6 +998,35 @@ export const dbService = {
   },
 
   // 9. Reading Progress
+  async getAllReadingProgress(userId: string): Promise<ReadingProgress[]> {
+    try {
+      if (!userId) return [];
+      const validUserId = ensureUuid(userId);
+
+      const { data, error } = await supabase
+        .from("reading_progress")
+        .select("*")
+        .eq("user_id", validUserId)
+        .order("updated_at", { ascending: false });
+
+      if (error || !data) return [];
+      return data.map((row: any) => ({
+        id: row.id,
+        userId: row.user_id,
+        contentId: row.novel_id || row.comic_id || "",
+        contentType: row.novel_id ? "NOVEL" : "COMIC",
+        chapterNumber: row.chapter_number,
+        episodeNumber: row.episode_number,
+        scrollOffset: row.scroll_position || 0,
+        pageIndex: 0,
+        progressPercentage: row.percentage || 0,
+        lastReadAt: row.updated_at || new Date().toISOString(),
+      }));
+    } catch {
+      return [];
+    }
+  },
+
   async getReadingProgress(userId: string, contentId: string): Promise<ReadingProgress | null> {
     try {
       if (!userId || !contentId) return null;
