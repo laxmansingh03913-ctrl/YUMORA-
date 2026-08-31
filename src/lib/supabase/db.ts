@@ -362,6 +362,23 @@ export const dbService = {
         console.error("Supabase insert chapter error:", error.message);
         return null;
       }
+
+      // Auto-sync the novel's chapters_count field with the real chapter count
+      try {
+        const { count: actualCount } = await supabase
+          .from("chapters")
+          .select("id", { count: "exact", head: true })
+          .eq("novel_id", validNovelId);
+        if (actualCount !== null) {
+          await supabase
+            .from("novels")
+            .update({ chapters_count: actualCount })
+            .eq("id", validNovelId);
+        }
+      } catch {
+        // Non-critical — ignore sync failure
+      }
+
       return data as unknown as Chapter;
     } catch (e) {
       console.warn("Supabase insert chapter exception:", e);

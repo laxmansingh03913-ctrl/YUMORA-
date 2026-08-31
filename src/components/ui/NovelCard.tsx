@@ -187,7 +187,7 @@ export function NovelCard({ novel, variant = "standard", rank }: NovelCardProps)
                 <CheckCircle2 className="w-3 h-3 text-[#D91E18] flex-shrink-0" />
               )}
             </Link>
-            <span>{novel.chaptersCount || novel.chapters?.length || 1} Ch</span>
+            <span>{novel.chaptersCount ?? novel.chapters?.length ?? 0} Ch</span>
           </div>
         </div>
 
