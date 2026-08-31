@@ -153,13 +153,17 @@ export default function CreatorDashboardPage() {
   const [editPaypalEmail, setEditPaypalEmail] = useState(payoutSettings.paypalEmail);
   const [editAutoPayout, setEditAutoPayout] = useState(payoutSettings.autoPayoutEnabled);
 
-  // Sync state when user loads
+  // Sync state when user loads - fetch authoritative data from Database
   useEffect(() => {
     if (user) {
-      const userNovels = dataStore.getNovels().filter((n) => n.creatorId === user.id);
-      const userComics = dataStore.getComics().filter((c) => c.creatorId === user.id);
-      setNovels(userNovels);
-      setComics(userComics);
+      dbService.getNovels().then((allNovels) => {
+        const userNovels = allNovels.filter((n) => n.creatorId === user.id);
+        setNovels(userNovels);
+      });
+      dbService.getComics().then((allComics) => {
+        const userComics = allComics.filter((c) => c.creatorId === user.id);
+        setComics(userComics);
+      });
 
       // Fetch authoritative wallet balance from Supabase Database
       dbService.getWalletBalance(user.id).then((balanceCoins) => {

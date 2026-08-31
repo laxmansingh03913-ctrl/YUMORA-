@@ -10,10 +10,14 @@ import { Novel } from "@/lib/types";
 export default function NovelsPage() {
   const [selectedGenre, setSelectedGenre] = useState<string>("All");
   const [search, setSearch] = useState("");
-  const [novels, setNovels] = useState<Novel[]>(() => dataStore.getNovels());
+  const [novels, setNovels] = useState<Novel[]>([]);
 
   useEffect(() => {
-    setNovels(dataStore.getNovels());
+    dbService.getNovels().then((data) => {
+      if (data && data.length > 0) {
+        setNovels(data);
+      }
+    });
   }, []);
   const genres = ["All", "Sci-Fi", "Fantasy", "Cyberpunk", "Adventure", "Mystery", "Romance"];
 

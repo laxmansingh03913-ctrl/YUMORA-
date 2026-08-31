@@ -914,39 +914,15 @@ export default function CreatorUploadWizardPage() {
           };
 
           // Insert into Supabase PostgreSQL Cloud DB
-          await dbService.insertComic(newComic);
-          for (const ep of episodesToAttach) {
-            await dbService.insertEpisode(ep, comicId);
+          const insertedComic = await dbService.insertComic(newComic);
+          if (!insertedComic) {
+            throw new Error("Failed to save comic to cloud database. Please try again.");
           }
-
-          // Also sync with local fast cache
-          dataStore.saveComic(newComic);
-
-          // Automatically persist custom creator voice script for this episode
-          const voiceScript = pages.flatMap((p, pIdx) =>
-            (p.dialogueLines || []).map((d) => ({
-              panelIndex: pIdx,
-              speaker: d.speaker || "Character",
-              role: d.role || "HERO",
-              avatar:
-                d.role === "HEROINE"
-                  ? "🌸"
-                  : d.role === "VILLAIN"
-                  ? "👑"
-                  : d.role === "NARRATOR"
-                  ? "🎙️"
-                  : "⚡",
-              dialogue: d.text,
-              sfx: "WIND",
-            }))
-          );
-          if (voiceScript.length > 0) {
-            try {
-              localStorage.setItem(
-                `manga-dub-${slug.toLowerCase().replace(/[^a-z0-9]/g, "-")}-ep-${chapterNumber}-v3`,
-                JSON.stringify(voiceScript)
-              );
-            } catch {}
+          for (const ep of episodesToAttach) {
+            const insertedEp = await dbService.insertEpisode(ep, comicId);
+            if (!insertedEp) {
+              throw new Error(`Failed to save episode ${ep.episodeNumber} to database.`);
+            }
           }
         }
       } else {
@@ -1003,12 +979,14 @@ export default function CreatorUploadWizardPage() {
 
           for (let i = 0; i < chaptersToSave.length; i++) {
             const ch = chaptersToSave[i];
-            setCloudPublishStatus(`Saving Chapter ${ch.chapterNumber} (${i + 1}/${chaptersToSave.length}) to Cloud Database...`);
-            await dbService.insertChapter(ch, selectedSeriesId);
-            dataStore.addChapter(selectedSeriesId, ch);
+            setCloudPublishStatus(`Saving Chapter ${ch.chapterNumber} (${i + 1}/${chaptersToSave.length}) directly to Database...`);
+            const inserted = await dbService.insertChapter(ch, selectedSeriesId);
+            if (!inserted) {
+              throw new Error(`Failed to save Chapter ${ch.chapterNumber} to cloud database.`);
+            }
           }
         } else {
-          setCloudPublishStatus("Saving novel manuscript to Supabase Cloud Database...");
+          setCloudPublishStatus("Saving novel manuscript directly to Supabase Cloud Database...");
           const novelId = `novel-${Date.now()}`;
 
           // Collect all written chapters from novelChaptersMap
@@ -1078,14 +1056,17 @@ export default function CreatorUploadWizardPage() {
             chapters: chaptersToAttach,
           };
 
-          // Insert into Supabase PostgreSQL Cloud DB
-          await dbService.insertNovel(newNovel);
-          for (const ch of chaptersToAttach) {
-            await dbService.insertChapter(ch, novelId);
+          // Insert directly into Supabase PostgreSQL Cloud DB
+          const insertedNovel = await dbService.insertNovel(newNovel);
+          if (!insertedNovel) {
+            throw new Error("Failed to save novel to cloud database. Please try again.");
           }
-
-          // Also sync with local fast cache
-          dataStore.saveNovel(newNovel);
+          for (const ch of chaptersToAttach) {
+            const insertedCh = await dbService.insertChapter(ch, novelId);
+            if (!insertedCh) {
+              throw new Error(`Failed to save chapter ${ch.chapterNumber} to cloud database.`);
+            }
+          }
         }
       }
 
@@ -1096,10 +1077,9 @@ export default function CreatorUploadWizardPage() {
       }
 
       setStep(5);
-    } catch (err) {
+    } catch (err: any) {
       console.error("Cloud publish error:", err);
-      alert("Notice: Story saved to local workspace. If Supabase network had a hiccup, it will sync automatically.");
-      setStep(5);
+      alert(`Database Upload Error: ${err?.message || "Failed to save story to database. Please check your connection and try again."}`);
     } finally {
       setIsPublishingToCloud(false);
       setCloudPublishStatus(null);

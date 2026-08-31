@@ -120,8 +120,15 @@ export default function IndexPage() {
   const [selectedFormats, setSelectedFormats] = useState<string[]>([]);
   const [selectedGenres, setSelectedGenres] = useState<string[]>([]);
 
+  const [novels, setNovels] = useState<Novel[]>([]);
+
   useEffect(() => {
     setMounted(true);
+    dbService.getNovels().then((data) => {
+      if (data && data.length > 0) {
+        setNovels(data);
+      }
+    });
   }, []);
 
   // Check onboarding triggers when authenticated
@@ -135,7 +142,6 @@ export default function IndexPage() {
     }
   }, [user, isLoading, mounted]);
 
-  const novels = dataStore.getNovels();
   const creators = dataStore.getUsers().filter((u) => u.role === "CREATOR" || u.role === "ADMIN");
   const activeContest = dataStore.getActiveContest();
   const followingFeed = mounted && user ? dataStore.getFollowingFeed() : [];
