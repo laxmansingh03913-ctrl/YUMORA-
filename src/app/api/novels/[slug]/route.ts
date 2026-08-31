@@ -32,6 +32,18 @@ export async function GET(
       });
 
       if (dbNovel) {
+        // Increment views & reads in database in background
+        prisma.novel.update({
+          where: { id: dbNovel.id },
+          data: {
+            views: { increment: 1 },
+            reads: { increment: 1 },
+          },
+        }).catch((err) => console.warn("[VIEWS INCREMENT ERROR]", err));
+
+        dbNovel.views = (dbNovel.views || 0) + 1;
+        dbNovel.reads = (dbNovel.reads || 0) + 1;
+
         const formatted: Novel = {
           id: dbNovel.id,
           creatorId: dbNovel.creatorId,

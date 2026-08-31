@@ -434,6 +434,20 @@ export const dbService = {
 
       if (error || !data) return null;
       const row: any = data;
+
+      // Increment views & reads in database in background
+      supabase
+        .from("comics")
+        .update({
+          views: (row.views || 0) + 1,
+          reads: (row.reads || 0) + 1,
+        })
+        .eq("id", row.id)
+        .then(() => {}, () => {});
+
+      row.views = (row.views || 0) + 1;
+      row.reads = (row.reads || 0) + 1;
+
       return {
         id: row.id,
         creatorId: row.creator_id || "creator",
