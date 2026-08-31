@@ -636,9 +636,64 @@ export const dbService = {
     }
   },
 
-  async deleteNovel(novelId: string): Promise<boolean> {
+  async deleteNovel(novelId: string, creatorId?: string, penaltyCoins: number = 50): Promise<boolean> {
     try {
-      const { error } = await supabase.from("novels").delete().eq("id", novelId);
+      // First try server API for guaranteed cascade delete & penalty
+      const res = await fetch("/api/creator/delete", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: novelId, type: "NOVEL", creatorId, penaltyCoins }),
+      });
+      if (res.ok) return true;
+    } catch {
+      // fallback
+    }
+
+    try {
+      const validId = ensureUuid(novelId);
+      const { error } = await supabase.from("novels").delete().eq("id", validId);
+      return !error;
+    } catch {
+      return false;
+    }
+  },
+
+  async deleteComic(comicId: string, creatorId?: string, penaltyCoins: number = 50): Promise<boolean> {
+    try {
+      const res = await fetch("/api/creator/delete", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: comicId, type: "COMIC", creatorId, penaltyCoins }),
+      });
+      if (res.ok) return true;
+    } catch {
+      // fallback
+    }
+
+    try {
+      const validId = ensureUuid(comicId);
+      const { error } = await supabase.from("comics").delete().eq("id", validId);
+      return !error;
+    } catch {
+      return false;
+    }
+  },
+
+  async deleteChapter(chapterId: string, creatorId?: string, penaltyCoins: number = 20): Promise<boolean> {
+    try {
+      const res = await fetch("/api/creator/delete", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: chapterId, type: "CHAPTER", creatorId, penaltyCoins }),
+      });
+      if (res.ok) return true;
+    } catch {
+      // fallback
+    }
+
+    try {
+      const validId = ensureUuid(chapterId);
+      const { error } = await supabase.from("chapters").delete().eq("id", validId);
       return !error;
     } catch {
       return false;

@@ -239,10 +239,21 @@ export default function CreatorDashboardPage() {
     (payoutSettings.method === "PAYPAL" && payoutSettings.paypalEmail.trim())
   );
 
-  const handleDeleteNovel = (id: string, title: string) => {
-    if (window.confirm(`Are you sure you want to delete "${title}"?`)) {
+  const handleDeleteNovel = async (id: string, title: string) => {
+    const confirmed = window.confirm(
+      `⚠️ PERMANENT DELETION WARNING\n\nAre you sure you want to permanently delete "${title}"?\n\nThis will completely erase all chapters, bookmarks, and reader stats from the cloud database.\n\nNote: A creator deletion penalty of 50 Coins will be deducted.`
+    );
+    if (confirmed) {
+      // 1. Delete from local cache
       dataStore.deleteNovel(id);
       setNovels((prev) => prev.filter((n) => n.id !== id));
+
+      // 2. Permanently delete from Supabase cloud database & apply penalty
+      try {
+        await dbService.deleteNovel(id, user?.id, 50);
+      } catch (err) {
+        console.error("Permanent novel deletion error:", err);
+      }
     }
   };
 
@@ -254,10 +265,21 @@ export default function CreatorDashboardPage() {
     setNovels((prev) => prev.map((n) => (n.id === novel.id ? updated : n)));
   };
 
-  const handleDeleteComic = (id: string, title: string) => {
-    if (window.confirm(`Are you sure you want to delete "${title}"?`)) {
+  const handleDeleteComic = async (id: string, title: string) => {
+    const confirmed = window.confirm(
+      `⚠️ PERMANENT DELETION WARNING\n\nAre you sure you want to permanently delete "${title}"?\n\nThis will completely erase all episodes, manga pages, and reader stats from the cloud database.\n\nNote: A creator deletion penalty of 50 Coins will be deducted.`
+    );
+    if (confirmed) {
+      // 1. Delete from local cache
       dataStore.deleteComic(id);
       setComics((prev) => prev.filter((c) => c.id !== id));
+
+      // 2. Permanently delete from Supabase cloud database & apply penalty
+      try {
+        await dbService.deleteComic(id, user?.id, 50);
+      } catch (err) {
+        console.error("Permanent comic deletion error:", err);
+      }
     }
   };
 
