@@ -162,6 +162,9 @@ class DataStore {
 
   private getItem<T>(key: string, defaultValue: T): T {
     if (!this.isBrowser()) return defaultValue;
+    if (key === STORAGE_KEYS.NOVELS || key === STORAGE_KEYS.COMICS) {
+      return defaultValue; // Bypass localStorage for large content datasets
+    }
     try {
       const stored = localStorage.getItem(key);
       return stored ? JSON.parse(stored) : defaultValue;
@@ -172,6 +175,9 @@ class DataStore {
 
   private setItem<T>(key: string, value: T): void {
     if (!this.isBrowser()) return;
+    if (key === STORAGE_KEYS.NOVELS || key === STORAGE_KEYS.COMICS) {
+      return; // Bypass localStorage for large content datasets
+    }
     try {
       localStorage.setItem(key, JSON.stringify(value));
     } catch (e) {
