@@ -3148,20 +3148,62 @@ export default function CreatorUploadWizardPage() {
 
             <div className="pt-4 border-t border-zinc-800 grid grid-cols-3 gap-2 text-center text-xs">
               <div className="p-2 rounded-xl bg-zinc-900 border border-zinc-800">
-                <p className="text-[10px] text-zinc-400">Chapter</p>
-                <p className="font-bold text-white mt-0.5">Chapter {chapterNumber}</p>
-              </div>
-              <div className="p-2 rounded-xl bg-zinc-900 border border-zinc-800">
-                <p className="text-[10px] text-zinc-400">{isVisualMedium ? "Pages" : "Word Count"}</p>
+                <p className="text-[10px] text-zinc-400">Chapters / Ep</p>
                 <p className="font-bold text-white mt-0.5">
-                  {isVisualMedium ? `${pages.length} Pages` : `${wordCount.toLocaleString()} words`}
+                  {isVisualMedium
+                    ? `${pages.length} Pages`
+                    : `${Object.values(novelChaptersMap).filter((d) => d.content && d.content.trim().length > 0).length || 1} Chapters`}
                 </p>
               </div>
               <div className="p-2 rounded-xl bg-zinc-900 border border-zinc-800">
-                <p className="text-[10px] text-zinc-400">Est. Read Time</p>
-                <p className="font-bold text-white mt-0.5">{readTime} min</p>
+                <p className="text-[10px] text-zinc-400">{isVisualMedium ? "Panels" : "Total Words"}</p>
+                <p className="font-bold text-white mt-0.5">
+                  {isVisualMedium
+                    ? `${pages.length} Panels`
+                    : `${Object.values(novelChaptersMap).reduce((acc, d) => acc + (d.content ? d.content.trim().split(/\s+/).filter(Boolean).length : 0), 0).toLocaleString()} words`}
+                </p>
+              </div>
+              <div className="p-2 rounded-xl bg-zinc-900 border border-zinc-800">
+                <p className="text-[10px] text-zinc-400">Status</p>
+                <p className="font-bold text-emerald-400 mt-0.5">Ready to Sync</p>
               </div>
             </div>
+
+            {!isVisualMedium && (
+              <div className="space-y-2 pt-2 border-t border-zinc-800/80 text-left">
+                <p className="text-xs font-bold text-zinc-300">
+                  Chapters to be written to Database:
+                </p>
+                <div className="space-y-1.5 max-h-48 overflow-y-auto">
+                  {Object.entries({
+                    ...novelChaptersMap,
+                    [chapterNumber]: {
+                      id: novelChaptersMap[chapterNumber]?.id,
+                      title: chapterTitle || `Chapter ${chapterNumber}`,
+                      content: chapterContent,
+                    },
+                  })
+                    .filter(([_, data]) => data.content && data.content.trim().length > 0)
+                    .sort(([a], [b]) => parseInt(a, 10) - parseInt(b, 10))
+                    .map(([numStr, data]) => {
+                      const words = data.content.trim().split(/\s+/).filter(Boolean).length;
+                      return (
+                        <div
+                          key={numStr}
+                          className="flex items-center justify-between p-2.5 rounded-xl bg-zinc-900 border border-zinc-800 text-xs"
+                        >
+                          <span className="font-bold text-zinc-200">
+                            Ch. {numStr}: {data.title}
+                          </span>
+                          <span className="text-emerald-400 font-mono text-[11px] font-bold">
+                            ✓ Ready ({words} words)
+                          </span>
+                        </div>
+                      );
+                    })}
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -3236,7 +3278,19 @@ export default function CreatorUploadWizardPage() {
               {step < 4 ? (
                 <button
                   type="button"
-                  onClick={() => setStep((prev) => Math.min(4, prev + 1) as typeof step)}
+                  onClick={() => {
+                    if (step === 3 && !isVisualMedium) {
+                      setNovelChaptersMap((prev) => ({
+                        ...prev,
+                        [chapterNumber]: {
+                          id: prev[chapterNumber]?.id,
+                          title: chapterTitle || `Chapter ${chapterNumber}`,
+                          content: chapterContent,
+                        },
+                      }));
+                    }
+                    setStep((prev) => Math.min(4, prev + 1) as typeof step);
+                  }}
                   className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white font-bold text-xs shadow-lg shadow-indigo-600/20 transition flex items-center gap-1.5 transform hover:scale-[1.02]"
                 >
                   <span>Continue</span>
