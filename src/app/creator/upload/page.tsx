@@ -1079,7 +1079,27 @@ export default function CreatorUploadWizardPage() {
       setStep(5);
     } catch (err: any) {
       console.error("Cloud publish error:", err);
-      alert(`Database Upload Error: ${err?.message || "Failed to save story to database. Please check your connection and try again."}`);
+      const errMsg = err?.message || "Failed to save story to database. Please check your connection and try again.";
+      alert(`Database Upload Error: ${errMsg}`);
+
+      // Automatically dispatch high-priority error email to Admin
+      try {
+        fetch("/api/admin/error-report", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            errorType: "STORY_UPLOAD_FAILURE",
+            errorMessage: errMsg,
+            endpoint: "/creator/upload",
+            userId: user?.id,
+            userEmail: user?.email,
+            storyTitle: title,
+            chapterNumber,
+          }),
+        }).catch(() => {});
+      } catch {
+        // ignore
+      }
     } finally {
       setIsPublishingToCloud(false);
       setCloudPublishStatus(null);
