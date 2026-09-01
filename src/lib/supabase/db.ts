@@ -325,23 +325,12 @@ export const dbService = {
       const validNovelId = ensureUuid(novelId);
       const validChapterId = ensureUuid(chapter.id);
 
-      // First, check if a chapter with the same chapter_number already exists for this novel
-      // This allows editing existing chapters without creating duplicates
-      const { data: existingChapter } = await supabase
-        .from("chapters")
-        .select("id")
-        .eq("novel_id", validNovelId)
-        .eq("chapter_number", chapter.chapterNumber)
-        .maybeSingle();
-
-      const targetId = existingChapter?.id || validChapterId;
-
       const { data, error } = await supabase
         .from("chapters")
         .upsert(
           [
             {
-              id: targetId,
+              id: validChapterId,
               novel_id: validNovelId,
               chapter_number: chapter.chapterNumber,
               title: chapter.title,
@@ -353,7 +342,7 @@ export const dbService = {
               published_at: chapter.publishedAt || new Date().toISOString(),
             },
           ],
-          { onConflict: "id" }
+          { onConflict: "novel_id,chapter_number", ignoreDuplicates: false }
         )
         .select()
         .single();

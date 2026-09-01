@@ -324,6 +324,50 @@ CREATE POLICY "Public comics are viewable by everyone" ON public.comics FOR SELE
 DROP POLICY IF EXISTS "Creators can manage own comics" ON public.comics;
 CREATE POLICY "Creators can manage own comics" ON public.comics FOR ALL USING (auth.uid() = creator_id);
 
+-- Chapters (Novels): Public read, creator can insert/update/delete their own chapters
+DROP POLICY IF EXISTS "Public chapters are viewable by everyone" ON public.chapters;
+CREATE POLICY "Public chapters are viewable by everyone" ON public.chapters FOR SELECT USING (true);
+
+DROP POLICY IF EXISTS "Creators can insert own chapters" ON public.chapters;
+CREATE POLICY "Creators can insert own chapters" ON public.chapters FOR INSERT
+  WITH CHECK (
+    auth.uid() = (SELECT creator_id FROM public.novels WHERE id = novel_id LIMIT 1)
+  );
+
+DROP POLICY IF EXISTS "Creators can update own chapters" ON public.chapters;
+CREATE POLICY "Creators can update own chapters" ON public.chapters FOR UPDATE
+  USING (
+    auth.uid() = (SELECT creator_id FROM public.novels WHERE id = novel_id LIMIT 1)
+  );
+
+DROP POLICY IF EXISTS "Creators can delete own chapters" ON public.chapters;
+CREATE POLICY "Creators can delete own chapters" ON public.chapters FOR DELETE
+  USING (
+    auth.uid() = (SELECT creator_id FROM public.novels WHERE id = novel_id LIMIT 1)
+  );
+
+-- Episodes (Comics): Public read, creator can insert/update/delete their own episodes
+DROP POLICY IF EXISTS "Public episodes are viewable by everyone" ON public.episodes;
+CREATE POLICY "Public episodes are viewable by everyone" ON public.episodes FOR SELECT USING (true);
+
+DROP POLICY IF EXISTS "Creators can insert own episodes" ON public.episodes;
+CREATE POLICY "Creators can insert own episodes" ON public.episodes FOR INSERT
+  WITH CHECK (
+    auth.uid() = (SELECT creator_id FROM public.comics WHERE id = comic_id LIMIT 1)
+  );
+
+DROP POLICY IF EXISTS "Creators can update own episodes" ON public.episodes;
+CREATE POLICY "Creators can update own episodes" ON public.episodes FOR UPDATE
+  USING (
+    auth.uid() = (SELECT creator_id FROM public.comics WHERE id = comic_id LIMIT 1)
+  );
+
+DROP POLICY IF EXISTS "Creators can delete own episodes" ON public.episodes;
+CREATE POLICY "Creators can delete own episodes" ON public.episodes FOR DELETE
+  USING (
+    auth.uid() = (SELECT creator_id FROM public.comics WHERE id = comic_id LIMIT 1)
+  );
+
 -- User Activity (Likes, Bookmarks, Follows, Progress)
 DROP POLICY IF EXISTS "Users manage own likes" ON public.likes;
 CREATE POLICY "Users manage own likes" ON public.likes FOR ALL USING (auth.uid() = user_id);
