@@ -46,6 +46,7 @@ model User {
   readingProgress             ReadingProgress[]
   reportsFiled                Report[]
   notifications               Notification[]
+  drafts                      CreatorDraft[]
   payout_method               String?             @default("UPI") @map("payout_method")
   payout_bank_holder          String?             @map("payout_bank_holder")
   payout_bank_name            String?             @map("payout_bank_name")
@@ -449,4 +450,28 @@ model Notification {
   @@index([userId], map: "idx_notifications_user_id")
   @@index([createdAt(sort: Desc)], map: "idx_notifications_created_at")
   @@map("notifications")
+}
+
+model CreatorDraft {
+  id           String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId       String    @map("user_id") @db.Uuid
+  seriesId     String?   @map("series_id")
+  format       String    @default("NOVEL")
+  title        String?
+  description  String?
+  coverUrl     String?   @map("cover_url")
+  bannerUrl    String?   @map("banner_url")
+  genre        String?
+  secondaryGenre String? @map("secondary_genre")
+  tags         String[]  @default([])
+  uploadMode   String?   @default("NEW_SERIES") @map("upload_mode")
+  currentStep  Int?      @default(3) @map("current_step")
+  chaptersData Json      @default("{}") @map("chapters_data")
+  lastSavedAt  DateTime? @default(now()) @map("last_saved_at") @db.Timestamptz(6)
+  createdAt    DateTime? @default(now()) @map("created_at") @db.Timestamptz(6)
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([userId], map: "idx_creator_drafts_user_id")
+  @@index([lastSavedAt(sort: Desc)], map: "idx_creator_drafts_last_saved")
+  @@map("creator_drafts")
 }

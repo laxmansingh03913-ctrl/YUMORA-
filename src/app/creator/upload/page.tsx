@@ -74,6 +74,7 @@ import {
 import { slugify, calculateReadTime } from "@/lib/utils";
 import { CreatorProfileGate } from "@/components/creator/CreatorProfileGate";
 import { dbService } from "@/lib/supabase/db";
+import { parseDocumentFile, DocumentParseResult } from "@/lib/importer/documentParser";
 import { uploadDataUrlToSupabase, SUPABASE_BUCKETS } from "@/lib/supabase/storage";
 import {
   validateImageFile,
@@ -248,6 +249,197 @@ export default function CreatorUploadWizardPage() {
         content: chapterContent,
       },
     }));
+  };
+
+  // Cloud Database Auto-Save & Recovery States (Direct PostgreSQL)
+  const [cloudDraft, setCloudDraft] = useState<any | null>(null);
+  const [showDraftRecoveryBanner, setShowDraftRecoveryBanner] = useState(false);
+  const [autoSaveState, setAutoSaveState] = useState<"idle" | "saving" | "saved" | "error">("idle");
+  const [lastCloudSavedTime, setLastCloudSavedTime] = useState<string | null>(null);
+  
+  // Document (.docx / .txt / .md) Import States
+  const [docImportResult, setDocImportResult] = useState<DocumentParseResult | null>(null);
+  const [isDocImportModalOpen, setIsDocImportModalOpen] = useState(false);
+  const [isImportingDoc, setIsImportingDoc] = useState(false);
+  const docInputRef = useRef<HTMLInputElement>(null);
+
+  // 1. Initial Cloud Draft Check on Mount
+  useEffect(() => {
+    if (!user?.id) return;
+    fetch(`/api/creator/drafts?userId=${encodeURIComponent(user.id)}`)
+      .then((r) => r.json())
+      .then((data) => {
+        if (
+          data.success &&
+          data.draft &&
+          (data.draft.title ||
+            (data.draft.chaptersData &&
+              Object.keys(data.draft.chaptersData).length > 0 &&
+              Object.values(data.draft.chaptersData).some((c: any) => c.content?.trim())))
+        ) {
+          setCloudDraft(data.draft);
+          setShowDraftRecoveryBanner(true);
+        }
+      })
+      .catch(() => {});
+  }, [user?.id]);
+
+  // 2. Debounced Cloud Database Auto-Save
+  useEffect(() => {
+    if (!user?.id) return;
+    // Don't auto-save if completely blank initial state
+    if (
+      !title &&
+      !chapterContent &&
+      Object.keys(novelChaptersMap).length <= 1 &&
+      !novelChaptersMap[1]?.content
+    ) {
+      return;
+    }
+
+    setAutoSaveState("saving");
+    const timer = setTimeout(async () => {
+      try {
+        const currentActiveMap = {
+          ...novelChaptersMap,
+          [chapterNumber]: {
+            id: novelChaptersMap[chapterNumber]?.id,
+            title: chapterTitle || `Chapter ${chapterNumber}`,
+            content: chapterContent,
+          },
+        };
+
+        const res = await fetch("/api/creator/drafts", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            userId: user.id,
+            seriesId: selectedSeriesId || null,
+            format: formatChoice,
+            title,
+            description,
+            coverUrl,
+            genre,
+            secondaryGenre,
+            tags: tagInput.split(",").map((t) => t.trim()).filter(Boolean),
+            uploadMode,
+            currentStep: step,
+            chaptersData: currentActiveMap,
+          }),
+        });
+        const data = await res.json();
+        if (data.success) {
+          setAutoSaveState("saved");
+          setLastCloudSavedTime(
+            new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+          );
+        } else {
+          setAutoSaveState("error");
+        }
+      } catch {
+        setAutoSaveState("error");
+      }
+    }, 3500); // 3.5 second debounce for active typing
+
+    return () => clearTimeout(timer);
+  }, [
+    user?.id,
+    title,
+    description,
+    coverUrl,
+    genre,
+    secondaryGenre,
+    tagInput,
+    formatChoice,
+    uploadMode,
+    step,
+    chapterNumber,
+    chapterTitle,
+    chapterContent,
+    novelChaptersMap,
+    selectedSeriesId,
+  ]);
+
+  const handleRestoreCloudDraft = () => {
+    if (!cloudDraft) return;
+    if (cloudDraft.title) setTitle(cloudDraft.title);
+    if (cloudDraft.description) setDescription(cloudDraft.description);
+    if (cloudDraft.coverUrl) setCoverUrl(cloudDraft.coverUrl);
+    if (cloudDraft.genre) setGenre(cloudDraft.genre);
+    if (cloudDraft.secondaryGenre) setSecondaryGenre(cloudDraft.secondaryGenre);
+    if (cloudDraft.tags && Array.isArray(cloudDraft.tags)) setTagInput(cloudDraft.tags.join(", "));
+    if (cloudDraft.format) setFormatChoice(cloudDraft.format);
+    if (cloudDraft.uploadMode) setUploadMode(cloudDraft.uploadMode);
+    if (cloudDraft.seriesId) setSelectedSeriesId(cloudDraft.seriesId);
+
+    if (cloudDraft.chaptersData && typeof cloudDraft.chaptersData === "object") {
+      setNovelChaptersMap(cloudDraft.chaptersData);
+      const nums = Object.keys(cloudDraft.chaptersData).map(Number).sort((a, b) => a - b);
+      const firstNum = nums[0] || 1;
+      setChapterNumber(firstNum);
+      setChapterTitle(cloudDraft.chaptersData[firstNum]?.title || `Chapter ${firstNum}`);
+      setChapterContent(cloudDraft.chaptersData[firstNum]?.content || "");
+    }
+    if (cloudDraft.currentStep) {
+      setStep(cloudDraft.currentStep as any);
+    }
+    setShowDraftRecoveryBanner(false);
+  };
+
+  const handleDiscardCloudDraft = async () => {
+    if (user?.id) {
+      await fetch(`/api/creator/drafts?userId=${encodeURIComponent(user.id)}`, {
+        method: "DELETE",
+      }).catch(() => {});
+    }
+    setShowDraftRecoveryBanner(false);
+    setCloudDraft(null);
+  };
+
+  // 3. Document File Import Handler (.docx / .txt / .md)
+  const handleDocumentFileUpload = async (file: File) => {
+    setIsImportingDoc(true);
+    try {
+      const res = await parseDocumentFile(file);
+      if (res.success && res.chapters.length > 0) {
+        setDocImportResult(res);
+        setIsDocImportModalOpen(true);
+      } else {
+        alert(res.error || "Failed to extract chapters from document.");
+      }
+    } catch (err: any) {
+      alert(err?.message || "Failed to process document file.");
+    } finally {
+      setIsImportingDoc(false);
+    }
+  };
+
+  const applyImportedChapters = (mode: "REPLACE" | "APPEND") => {
+    if (!docImportResult) return;
+
+    const newMap: Record<number, { id?: string; title: string; content: string }> =
+      mode === "APPEND" ? { ...novelChaptersMap } : {};
+
+    const existingNums = Object.keys(novelChaptersMap).map(Number);
+    const baseNum = mode === "APPEND" && existingNums.length > 0 ? Math.max(...existingNums) : 0;
+
+    docImportResult.chapters.forEach((ch, idx) => {
+      const targetNum = mode === "APPEND" ? baseNum + idx + 1 : ch.chapterNumber;
+      newMap[targetNum] = {
+        title: ch.title,
+        content: ch.content,
+      };
+    });
+
+    setNovelChaptersMap(newMap);
+    const firstImportedNum =
+      mode === "APPEND" ? baseNum + 1 : docImportResult.chapters[0].chapterNumber;
+    setChapterNumber(firstImportedNum);
+    setChapterTitle(newMap[firstImportedNum]?.title || `Chapter ${firstImportedNum}`);
+    setChapterContent(newMap[firstImportedNum]?.content || "");
+
+    setIsDocImportModalOpen(false);
+    setDocImportResult(null);
   };
 
   // Handler for selecting an existing series to add a chapter to
@@ -1070,6 +1262,13 @@ export default function CreatorUploadWizardPage() {
         }
       }
 
+      // Clear database draft once successfully published to cloud
+      if (user?.id) {
+        fetch(`/api/creator/drafts?userId=${encodeURIComponent(user.id)}`, { method: "DELETE" }).catch(() => {});
+        setCloudDraft(null);
+        setShowDraftRecoveryBanner(false);
+      }
+
       try {
         confetti({ particleCount: 140, spread: 90, origin: { y: 0.6 } });
       } catch {
@@ -1145,22 +1344,92 @@ export default function CreatorUploadWizardPage() {
         </div>
       )}
 
+      {/* Cloud Draft Recovery Banner (Direct Database) */}
+      {showDraftRecoveryBanner && cloudDraft && (
+        <div className="p-4 sm:p-5 rounded-3xl bg-indigo-950/70 border border-indigo-500/40 text-zinc-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-2xl backdrop-blur-xl animate-in fade-in slide-in-from-top-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-2xl bg-indigo-500/20 text-indigo-400 flex items-center justify-center flex-shrink-0">
+              <RotateCcw className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="px-2 py-0.5 rounded text-[10px] font-black bg-indigo-500 text-white uppercase tracking-wider">
+                  Cloud Draft Found
+                </span>
+                <span className="text-[11px] text-zinc-400">
+                  {cloudDraft.lastSavedAt
+                    ? `Saved: ${new Date(cloudDraft.lastSavedAt).toLocaleString([], { dateStyle: "short", timeStyle: "short" })}`
+                    : "Unpublished Manuscript"}
+                </span>
+              </div>
+              <p className="text-xs font-bold text-zinc-200 mt-1">
+                &ldquo;{cloudDraft.title || "Untitled Story"}&rdquo; •{" "}
+                {Object.keys(cloudDraft.chaptersData || {}).length} Chapter(s) ready to restore.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 flex-shrink-0">
+            <button
+              type="button"
+              onClick={handleRestoreCloudDraft}
+              className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold shadow-md transition cursor-pointer flex items-center gap-1.5"
+            >
+              <Check className="w-3.5 h-3.5" />
+              <span>Restore Draft</span>
+            </button>
+            <button
+              type="button"
+              onClick={handleDiscardCloudDraft}
+              className="px-3.5 py-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs font-bold transition cursor-pointer"
+            >
+              Discard
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Header & Positioning */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-zinc-200 dark:border-zinc-800">
         <div>
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-indigo-500/10 text-indigo-500 border border-indigo-500/30 mb-1">
             <Zap className="w-3.5 h-3.5" />
-            <span>Yomika Studio • High-Performance Publishing Pipeline</span>
+            <span>Yomika Studio • Direct Database Connected Pipeline</span>
           </div>
           <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-zinc-900 dark:text-zinc-100">
             Publish to the Story Universe
           </h1>
           <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
-            Features: <strong className="text-zinc-700 dark:text-zinc-300">Client WebP Compression • 10MB/15MB Limits • Live Markdown Studio</strong>
+            Features: <strong className="text-zinc-700 dark:text-zinc-300">Word (.docx) Importer • Cloud DB Auto-Save • Live Chapter Splitter</strong>
           </p>
         </div>
 
         <div className="flex items-center gap-3">
+          {/* Live Cloud DB Auto-Save Badge */}
+          <div className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-[11px] font-bold">
+            {autoSaveState === "saving" ? (
+              <>
+                <Loader2 className="w-3.5 h-3.5 animate-spin text-amber-400" />
+                <span className="text-amber-400">Saving to Cloud DB...</span>
+              </>
+            ) : autoSaveState === "saved" ? (
+              <>
+                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                <span className="text-emerald-400">Cloud Saved ({lastCloudSavedTime || "Active"})</span>
+              </>
+            ) : autoSaveState === "error" ? (
+              <>
+                <AlertCircle className="w-3.5 h-3.5 text-rose-400" />
+                <span className="text-rose-400">Sync Paused</span>
+              </>
+            ) : (
+              <>
+                <Globe className="w-3.5 h-3.5 text-zinc-400" />
+                <span className="text-zinc-400">Direct DB Mode</span>
+              </>
+            )}
+          </div>
+
           <button
             type="button"
             onClick={handleSaveDraft}
@@ -1871,6 +2140,56 @@ export default function CreatorUploadWizardPage() {
                   </button>
                 </div>
               )}
+
+              {/* Document File Importer (.docx / .txt / .md) */}
+              <input
+                type="file"
+                ref={docInputRef}
+                accept=".docx,.txt,.md,.markdown"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) handleDocumentFileUpload(file);
+                }}
+                className="hidden"
+              />
+
+              <div className="p-4 sm:p-5 rounded-3xl bg-gradient-to-r from-indigo-950/40 via-violet-950/20 to-purple-950/40 border border-indigo-500/30 flex flex-col sm:flex-row items-center justify-between gap-4">
+                <div className="flex items-center gap-3.5">
+                  <div className="w-11 h-11 rounded-2xl bg-indigo-600/20 text-indigo-400 flex items-center justify-center flex-shrink-0 ring-4 ring-indigo-500/10">
+                    <FileType className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h4 className="text-xs sm:text-sm font-black text-zinc-900 dark:text-zinc-100 flex items-center gap-1.5">
+                      <span>Import Full Manuscript (.docx / .txt / .md)</span>
+                      <span className="px-2 py-0.5 rounded text-[9px] font-bold bg-indigo-500/20 text-indigo-400 border border-indigo-500/30 uppercase tracking-wider">
+                        Auto-Chapter Splitter
+                      </span>
+                    </h4>
+                    <p className="text-[11px] text-zinc-500 dark:text-zinc-400 mt-0.5">
+                      Drag & drop your Word book or text file. We automatically detect and split all chapters into your manuscript!
+                    </p>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  disabled={isImportingDoc}
+                  onClick={() => docInputRef.current?.click()}
+                  className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white font-bold text-xs shadow-md transition flex items-center justify-center gap-2 cursor-pointer flex-shrink-0"
+                >
+                  {isImportingDoc ? (
+                    <>
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      <span>Parsing Document...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Upload className="w-3.5 h-3.5" />
+                      <span>Import Word File</span>
+                    </>
+                  )}
+                </button>
+              </div>
 
               {/* Chapter Meta */}
               <div className="space-y-2">
@@ -3533,6 +3852,92 @@ export default function CreatorUploadWizardPage() {
                   </button>
                 </div>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Document Import Confirmation Modal */}
+      {isDocImportModalOpen && docImportResult && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in">
+          <div className="w-full max-w-xl bg-zinc-950 border border-zinc-800 rounded-3xl p-6 text-white space-y-5 shadow-2xl animate-in zoom-in-95">
+            <div className="flex items-center justify-between pb-3 border-b border-zinc-800">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold text-sm">
+                  <CheckCircle2 className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-black text-sm text-zinc-100">
+                    Manuscript Analyzed Successfully!
+                  </h3>
+                  <p className="text-[11px] text-zinc-400">
+                    File: <strong className="text-zinc-200">{docImportResult.fileName}</strong> • {docImportResult.totalWords.toLocaleString()} Words
+                  </p>
+                </div>
+              </div>
+
+              <button
+                onClick={() => setIsDocImportModalOpen(false)}
+                className="p-1.5 rounded-xl bg-zinc-800 text-zinc-400 hover:text-white cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="space-y-2">
+              <div className="flex items-center justify-between text-xs">
+                <p className="font-bold text-zinc-300">
+                  Detected {docImportResult.chapters.length} Chapters:
+                </p>
+                <span className="text-[11px] text-zinc-500">Auto-numbered in sequence</span>
+              </div>
+
+              <div className="max-h-56 overflow-y-auto space-y-1.5 pr-1">
+                {docImportResult.chapters.map((ch) => (
+                  <div
+                    key={ch.chapterNumber}
+                    className="p-3 rounded-2xl bg-zinc-900 border border-zinc-800/80 flex items-center justify-between text-xs"
+                  >
+                    <div className="space-y-0.5 max-w-[320px]">
+                      <p className="font-bold text-zinc-100 truncate">{ch.title}</p>
+                      <p className="text-[11px] text-zinc-500 line-clamp-1">
+                        {ch.content.slice(0, 90)}...
+                      </p>
+                    </div>
+                    <span className="px-2 py-1 rounded-lg bg-zinc-800 text-emerald-400 font-mono text-[11px] font-bold flex-shrink-0">
+                      {ch.wordCount.toLocaleString()} words
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="pt-3 border-t border-zinc-800 flex flex-col sm:flex-row items-center justify-end gap-2.5">
+              <button
+                type="button"
+                onClick={() => setIsDocImportModalOpen(false)}
+                className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-xs font-bold text-zinc-400 cursor-pointer"
+              >
+                Cancel
+              </button>
+
+              {Object.keys(novelChaptersMap).some((k) => novelChaptersMap[Number(k)]?.content?.trim()) && (
+                <button
+                  type="button"
+                  onClick={() => applyImportedChapters("APPEND")}
+                  className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-indigo-300 text-xs font-bold transition cursor-pointer"
+                >
+                  Append As New Chapters
+                </button>
+              )}
+
+              <button
+                type="button"
+                onClick={() => applyImportedChapters("REPLACE")}
+                className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white text-xs font-black shadow-lg shadow-indigo-600/25 transition cursor-pointer"
+              >
+                Load {docImportResult.chapters.length} Chapters to Studio
+              </button>
             </div>
           </div>
         </div>
