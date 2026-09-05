@@ -59,6 +59,9 @@ import {
   Pause,
   Radio,
   Volume2,
+  Scale,
+  ShieldCheck,
+  Bot,
 } from "lucide-react";
 import { dataStore } from "@/lib/data/store";
 import { useAuth } from "@/context/AuthContext";
@@ -83,6 +86,7 @@ import {
   MAX_COVER_SIZE_BYTES,
   MAX_PAGE_SIZE_BYTES,
 } from "@/lib/image-processing";
+import { CreatorLegislationModal } from "@/components/creator/CreatorLegislationModal";
 
 const CONTENT_WARNING_OPTIONS = [
   "None",
@@ -162,6 +166,10 @@ export default function CreatorUploadWizardPage() {
   const [contentWarnings, setContentWarnings] = useState<string[]>([]);
   const [isSeries, setIsSeries] = useState(true);
   const [hasCopyright, setHasCopyright] = useState(true);
+  const [agreedToCopyright, setAgreedToCopyright] = useState(false);
+  const [agreedToGuidelines, setAgreedToGuidelines] = useState(false);
+  const [aiDisclosure, setAiDisclosure] = useState<"HUMAN_ONLY" | "AI_ASSISTED" | "HEAVILY_AI">("HUMAN_ONLY");
+  const [isLegislationModalOpen, setIsLegislationModalOpen] = useState(false);
 
   // Cover Image Processing & Compression Status
   const [isCompressingCover, setIsCompressingCover] = useState(false);
@@ -969,11 +977,22 @@ export default function CreatorUploadWizardPage() {
       return;
     }
 
+    if (!agreedToCopyright || !agreedToGuidelines) {
+      alert("Please review and accept both the Author Copyright Certification and Yomika Content Legislation before publishing.");
+      return;
+    }
+
     setIsPublishingToCloud(true);
     setCloudPublishStatus("Uploading cover to Supabase Storage...");
 
     const slug = slugify(title) || `work-${Date.now()}`;
-    const tags = tagInput.split(",").map((t) => t.trim()).filter(Boolean);
+    const rawTags = tagInput.split(",").map((t) => t.trim()).filter(Boolean);
+    if (aiDisclosure === "AI_ASSISTED" && !rawTags.includes("AI-Assisted")) {
+      rawTags.push("AI-Assisted");
+    } else if (aiDisclosure === "HEAVILY_AI" && !rawTags.includes("AI-Generated")) {
+      rawTags.push("AI-Generated");
+    }
+    const tags = rawTags;
 
     try {
       // 1. Upload Cover Image to Supabase Storage
@@ -2030,6 +2049,179 @@ export default function CreatorUploadWizardPage() {
                   placeholder="e.g. Magic, Progression, Cyberpunk, Dungeons"
                   className="w-full px-4 py-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 text-xs font-semibold text-zinc-900 dark:text-zinc-100 focus:outline-none focus:border-indigo-500"
                 />
+              </div>
+
+              {/* Age Rating & Content Legislation Standards */}
+              <div className="pt-4 border-t border-zinc-100 dark:border-zinc-800/80 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <label className="block text-xs font-extrabold text-zinc-900 dark:text-zinc-100">
+                      Age Rating & Audience Classification *
+                    </label>
+                    <p className="text-[11px] text-zinc-500">
+                      Required by Yomika Content Legislation for reader safety and compliance
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setIsLegislationModalOpen(true)}
+                    className="text-[11px] text-indigo-500 hover:text-indigo-400 font-bold underline flex items-center gap-1"
+                  >
+                    <Scale className="w-3 h-3" />
+                    <span>View Rules</span>
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                  {/* EVERYONE */}
+                  <button
+                    type="button"
+                    onClick={() => setContentRating("EVERYONE")}
+                    className={`p-3.5 rounded-2xl border text-left transition space-y-1.5 ${
+                      contentRating === "EVERYONE"
+                        ? "bg-emerald-950/30 border-emerald-500 ring-2 ring-emerald-500/30 text-white"
+                        : "bg-zinc-50 dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800 text-zinc-400 hover:border-zinc-700"
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="px-2 py-0.5 rounded text-[10px] font-black bg-emerald-500/20 text-emerald-400">
+                        EVERYONE
+                      </span>
+                      {contentRating === "EVERYONE" && <Check className="w-3.5 h-3.5 text-emerald-400" />}
+                    </div>
+                    <p className="font-bold text-xs text-zinc-900 dark:text-zinc-100">All Ages / Family</p>
+                    <p className="text-[10px] text-zinc-500 leading-tight">
+                      Wholesome adventure, comedy. Zero gore, nudity, or profanity.
+                    </p>
+                  </button>
+
+                  {/* TEEN */}
+                  <button
+                    type="button"
+                    onClick={() => setContentRating("TEEN")}
+                    className={`p-3.5 rounded-2xl border text-left transition space-y-1.5 ${
+                      contentRating === "TEEN"
+                        ? "bg-amber-950/30 border-amber-500 ring-2 ring-amber-500/30 text-white"
+                        : "bg-zinc-50 dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800 text-zinc-400 hover:border-zinc-700"
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="px-2 py-0.5 rounded text-[10px] font-black bg-amber-500/20 text-amber-400">
+                        TEEN 13+
+                      </span>
+                      {contentRating === "TEEN" && <Check className="w-3.5 h-3.5 text-amber-400" />}
+                    </div>
+                    <p className="font-bold text-xs text-zinc-900 dark:text-zinc-100">Young Adult / Shonen</p>
+                    <p className="text-[10px] text-zinc-500 leading-tight">
+                      Fantasy combat, mild language, romance, darker story stakes.
+                    </p>
+                  </button>
+
+                  {/* MATURE */}
+                  <button
+                    type="button"
+                    onClick={() => setContentRating("MATURE")}
+                    className={`p-3.5 rounded-2xl border text-left transition space-y-1.5 ${
+                      contentRating === "MATURE"
+                        ? "bg-rose-950/30 border-rose-500 ring-2 ring-rose-500/30 text-white"
+                        : "bg-zinc-50 dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800 text-zinc-400 hover:border-zinc-700"
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="px-2 py-0.5 rounded text-[10px] font-black bg-rose-500/20 text-rose-400">
+                        MATURE 18+
+                      </span>
+                      {contentRating === "MATURE" && <Check className="w-3.5 h-3.5 text-rose-400" />}
+                    </div>
+                    <p className="font-bold text-xs text-zinc-900 dark:text-zinc-100">Adult (Age Gated)</p>
+                    <p className="text-[10px] text-zinc-500 leading-tight">
+                      Intense combat gore, psychological horror, suggestive themes.
+                    </p>
+                  </button>
+                </div>
+              </div>
+
+              {/* Content Warnings */}
+              <div className="space-y-2 pt-2">
+                <label className="block text-xs font-bold text-zinc-700 dark:text-zinc-300">
+                  Content Warnings (Optional Flags)
+                </label>
+                <div className="flex flex-wrap gap-2">
+                  {CONTENT_WARNING_OPTIONS.filter((opt) => opt !== "None").map((warning) => {
+                    const isSelected = contentWarnings.includes(warning);
+                    return (
+                      <button
+                        key={warning}
+                        type="button"
+                        onClick={() => {
+                          if (isSelected) {
+                            setContentWarnings((prev) => prev.filter((w) => w !== warning));
+                          } else {
+                            setContentWarnings((prev) => [...prev, warning]);
+                          }
+                        }}
+                        className={`px-3 py-1.5 rounded-xl text-xs font-semibold border transition ${
+                          isSelected
+                            ? "bg-rose-500/20 text-rose-400 border-rose-500/40"
+                            : "bg-zinc-50 dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800 text-zinc-500 hover:text-zinc-300"
+                        }`}
+                      >
+                        {isSelected ? `✓ ${warning}` : `+ ${warning}`}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* AI Content Transparency & Disclosure */}
+              <div className="p-4 rounded-2xl bg-zinc-100 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 space-y-2.5">
+                <div className="flex items-center gap-2 text-zinc-900 dark:text-zinc-100">
+                  <Bot className="w-4 h-4 text-cyan-400" />
+                  <label className="text-xs font-extrabold">
+                    AI Content Disclosure & Transparency
+                  </label>
+                </div>
+                <p className="text-[11px] text-zinc-500">
+                  Under Yomika policy, readers must be informed if generative AI was used in creating this work.
+                </p>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-1">
+                  <button
+                    type="button"
+                    onClick={() => setAiDisclosure("HUMAN_ONLY")}
+                    className={`p-2.5 rounded-xl border text-left text-xs font-bold transition ${
+                      aiDisclosure === "HUMAN_ONLY"
+                        ? "bg-indigo-600 text-white border-indigo-500"
+                        : "bg-zinc-50 dark:bg-zinc-900 text-zinc-400 border-zinc-200 dark:border-zinc-800 hover:border-zinc-700"
+                    }`}
+                  >
+                    100% Human Original
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setAiDisclosure("AI_ASSISTED")}
+                    className={`p-2.5 rounded-xl border text-left text-xs font-bold transition ${
+                      aiDisclosure === "AI_ASSISTED"
+                        ? "bg-cyan-600 text-white border-cyan-500"
+                        : "bg-zinc-50 dark:bg-zinc-900 text-zinc-400 border-zinc-200 dark:border-zinc-800 hover:border-zinc-700"
+                    }`}
+                  >
+                    AI-Assisted (Idea/Edit)
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setAiDisclosure("HEAVILY_AI")}
+                    className={`p-2.5 rounded-xl border text-left text-xs font-bold transition ${
+                      aiDisclosure === "HEAVILY_AI"
+                        ? "bg-amber-600 text-white border-amber-500"
+                        : "bg-zinc-50 dark:bg-zinc-900 text-zinc-400 border-zinc-200 dark:border-zinc-800 hover:border-zinc-700"
+                    }`}
+                  >
+                    Generative AI Synthesis
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -3539,6 +3731,110 @@ export default function CreatorUploadWizardPage() {
                 </div>
               </div>
             )}
+
+            {/* Story Classification & Compliance Tags Summary */}
+            <div className="pt-4 border-t border-zinc-800/80 space-y-2.5 text-left">
+              <p className="text-xs font-bold text-zinc-300">Audience & Compliance Classification:</p>
+              <div className="flex flex-wrap items-center gap-2">
+                <span className={`px-2.5 py-1 rounded-lg text-[11px] font-black border ${
+                  contentRating === "EVERYONE"
+                    ? "bg-emerald-500/20 text-emerald-400 border-emerald-500/30"
+                    : contentRating === "TEEN"
+                    ? "bg-amber-500/20 text-amber-400 border-amber-500/30"
+                    : "bg-rose-500/20 text-rose-400 border-rose-500/30"
+                }`}>
+                  Rating: {contentRating}
+                </span>
+
+                <span className="px-2.5 py-1 rounded-lg text-[11px] font-bold bg-zinc-900 border border-zinc-800 text-cyan-400 flex items-center gap-1">
+                  <Bot className="w-3.5 h-3.5" />
+                  <span>
+                    {aiDisclosure === "HUMAN_ONLY"
+                      ? "100% Human Original"
+                      : aiDisclosure === "AI_ASSISTED"
+                      ? "AI-Assisted (#AI-Assisted)"
+                      : "Generative AI"}
+                  </span>
+                </span>
+
+                {contentWarnings.length > 0 && (
+                  <span className="px-2.5 py-1 rounded-lg text-[11px] font-bold bg-rose-950/40 border border-rose-500/30 text-rose-300">
+                    Warnings: {contentWarnings.join(", ")}
+                  </span>
+                )}
+              </div>
+            </div>
+
+            {/* MANDATORY PRE-PUBLISH CREATOR LEGAL CERTIFICATION */}
+            <div className="p-5 rounded-2xl bg-zinc-900/90 border border-indigo-500/30 text-left space-y-4 shadow-lg">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="p-1.5 rounded-xl bg-indigo-500/20 text-indigo-400 border border-indigo-500/30">
+                    <Scale className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h4 className="font-extrabold text-xs text-white">
+                      Creator Rights & Content Legislation Certification
+                    </h4>
+                    <p className="text-[10px] text-zinc-400">
+                      Mandatory under Yomika Author Terms & Intellectual Property Law
+                    </p>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setIsLegislationModalOpen(true)}
+                  className="px-2.5 py-1 rounded-lg bg-indigo-600/20 hover:bg-indigo-600/30 border border-indigo-500/30 text-indigo-300 text-[11px] font-bold transition flex items-center gap-1 cursor-pointer"
+                >
+                  <BookOpen className="w-3 h-3" />
+                  <span>Read Full Code</span>
+                </button>
+              </div>
+
+              {/* Checkbox 1: Copyright */}
+              <label className="flex items-start gap-3 p-3 rounded-xl bg-zinc-950/60 border border-zinc-800/80 hover:border-zinc-700 transition cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={agreedToCopyright}
+                  onChange={(e) => setAgreedToCopyright(e.target.checked)}
+                  className="mt-0.5 w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500 bg-zinc-900 border-zinc-700 cursor-pointer"
+                />
+                <div className="text-xs space-y-0.5">
+                  <p className="font-bold text-zinc-200">
+                    100% Author Copyright & Ownership Declaration
+                  </p>
+                  <p className="text-[11px] text-zinc-400 leading-relaxed">
+                    I certify under penalty of account termination that I am the sole author or authorized copyright owner of this story, characters, and artwork. I retain 100% intellectual property rights and grant Yomika a non-exclusive digital distribution license.
+                  </p>
+                </div>
+              </label>
+
+              {/* Checkbox 2: Guidelines & Legislation */}
+              <label className="flex items-start gap-3 p-3 rounded-xl bg-zinc-950/60 border border-zinc-800/80 hover:border-zinc-700 transition cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={agreedToGuidelines}
+                  onChange={(e) => setAgreedToGuidelines(e.target.checked)}
+                  className="mt-0.5 w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500 bg-zinc-900 border-zinc-700 cursor-pointer"
+                />
+                <div className="text-xs space-y-0.5">
+                  <p className="font-bold text-zinc-200">
+                    Community Legislation & Accurate Rating Compliance
+                  </p>
+                  <p className="text-[11px] text-zinc-400 leading-relaxed">
+                    I confirm that this story complies with Yomika Creator Content Legislation. It contains no ripped scans or pirated translations, adheres to child safety standards, and is truthfully age-rated as <strong className="text-indigo-300">{contentRating}</strong>.
+                  </p>
+                </div>
+              </label>
+
+              {(!agreedToCopyright || !agreedToGuidelines) && (
+                <div className="flex items-center gap-2 p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-300 text-[11px]">
+                  <AlertCircle className="w-3.5 h-3.5 flex-shrink-0" />
+                  <span>Please check both declarations above to enable cloud publishing.</span>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       )}
@@ -3651,9 +3947,10 @@ export default function CreatorUploadWizardPage() {
               ) : (
                 <button
                   type="button"
-                  disabled={isPublishingToCloud}
+                  disabled={isPublishingToCloud || !agreedToCopyright || !agreedToGuidelines}
+                  title={!agreedToCopyright || !agreedToGuidelines ? "Please check both legal declarations in Step 4 to publish" : "Publish to Supabase Cloud"}
                   onClick={handleCompletePublish}
-                  className="px-7 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-black text-xs shadow-lg shadow-emerald-600/25 transition flex items-center gap-2 transform hover:scale-[1.02] disabled:opacity-60"
+                  className="px-7 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-black text-xs shadow-lg shadow-emerald-600/25 transition flex items-center gap-2 transform hover:scale-[1.02] disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:scale-100"
                 >
                   {isPublishingToCloud ? (
                     <>
@@ -3975,6 +4272,16 @@ export default function CreatorUploadWizardPage() {
           </div>
         </div>
       )}
+
+      {/* Creator Legislation & Legal Policy Modal */}
+      <CreatorLegislationModal
+        isOpen={isLegislationModalOpen}
+        onClose={() => setIsLegislationModalOpen(false)}
+        onAcceptAll={() => {
+          setAgreedToCopyright(true);
+          setAgreedToGuidelines(true);
+        }}
+      />
     </div>
   );
 }
