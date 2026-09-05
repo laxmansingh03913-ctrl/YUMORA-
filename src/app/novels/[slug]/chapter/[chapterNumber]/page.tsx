@@ -80,6 +80,30 @@ export default function ChapterReaderPage({ params }: ReaderPageProps) {
   const [isAudiobookOpen, setIsAudiobookOpen] = useState(shouldAutoListen);
   const [isAiAssistantOpen, setIsAiAssistantOpen] = useState(false);
   const [activeAudioParagraphIdx, setActiveAudioParagraphIdx] = useState(0);
+  const [readingWidth, setReadingWidth] = useState<number>(720);
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem("yumora_reading_width");
+      if (saved) {
+        const parsed = parseInt(saved, 10);
+        if (!isNaN(parsed) && parsed >= 520 && parsed <= 1300) {
+          setReadingWidth(parsed);
+        }
+      }
+    } catch {
+      // fallback to 720
+    }
+  }, []);
+
+  const handleReadingWidthChange = (val: number) => {
+    setReadingWidth(val);
+    try {
+      localStorage.setItem("yumora_reading_width", val.toString());
+    } catch {
+      // ignore
+    }
+  };
 
   const [loadedChapters, setLoadedChapters] = useState<Chapter[]>([]);
 
@@ -453,7 +477,10 @@ export default function ChapterReaderPage({ params }: ReaderPageProps) {
       </header>
 
       {/* 3. MAIN STORY READING CONTENT */}
-      <main className={`mx-auto px-6 sm:px-8 py-12 lg:py-16 ${getWidthClass()}`}>
+      <main
+        className="w-full mx-auto px-6 sm:px-8 py-12 lg:py-16 transition-[max-width] duration-200 ease-out"
+        style={{ maxWidth: `${readingWidth}px` }}
+      >
         {/* Chapter Header */}
         <div className="text-center space-y-3 mb-12 pb-8 border-b border-white/10">
           <p className="text-xs font-bold uppercase tracking-widest text-rose-500">
@@ -794,21 +821,38 @@ export default function ChapterReaderPage({ params }: ReaderPageProps) {
               </div>
             </div>
 
-            {/* Reading Width */}
+            {/* Reading Width Slider & Presets */}
             <div>
-              <label className="block text-xs font-bold text-zinc-400 mb-2">Page Width</label>
+              <div className="flex justify-between items-center text-xs font-bold text-zinc-400 mb-1.5">
+                <span>Reading Width</span>
+                <span className="text-rose-400 font-mono font-bold">{readingWidth}px</span>
+              </div>
+              <input
+                type="range"
+                min={540}
+                max={1200}
+                step={20}
+                value={readingWidth}
+                onChange={(e) => handleReadingWidthChange(parseInt(e.target.value, 10))}
+                className="w-full accent-rose-500 cursor-pointer h-2 bg-zinc-800 rounded-lg mb-2.5"
+              />
               <div className="grid grid-cols-4 gap-2">
-                {(["narrow", "standard", "wide", "full"] as const).map((w) => (
+                {[
+                  { label: "Compact", px: 580 },
+                  { label: "Normal", px: 720 },
+                  { label: "Wide", px: 920 },
+                  { label: "Ultra", px: 1180 },
+                ].map((preset) => (
                   <button
-                    key={w}
-                    onClick={() => updateSettings({ maxWidth: w })}
-                    className={`py-2 rounded-xl text-xs font-semibold uppercase border transition ${
-                      settings.maxWidth === w
+                    key={preset.label}
+                    onClick={() => handleReadingWidthChange(preset.px)}
+                    className={`py-1.5 rounded-xl text-[11px] font-bold border transition ${
+                      Math.abs(readingWidth - preset.px) < 40
                         ? "bg-rose-950/40 border-rose-500 text-rose-300"
-                        : "bg-zinc-800 border-zinc-700 text-zinc-300"
+                        : "bg-zinc-800 border-zinc-700 text-zinc-400 hover:text-zinc-200"
                     }`}
                   >
-                    {w}
+                    {preset.label}
                   </button>
                 ))}
               </div>
@@ -966,6 +1010,26 @@ export default function ChapterReaderPage({ params }: ReaderPageProps) {
             >
               <Plus className="w-3.5 h-3.5" />
             </button>
+          </div>
+
+          {/* Quick Reading Width Slider */}
+          <div className="hidden sm:flex items-center gap-1.5 bg-zinc-800/80 rounded-full px-2.5 py-1 border border-zinc-700/50">
+            <span className="text-[10px] text-zinc-400 font-bold uppercase tracking-wider select-none">
+              Width
+            </span>
+            <input
+              type="range"
+              min={540}
+              max={1200}
+              step={20}
+              value={readingWidth}
+              onChange={(e) => handleReadingWidthChange(parseInt(e.target.value, 10))}
+              className="w-16 md:w-20 accent-rose-500 cursor-pointer h-1.5 bg-zinc-700 rounded-lg"
+              title={`Reading Width: ${readingWidth}px`}
+            />
+            <span className="text-[10px] font-mono text-rose-400 font-bold min-w-[34px] text-right select-none">
+              {readingWidth}px
+            </span>
           </div>
 
           {/* Quick Theme Dots */}
