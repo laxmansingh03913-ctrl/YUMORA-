@@ -19,6 +19,7 @@ import {
   Plus,
   Trash2,
   Lock,
+  Coins,
   Globe,
   Tag,
   Clock,
@@ -204,10 +205,12 @@ export default function CreatorUploadWizardPage() {
   const [chapterNumber, setChapterNumber] = useState(1);
   const [chapterTitle, setChapterTitle] = useState("Chapter 1");
   const [chapterContent, setChapterContent] = useState("");
+  const [isChapterFree, setIsChapterFree] = useState<boolean>(true);
+  const [chapterPriceCoins, setChapterPriceCoins] = useState<number>(5);
   const [novelChaptersMap, setNovelChaptersMap] = useState<
-    Record<number, { id?: string; title: string; content: string }>
+    Record<number, { id?: string; title: string; content: string; isFree?: boolean; priceCoins?: number }>
   >({
-    1: { title: "Chapter 1", content: "" },
+    1: { title: "Chapter 1", content: "", isFree: true, priceCoins: 0 },
   });
 
   // Switch between chapters cleanly - saves current and opens blank or existing chapter
@@ -220,6 +223,8 @@ export default function CreatorUploadWizardPage() {
         id: novelChaptersMap[chapterNumber]?.id,
         title: chapterTitle || `Chapter ${chapterNumber}`,
         content: chapterContent,
+        isFree: isChapterFree,
+        priceCoins: chapterPriceCoins,
       },
     };
     setNovelChaptersMap(updatedMap);
@@ -228,11 +233,15 @@ export default function CreatorUploadWizardPage() {
     const target = updatedMap[newNum] || {
       title: `Chapter ${newNum}`,
       content: "",
+      isFree: newNum <= 3 ? true : false,
+      priceCoins: 5,
     };
 
     setChapterNumber(newNum);
     setChapterTitle(target.title || `Chapter ${newNum}`);
     setChapterContent(target.content || "");
+    setIsChapterFree(target.isFree ?? (newNum <= 3 ? true : false));
+    setChapterPriceCoins(target.priceCoins ?? 5);
   };
 
   const handleContentChange = (newContent: string) => {
@@ -240,9 +249,12 @@ export default function CreatorUploadWizardPage() {
     setNovelChaptersMap((prev) => ({
       ...prev,
       [chapterNumber]: {
+        ...prev[chapterNumber],
         id: prev[chapterNumber]?.id,
         title: chapterTitle || `Chapter ${chapterNumber}`,
         content: newContent,
+        isFree: isChapterFree,
+        priceCoins: chapterPriceCoins,
       },
     }));
   };
@@ -252,9 +264,12 @@ export default function CreatorUploadWizardPage() {
     setNovelChaptersMap((prev) => ({
       ...prev,
       [chapterNumber]: {
+        ...prev[chapterNumber],
         id: prev[chapterNumber]?.id,
         title: newTitle,
         content: chapterContent,
+        isFree: isChapterFree,
+        priceCoins: chapterPriceCoins,
       },
     }));
   };
@@ -1030,6 +1045,7 @@ export default function CreatorUploadWizardPage() {
               const epNum = chapterNumber + idx;
               const epId = `ep-${selectedSeriesId}-${epNum}-${Date.now() + idx}`;
               const pageUrl = finalPageUrls[idx];
+              const isFreeEp = epNum <= 3 ? true : isChapterFree;
               const ep: ComicEpisode = {
                 id: epId,
                 comicId: selectedSeriesId,
@@ -1040,6 +1056,8 @@ export default function CreatorUploadWizardPage() {
                 status: "ONGOING",
                 publishedAt: new Date().toISOString(),
                 likesCount: 0,
+                isFree: isFreeEp,
+                priceCoins: isFreeEp ? 0 : chapterPriceCoins,
               };
               await dbService.insertEpisode(ep, selectedSeriesId);
               dataStore.addComicEpisode(selectedSeriesId, ep);
@@ -1047,6 +1065,7 @@ export default function CreatorUploadWizardPage() {
           } else {
             setCloudPublishStatus(`Adding Episode ${chapterNumber} to existing series...`);
             const episodeId = crypto.randomUUID();
+            const isFreeEp = chapterNumber <= 3 ? true : isChapterFree;
             const newEpisode: ComicEpisode = {
               id: episodeId,
               comicId: selectedSeriesId,
@@ -1057,6 +1076,8 @@ export default function CreatorUploadWizardPage() {
               status: "ONGOING",
               publishedAt: new Date().toISOString(),
               likesCount: 0,
+              isFree: isFreeEp,
+              priceCoins: isFreeEp ? 0 : chapterPriceCoins,
             };
             await dbService.insertEpisode(newEpisode, selectedSeriesId);
             dataStore.addComicEpisode(selectedSeriesId, newEpisode);
@@ -1070,6 +1091,7 @@ export default function CreatorUploadWizardPage() {
           if (episodeDistributionMode === "EACH_IMAGE_IS_EPISODE" && finalPageUrls.length > 0) {
             episodesToAttach = finalPageUrls.map((pageUrl, idx) => {
               const epNum = idx + 1;
+              const isFreeEp = epNum <= 3 ? true : isChapterFree;
               return {
                 id: crypto.randomUUID(),
                 comicId,
@@ -1080,10 +1102,13 @@ export default function CreatorUploadWizardPage() {
                 status: "PUBLISHED",
                 publishedAt: new Date().toISOString(),
                 likesCount: 1,
+                isFree: isFreeEp,
+                priceCoins: isFreeEp ? 0 : chapterPriceCoins,
               };
             });
           } else {
             const episodeId = crypto.randomUUID();
+            const isFreeEp = chapterNumber <= 3 ? true : isChapterFree;
             episodesToAttach = [
               {
                 id: episodeId,
@@ -1095,6 +1120,8 @@ export default function CreatorUploadWizardPage() {
                 status: "PUBLISHED",
                 publishedAt: new Date().toISOString(),
                 likesCount: 1,
+                isFree: isFreeEp,
+                priceCoins: isFreeEp ? 0 : chapterPriceCoins,
               },
             ];
           }
@@ -1156,12 +1183,17 @@ export default function CreatorUploadWizardPage() {
         // Pure Text Serialized Novel
         if (uploadMode === "ADD_CHAPTER" && selectedSeriesId) {
           // Collect all written chapters from novelChaptersMap including current active chapter
-          const allSavedChapters = {
+          const allSavedChapters: Record<
+            string | number,
+            { id?: string; title: string; content: string; isFree?: boolean; priceCoins?: number }
+          > = {
             ...novelChaptersMap,
             [chapterNumber]: {
               id: novelChaptersMap[chapterNumber]?.id,
               title: chapterTitle || `Chapter ${chapterNumber}`,
               content: chapterContent,
+              isFree: isChapterFree,
+              priceCoins: isChapterFree ? 0 : chapterPriceCoins,
             },
           };
 
@@ -1181,7 +1213,8 @@ export default function CreatorUploadWizardPage() {
                 status: "PUBLISHED" as const,
                 wordCount: words,
                 readTimeMinutes: Math.max(1, Math.ceil(words / 200)),
-                isFree: true,
+                isFree: data.isFree ?? (num <= 3 ? true : false),
+                priceCoins: data.isFree === false ? (data.priceCoins ?? 5) : 0,
                 publishedAt: new Date().toISOString(),
               };
             })
@@ -1199,7 +1232,8 @@ export default function CreatorUploadWizardPage() {
               status: "PUBLISHED" as const,
               wordCount,
               readTimeMinutes: readTime,
-              isFree: true,
+              isFree: isChapterFree,
+              priceCoins: isChapterFree ? 0 : chapterPriceCoins,
               publishedAt: new Date().toISOString(),
             });
           }
@@ -1222,6 +1256,8 @@ export default function CreatorUploadWizardPage() {
             [chapterNumber]: {
               title: chapterTitle || `Chapter ${chapterNumber}`,
               content: chapterContent,
+              isFree: isChapterFree,
+              priceCoins: chapterPriceCoins,
             },
           };
 
@@ -1239,7 +1275,8 @@ export default function CreatorUploadWizardPage() {
                 status: "PUBLISHED" as const,
                 wordCount: words,
                 readTimeMinutes: Math.max(1, Math.ceil(words / 200)),
-                isFree: true,
+                isFree: data.isFree ?? (num <= 3 ? true : false),
+                priceCoins: data.isFree === false ? (data.priceCoins ?? 5) : 0,
                 publishedAt: new Date().toISOString(),
               };
             })
@@ -2451,6 +2488,72 @@ export default function CreatorUploadWizardPage() {
                   </div>
                 </div>
 
+                {/* Access Tier: Free vs Premium Coin Lock */}
+                <div className="p-3.5 rounded-2xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div className="space-y-0.5">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-black text-zinc-900 dark:text-zinc-100">
+                        Chapter Access Tier:
+                      </span>
+                      {isChapterFree ? (
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                          Free for All
+                        </span>
+                      ) : (
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-amber-500/20 text-amber-400 border border-amber-500/30 flex items-center gap-1">
+                          <Coins className="w-3 h-3 text-amber-500" />
+                          <span>Premium ({chapterPriceCoins} Coins)</span>
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-[11px] text-zinc-500">
+                      {chapterNumber <= 3
+                        ? "Under Yomika Fair Teaser Policy, chapters 1 to 3 are free to build reader engagement."
+                        : "Monetize this episode with Yomika Coins. Unlocks contribute directly to your creator balance."}
+                    </p>
+                  </div>
+
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsChapterFree(true);
+                        setNovelChaptersMap((prev) => ({
+                          ...prev,
+                          [chapterNumber]: { ...prev[chapterNumber], isFree: true, priceCoins: 0 },
+                        }));
+                      }}
+                      className={`px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
+                        isChapterFree
+                          ? "bg-emerald-600 text-white shadow-xs"
+                          : "bg-white dark:bg-zinc-900 text-zinc-400 border border-zinc-200 dark:border-zinc-800 hover:border-zinc-700"
+                      }`}
+                    >
+                      <Check className="w-3.5 h-3.5" />
+                      <span>Free</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsChapterFree(false);
+                        setNovelChaptersMap((prev) => ({
+                          ...prev,
+                          [chapterNumber]: { ...prev[chapterNumber], isFree: false, priceCoins: chapterPriceCoins },
+                        }));
+                      }}
+                      className={`px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
+                        !isChapterFree
+                          ? "bg-amber-600 text-white shadow-xs"
+                          : "bg-white dark:bg-zinc-900 text-zinc-400 border border-zinc-200 dark:border-zinc-800 hover:border-zinc-700"
+                      }`}
+                    >
+                      <Coins className="w-3.5 h-3.5" />
+                      <span>🔒 Premium ({chapterPriceCoins} Coins)</span>
+                    </button>
+                  </div>
+                </div>
+
                 {/* Quick Chapter Selector Pills */}
                 <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-[11px]">
                   <span className="text-zinc-500 text-[10px] font-bold uppercase whitespace-nowrap">
@@ -2964,6 +3067,60 @@ export default function CreatorUploadWizardPage() {
                         <p className="text-[11px] text-zinc-400 leading-snug">
                           Saari uploaded images ek hi episode ke andar consecutive pages (Page 1, 2, 3...) banengi.
                         </p>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Comic Episode Access Tier: Free vs Premium Coin Lock */}
+                  <div className="p-3.5 rounded-2xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div className="space-y-0.5">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-black text-zinc-900 dark:text-zinc-100">
+                          Episode Access Tier:
+                        </span>
+                        {isChapterFree ? (
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                            Free for All
+                          </span>
+                        ) : (
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-amber-500/20 text-amber-400 border border-amber-500/30 flex items-center gap-1">
+                            <Coins className="w-3 h-3 text-amber-500" />
+                            <span>Premium ({chapterPriceCoins} Coins)</span>
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-[11px] text-zinc-500">
+                        {chapterNumber <= 3
+                          ? "First 3 episodes are recommended free to hook comic readers."
+                          : "Monetize this episode with Coins to earn revenue from each reader unlock."}
+                      </p>
+                    </div>
+
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => setIsChapterFree(true)}
+                        className={`px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
+                          isChapterFree
+                            ? "bg-emerald-600 text-white shadow-xs"
+                            : "bg-white dark:bg-zinc-900 text-zinc-400 border border-zinc-200 dark:border-zinc-800 hover:border-zinc-700"
+                        }`}
+                      >
+                        <Check className="w-3.5 h-3.5" />
+                        <span>Free</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setIsChapterFree(false)}
+                        className={`px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
+                          !isChapterFree
+                            ? "bg-amber-600 text-white shadow-xs"
+                            : "bg-white dark:bg-zinc-900 text-zinc-400 border border-zinc-200 dark:border-zinc-800 hover:border-zinc-700"
+                        }`}
+                      >
+                        <Coins className="w-3.5 h-3.5" />
+                        <span>🔒 Premium ({chapterPriceCoins} Coins)</span>
                       </button>
                     </div>
                   </div>

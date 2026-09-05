@@ -100,6 +100,7 @@ export interface Chapter {
   status: ContentStatus;
   wordCount: number;
   isFree: boolean;
+  priceCoins?: number;
   publishedAt: string;
   readTimeMinutes: number;
 }
@@ -163,6 +164,8 @@ export interface ComicEpisode {
   thumbnailUrl?: string;
   imageUrls: string[];
   status: ContentStatus;
+  isFree?: boolean;
+  priceCoins?: number;
   publishedAt: string;
   likesCount: number;
 }

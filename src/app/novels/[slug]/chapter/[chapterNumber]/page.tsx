@@ -31,12 +31,17 @@ import {
   Eye,
   Sliders,
   Headphones,
+  Lock,
+  Coins,
 } from "lucide-react";
+import confetti from "canvas-confetti";
 import { dataStore } from "@/lib/data/store";
 import { useReader } from "@/context/ReaderContext";
 import { useAuth } from "@/context/AuthContext";
+import { supabase } from "@/lib/supabase/client";
 import { AudiobookPlayer } from "@/components/reader/AudiobookPlayer";
 import { AIAssistantModal } from "@/components/reader/AIAssistantModal";
+import { CoinShopModal } from "@/components/ui/CoinShopModal";
 import DanmakuOverlay from "@/components/reader/DanmakuOverlay";
 import { Comment, Chapter } from "@/lib/types";
 import { formatDate } from "@/lib/utils";
@@ -62,7 +67,86 @@ export default function ChapterReaderPage({ params }: ReaderPageProps) {
   const chapter = chapters.find((c) => c.chapterNumber === chapterNumber);
 
   const { settings, updateSettings, saveProgress } = useReader();
-  const { user } = useAuth();
+  const { user, openAuthModal } = useAuth();
+  const [unlockedChapters, setUnlockedChapters] = useState<Record<string, boolean>>({});
+  const [isCoinShopOpen, setIsCoinShopOpen] = useState(false);
+  const [isUnlocking, setIsUnlocking] = useState(false);
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem("yumora_unlocked_chapters");
+      if (saved) {
+        setUnlockedChapters(JSON.parse(saved));
+      }
+    } catch {
+      // ignore
+    }
+  }, []);
+
+  const isChapterLocked = (ch: Chapter) => {
+    // If free or chapters 1-3, always unlocked
+    if (ch.isFree !== false || ch.chapterNumber <= 3) return false;
+    // If author viewing their own novel, always unlocked
+    if (user?.id && novel?.creatorId && user.id === novel.creatorId) return false;
+    // Check local unlocked cache
+    const key = `${novelSlug}-${ch.chapterNumber}`;
+    return !unlockedChapters[key];
+  };
+
+  const handleUnlockChapter = async (ch: Chapter) => {
+    if (!user) {
+      openAuthModal("login");
+      return;
+    }
+
+    const price = ch.priceCoins || 5;
+    try {
+      setIsUnlocking(true);
+      const { data: wallet } = await supabase
+        .from("coin_wallets")
+        .select("balance")
+        .eq("user_id", user.id)
+        .maybeSingle();
+
+      const balance = wallet?.balance ?? 0;
+      if (balance < price) {
+        setIsCoinShopOpen(true);
+        return;
+      }
+
+      // Deduct coins from reader's wallet
+      await supabase
+        .from("coin_wallets")
+        .update({
+          balance: balance - price,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("user_id", user.id);
+
+      // Log coin transaction
+      await supabase.from("coin_transactions").insert({
+        user_id: user.id,
+        amount: -price,
+        type: "CHAPTER_UNLOCK",
+        description: `Unlocked Chapter ${ch.chapterNumber} of ${novel?.title || novelSlug}`,
+      });
+
+      // Mark unlocked in state and localStorage
+      const key = `${novelSlug}-${ch.chapterNumber}`;
+      const nextUnlocked = { ...unlockedChapters, [key]: true };
+      setUnlockedChapters(nextUnlocked);
+      localStorage.setItem("yumora_unlocked_chapters", JSON.stringify(nextUnlocked));
+
+      try {
+        confetti({ particleCount: 90, spread: 60, origin: { y: 0.7 } });
+      } catch {}
+    } catch (err) {
+      console.error("Unlock error:", err);
+      alert("Could not complete unlock. Please check your connection.");
+    } finally {
+      setIsUnlocking(false);
+    }
+  };
 
   const [scrollProgress, setScrollProgress] = useState(0);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
@@ -503,6 +587,8 @@ export default function ChapterReaderPage({ params }: ReaderPageProps) {
           {loadedChapters.map((ch, chIdx) => {
             const chParagraphs = ch.content.split("\n\n").filter((p: string) => p.trim());
             const isFirstChapter = chIdx === 0;
+            const isLocked = isChapterLocked(ch);
+            const visibleParagraphs = isLocked ? chParagraphs.slice(0, 2) : chParagraphs;
 
             return (
               <div key={ch.id} className="space-y-6">
@@ -526,7 +612,7 @@ export default function ChapterReaderPage({ params }: ReaderPageProps) {
                     lineHeight: settings.lineHeight,
                   }}
                 >
-                  {chParagraphs.map((paragraph: string, idx: number) => {
+                  {visibleParagraphs.map((paragraph: string, idx: number) => {
                     const globalParagraphIdx = chIdx * 100 + idx;
                     const isSpeakingThis =
                       isAudiobookOpen && activeAudioParagraphIdx === globalParagraphIdx;
@@ -625,6 +711,58 @@ export default function ChapterReaderPage({ params }: ReaderPageProps) {
                     );
                   })}
                 </article>
+
+                {/* Premium Chapter Lock Card */}
+                {isLocked && (
+                  <div className="relative mt-4 pt-10 pb-6">
+                    <div className="relative rounded-3xl bg-gradient-to-b from-amber-500/10 via-zinc-900/90 to-zinc-950 border border-amber-500/30 p-6 sm:p-8 text-center space-y-5 shadow-2xl shadow-amber-500/10 backdrop-blur-xl">
+                      <div className="w-14 h-14 mx-auto rounded-2xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-amber-400 shadow-lg shadow-amber-500/20">
+                        <Lock className="w-7 h-7 animate-pulse" />
+                      </div>
+
+                      <div className="space-y-1.5 max-w-md mx-auto">
+                        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-400 text-[10px] font-black uppercase tracking-widest">
+                          <Coins className="w-3 h-3" />
+                          <span>Premium Chapter</span>
+                        </div>
+                        <h3 className="text-xl sm:text-2xl font-black text-white">
+                          Unlock Chapter {ch.chapterNumber}
+                        </h3>
+                        <p className="text-xs sm:text-sm text-zinc-400">
+                          Support {novel?.creator?.name || "the author"} and continue reading this exclusive chapter immediately.
+                        </p>
+                      </div>
+
+                      {/* Price & Action */}
+                      <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3 max-w-sm mx-auto">
+                        <button
+                          onClick={() => handleUnlockChapter(ch)}
+                          disabled={isUnlocking}
+                          className="w-full sm:w-auto flex-1 py-3.5 px-6 rounded-2xl bg-gradient-to-r from-amber-500 via-yellow-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-black font-black text-sm shadow-xl shadow-amber-500/25 transition transform hover:scale-102 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+                        >
+                          <Coins className="w-4 h-4 fill-black" />
+                          <span>
+                            {isUnlocking
+                              ? "Unlocking..."
+                              : `Unlock Now (${ch.priceCoins || 5} Coins)`}
+                          </span>
+                        </button>
+
+                        <button
+                          onClick={() => setIsCoinShopOpen(true)}
+                          className="w-full sm:w-auto py-3.5 px-5 rounded-2xl bg-white/10 hover:bg-white/15 text-white font-bold text-xs transition border border-white/10 flex items-center justify-center gap-1.5 cursor-pointer"
+                        >
+                          <Coins className="w-3.5 h-3.5 text-amber-400" />
+                          <span>Get Coins</span>
+                        </button>
+                      </div>
+
+                      <p className="text-[11px] text-zinc-500">
+                        ✦ 100% of unlock proceeds directly fund creator royalties on Yumora.
+                      </p>
+                    </div>
+                  </div>
+                )}
               </div>
             );
           })}
@@ -1231,6 +1369,12 @@ export default function ChapterReaderPage({ params }: ReaderPageProps) {
         episodeNumber={chapter.chapterNumber}
         storyTitle={novel.title}
         isVisible={isToolbarVisible}
+      />
+
+      {/* 12. COIN RECHARGE SHOP MODAL */}
+      <CoinShopModal
+        isOpen={isCoinShopOpen}
+        onClose={() => setIsCoinShopOpen(false)}
       />
     </div>
   );
