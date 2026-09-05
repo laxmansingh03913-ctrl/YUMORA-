@@ -3,7 +3,7 @@
  */
 
 import { supabase } from "./client";
-import { Novel, Comic, ComicEpisode, Chapter, UserProfile, Comment, Contest, ReadingProgress, PayoutRequest } from "../types";
+import { Novel, Comic, ComicEpisode, Chapter, UserProfile, Comment, Contest, ReadingProgress, PayoutRequest, toDbStatus } from "../types";
 
 function ensureUuid(id?: string): string {
   if (!id) {
@@ -274,9 +274,7 @@ export const dbService = {
         language: novel.language || "en",
         format: finalFormat,
         sub_type: finalSubType,
-        // DB content_status ENUM: 'DRAFT' | 'ONGOING' | 'COMPLETED' | 'HIATUS'
-        // TypeScript has extra statuses like 'PUBLISHED'/'SCHEDULED' — map those to valid DB values
-        status: (["DRAFT", "ONGOING", "COMPLETED", "HIATUS"].includes(novel.status || "") ? novel.status : "ONGOING") || "ONGOING",
+        status: toDbStatus(novel.status),
         content_rating: novel.contentRating || "TEEN",
         content_warning: novel.contentWarning,
         views: novel.views || 1,
@@ -337,9 +335,7 @@ export const dbService = {
               chapter_number: chapter.chapterNumber,
               title: chapter.title,
               content: chapter.content,
-              // DB content_status ENUM: 'DRAFT' | 'ONGOING' | 'COMPLETED' | 'HIATUS'
-              // "PUBLISHED" is NOT a valid enum value — map to "ONGOING" (active/live chapters)
-              status: chapter.status === "PUBLISHED" ? "ONGOING" : (chapter.status || "ONGOING"),
+              status: toDbStatus(chapter.status),
               word_count: chapter.wordCount || 0,
               read_time_minutes: chapter.readTimeMinutes || 1,
               is_free: chapter.isFree ?? true,
@@ -600,7 +596,7 @@ export const dbService = {
               title: episode.title,
               thumbnail_url: episode.thumbnailUrl,
               image_urls: episode.imageUrls || [],
-              status: episode.status || "PUBLISHED",
+              status: toDbStatus(episode.status),
               likes_count: episode.likesCount || 0,
               published_at: episode.publishedAt || new Date().toISOString(),
             },

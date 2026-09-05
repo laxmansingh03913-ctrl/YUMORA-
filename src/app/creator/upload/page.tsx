@@ -1005,7 +1005,7 @@ export default function CreatorUploadWizardPage() {
                 title: `Episode ${epNum}`,
                 thumbnailUrl: pageUrl,
                 imageUrls: [pageUrl],
-                status: "PUBLISHED",
+                status: "ONGOING",
                 publishedAt: new Date().toISOString(),
                 likesCount: 0,
               };
@@ -1014,7 +1014,7 @@ export default function CreatorUploadWizardPage() {
             }
           } else {
             setCloudPublishStatus(`Adding Episode ${chapterNumber} to existing series...`);
-            const episodeId = `ep-${selectedSeriesId}-${chapterNumber}-${Date.now()}`;
+            const episodeId = crypto.randomUUID();
             const newEpisode: ComicEpisode = {
               id: episodeId,
               comicId: selectedSeriesId,
@@ -1022,7 +1022,7 @@ export default function CreatorUploadWizardPage() {
               title: chapterTitle || `Episode ${chapterNumber}`,
               thumbnailUrl: finalCoverUrl,
               imageUrls: finalPageUrls,
-              status: "PUBLISHED",
+              status: "ONGOING",
               publishedAt: new Date().toISOString(),
               likesCount: 0,
             };

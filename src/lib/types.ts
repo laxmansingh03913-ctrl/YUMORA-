@@ -1,6 +1,21 @@
 export type Role = 'READER' | 'CREATOR' | 'ADMIN';
 
+// UI-level statuses (superset — includes display-only values)
 export type ContentStatus = 'DRAFT' | 'SCHEDULED' | 'PUBLISHED' | 'ONGOING' | 'COMPLETED' | 'HIATUS';
+
+// DB-safe statuses — MUST match PostgreSQL content_status ENUM exactly
+// ENUM: ('DRAFT', 'ONGOING', 'COMPLETED', 'HIATUS')
+export type DbContentStatus = 'DRAFT' | 'ONGOING' | 'COMPLETED' | 'HIATUS';
+
+/** Sanitize any ContentStatus to a DB-safe value before writing to Supabase */
+export function toDbStatus(status: string | undefined | null): DbContentStatus {
+  const DB_VALID: DbContentStatus[] = ['DRAFT', 'ONGOING', 'COMPLETED', 'HIATUS'];
+  if (status && DB_VALID.includes(status as DbContentStatus)) {
+    return status as DbContentStatus;
+  }
+  // PUBLISHED and SCHEDULED map to ONGOING (live/active content)
+  return 'ONGOING';
+}
 
 export type ContentRating = 'EVERYONE' | 'TEEN' | 'MATURE';
 
