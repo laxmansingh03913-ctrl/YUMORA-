@@ -33,6 +33,7 @@ interface DanmakuOverlayProps {
   episodeNumber: number;
   storyTitle?: string;
   className?: string;
+  isVisible?: boolean;
 }
 
 const DEFAULT_DANMAKU_REACTIONS = [
@@ -60,6 +61,7 @@ export default function DanmakuOverlay({
   episodeNumber,
   storyTitle = "Story",
   className = "",
+  isVisible = true,
 }: DanmakuOverlayProps) {
   const [isEnabled, setIsEnabled] = useState(true);
   const [opacity, setOpacity] = useState(0.85);
@@ -189,7 +191,13 @@ export default function DanmakuOverlay({
       )}
 
       {/* 2. FLOATING LIVE REACTION CONTROLLER BAR (BOTTOM RIGHT) */}
-      <div className="fixed bottom-6 right-6 z-40 flex flex-col items-end gap-2 max-w-sm w-full pointer-events-auto">
+      <div
+        className={`fixed bottom-6 right-6 z-40 flex flex-col items-end gap-2 max-w-sm w-full pointer-events-auto transition-all duration-300 ease-in-out ${
+          isVisible
+            ? "translate-y-0 opacity-100"
+            : "translate-y-24 opacity-0 pointer-events-none"
+        }`}
+      >
         {/* Expanded Quick-Reaction Drawer */}
         {isReactionDrawerOpen && (
           <div className="w-full bg-zinc-950/95 border border-zinc-800 rounded-3xl p-4 shadow-2xl backdrop-blur-xl text-white space-y-3 animate-in slide-in-from-bottom-5 duration-200">

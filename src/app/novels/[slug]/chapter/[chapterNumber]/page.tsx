@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, use } from "react";
+import React, { useState, useEffect, useRef, use } from "react";
 import Link from "next/link";
 import { notFound, useRouter, useSearchParams } from "next/navigation";
 import {
@@ -75,6 +75,8 @@ export default function ChapterReaderPage({ params }: ReaderPageProps) {
   const [isBionicReading, setIsBionicReading] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showQuickDock, setShowQuickDock] = useState(true);
+  const [isToolbarVisible, setIsToolbarVisible] = useState(true);
+  const lastScrollY = useRef(0);
   const [isAudiobookOpen, setIsAudiobookOpen] = useState(shouldAutoListen);
   const [isAiAssistantOpen, setIsAiAssistantOpen] = useState(false);
   const [activeAudioParagraphIdx, setActiveAudioParagraphIdx] = useState(0);
@@ -145,12 +147,15 @@ export default function ChapterReaderPage({ params }: ReaderPageProps) {
     }
   };
 
-  // Scroll listener for reading progress
+  // Scroll listener for reading progress & auto-hiding toolbars
   useEffect(() => {
     const handleScroll = () => {
+      const currentScrollY = window.scrollY;
+      const scrollDelta = currentScrollY - lastScrollY.current;
+
       const totalHeight = document.documentElement.scrollHeight - window.innerHeight;
       if (totalHeight > 0) {
-        const currentProgress = (window.scrollY / totalHeight) * 100;
+        const currentProgress = (currentScrollY / totalHeight) * 100;
         setScrollProgress(Math.min(100, Math.max(0, currentProgress)));
 
         // Save progress to store
@@ -158,10 +163,35 @@ export default function ChapterReaderPage({ params }: ReaderPageProps) {
           saveProgress(novel.id, chapterNumber, Math.round(currentProgress));
         }
       }
+
+      // Auto-hide toolbar logic:
+      // Always show near the top of the chapter (< 70px)
+      if (currentScrollY < 70) {
+        setIsToolbarVisible(true);
+      } else if (scrollDelta > 8) {
+        // User is scrolling DOWN to read -> hide toolbars for distraction-free reading
+        setIsToolbarVisible(false);
+      } else if (scrollDelta < -6) {
+        // User scrolled UP -> reveal toolbars immediately
+        setIsToolbarVisible(true);
+      }
+
+      lastScrollY.current = currentScrollY;
+    };
+
+    // Auto-reveal toolbars if user moves cursor near the top or bottom of viewport
+    const handleMouseMove = (e: MouseEvent) => {
+      if (e.clientY < 65 || e.clientY > window.innerHeight - 75) {
+        setIsToolbarVisible(true);
+      }
     };
 
     window.addEventListener("scroll", handleScroll, { passive: true });
-    return () => window.removeEventListener("scroll", handleScroll);
+    window.addEventListener("mousemove", handleMouseMove, { passive: true });
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+      window.removeEventListener("mousemove", handleMouseMove);
+    };
   }, [novel, chapterNumber, saveProgress]);
 
   useEffect(() => {
@@ -335,7 +365,13 @@ export default function ChapterReaderPage({ params }: ReaderPageProps) {
       </div>
 
       {/* 2. TOP FLOATING READER HEADER */}
-      <header className="sticky top-0 z-40 w-full backdrop-blur-md bg-black/40 border-b border-white/5 px-4 py-2.5 flex items-center justify-between text-xs text-zinc-300">
+      <header
+        className={`sticky top-0 z-40 w-full backdrop-blur-md bg-black/40 border-b border-white/5 px-4 py-2.5 flex items-center justify-between text-xs text-zinc-300 transition-all duration-300 ease-in-out ${
+          isToolbarVisible
+            ? "translate-y-0 opacity-100"
+            : "-translate-y-full opacity-0 pointer-events-none"
+        }`}
+      >
         <div className="flex items-center gap-3">
           <Link
             href={`/novels/${novel.slug}`}
@@ -901,7 +937,14 @@ export default function ChapterReaderPage({ params }: ReaderPageProps) {
       )}
 
       {/* 8. FLOATING QUICK CONTROL DOCK */}
-      <aside aria-label="Quick reading controls" className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40">
+      <aside
+        aria-label="Quick reading controls"
+        className={`fixed bottom-6 left-1/2 -translate-x-1/2 z-40 transition-all duration-300 ease-in-out ${
+          isToolbarVisible
+            ? "translate-y-0 opacity-100 scale-100"
+            : "translate-y-24 opacity-0 pointer-events-none scale-95"
+        }`}
+      >
         <div className="flex items-center gap-1.5 sm:gap-2 px-3 py-2 rounded-full bg-zinc-950/90 dark:bg-zinc-900/90 text-white backdrop-blur-xl border border-zinc-700/60 shadow-2xl shadow-black/50">
           {/* Font Size Steppers */}
           <div className="flex items-center gap-0.5 bg-zinc-800/80 rounded-full px-1 py-0.5 border border-zinc-700/50">
@@ -1028,7 +1071,13 @@ export default function ChapterReaderPage({ params }: ReaderPageProps) {
       </aside>
 
       {/* 8.5 FLOATING VERTICAL SCROLL NAVIGATION PAD (RIGHT EDGE) */}
-      <aside className="fixed right-3 sm:right-6 top-1/2 -translate-y-1/2 z-40 hidden sm:flex flex-col items-center gap-2 p-2 rounded-2xl bg-zinc-900/90 border border-zinc-700/80 shadow-2xl backdrop-blur-md text-zinc-300 select-none">
+      <aside
+        className={`fixed right-3 sm:right-6 top-1/2 -translate-y-1/2 z-40 hidden sm:flex flex-col items-center gap-2 p-2 rounded-2xl bg-zinc-900/90 border border-zinc-700/80 shadow-2xl backdrop-blur-md text-zinc-300 select-none transition-all duration-300 ease-in-out ${
+          isToolbarVisible
+            ? "translate-x-0 opacity-100"
+            : "translate-x-16 opacity-20 hover:opacity-100 hover:translate-x-0"
+        }`}
+      >
         {/* Scroll To Top */}
         <button
           onClick={scrollToTop}
@@ -1104,6 +1153,7 @@ export default function ChapterReaderPage({ params }: ReaderPageProps) {
         storyId={novel.id}
         episodeNumber={chapter.chapterNumber}
         storyTitle={novel.title}
+        isVisible={isToolbarVisible}
       />
     </div>
   );
