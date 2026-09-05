@@ -523,6 +523,19 @@ export default function CreatorUploadWizardPage() {
     }
   };
 
+  // Pre-fill series from URL parameters (e.g. from Comic/Novel landing page: ?mode=ADD_CHAPTER&seriesId=...&type=...)
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search);
+    const mode = params.get("mode");
+    const seriesId = params.get("seriesId");
+    const type = params.get("type");
+
+    if (mode === "ADD_CHAPTER" && seriesId) {
+      handleSelectExistingSeries(seriesId, (type as "NOVEL" | "COMIC") || "COMIC");
+    }
+  }, []);
+
   // Novel Markdown Studio View Modes
   const [novelViewMode, setNovelViewMode] = useState<"split" | "edit" | "preview">("split");
   const [proseFont, setProseFont] = useState<"serif" | "sans" | "mono">("serif");
@@ -1104,6 +1117,9 @@ export default function CreatorUploadWizardPage() {
             updatedAt: new Date().toISOString(),
             episodes: episodesToAttach,
           };
+
+          // Save locally to dataStore first for instant access
+          dataStore.saveComic(newComic);
 
           // Insert into Supabase PostgreSQL Cloud DB
           const insertedComic = await dbService.insertComic(newComic);
@@ -3544,18 +3560,28 @@ export default function CreatorUploadWizardPage() {
           </div>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
-            <Link
-              href={isVisualMedium ? `/comics/${slugify(title)}` : `/novels/${slugify(title)}`}
-              className="w-full sm:w-auto px-6 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs shadow-md transition"
-            >
-              Open Universal Web Reader
-            </Link>
+            {isVisualMedium && pages.length === 0 ? (
+              <Link
+                href={`/creator/upload?mode=ADD_CHAPTER&seriesId=${selectedSeriesId || slugify(title)}&type=COMIC`}
+                className="w-full sm:w-auto px-6 py-3 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-black text-xs shadow-md transition flex items-center justify-center gap-1.5"
+              >
+                <Upload className="w-4 h-4" />
+                <span>Upload Episode 1 in Studio</span>
+              </Link>
+            ) : (
+              <Link
+                href={isVisualMedium ? `/comics/${slugify(title)}` : `/novels/${slugify(title)}`}
+                className="w-full sm:w-auto px-6 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs shadow-md transition"
+              >
+                Open Universal Web Reader
+              </Link>
+            )}
 
             <Link
-              href="/creator"
+              href={isVisualMedium ? `/comics/${slugify(title)}` : `/novels/${slugify(title)}`}
               className="w-full sm:w-auto px-6 py-3 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-200 font-bold text-xs transition"
             >
-              Go to Creator Studio
+              View Series Page
             </Link>
           </div>
         </div>
@@ -3598,15 +3624,22 @@ export default function CreatorUploadWizardPage() {
                 <button
                   type="button"
                   onClick={() => {
-                    if (step === 3 && !isVisualMedium) {
-                      setNovelChaptersMap((prev) => ({
-                        ...prev,
-                        [chapterNumber]: {
-                          id: prev[chapterNumber]?.id,
-                          title: chapterTitle || `Chapter ${chapterNumber}`,
-                          content: chapterContent,
-                        },
-                      }));
+                    if (step === 3) {
+                      if (!isVisualMedium) {
+                        setNovelChaptersMap((prev) => ({
+                          ...prev,
+                          [chapterNumber]: {
+                            id: prev[chapterNumber]?.id,
+                            title: chapterTitle || `Chapter ${chapterNumber}`,
+                            content: chapterContent,
+                          },
+                        }));
+                      } else if (pages.length === 0) {
+                        const proceedAsTeaser = window.confirm(
+                          "Notice: You haven't uploaded any episode panels yet.\n\nDo you want to proceed and register this series as an 'Announcement / Coming Soon Teaser'?"
+                        );
+                        if (!proceedAsTeaser) return;
+                      }
                     }
                     setStep((prev) => Math.min(4, prev + 1) as typeof step);
                   }}

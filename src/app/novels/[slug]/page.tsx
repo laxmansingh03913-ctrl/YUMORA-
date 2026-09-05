@@ -404,27 +404,50 @@ export default function NovelDetailPage({ params }: PageProps) {
 
               {/* Action Buttons: Read Now, Listen to Audiobook, Tip, Bookmark */}
               <div className="flex flex-wrap items-center gap-3 pt-2">
-                <button
-                  onClick={() => requireAuth(`/novels/${novel.slug}/chapter/${nextChapterToRead}`)}
-                  className="px-7 py-3.5 rounded-2xl bg-gradient-to-r from-rose-600 to-indigo-600 hover:from-rose-500 hover:to-indigo-500 text-white font-bold text-sm shadow-xl shadow-rose-600/30 transition transform hover:scale-[1.02] flex items-center gap-2 cursor-pointer"
-                >
-                  <BookOpen className="w-4 h-4" />
-                  <span>
-                    {readingProgress
-                      ? `Continue Chapter ${readingProgress.chapterNumber}`
-                      : `Start Reading Ch. ${firstAvailableChapter}`}
-                  </span>
-                  <ChevronRight className="w-4 h-4" />
-                </button>
+                {chapters.length === 0 ? (
+                  user && (user.id === novel.creatorId || user.username === creator.username) ? (
+                    <Link
+                      href={`/creator/upload?mode=ADD_CHAPTER&seriesId=${novel.id}&type=NOVEL`}
+                      className="px-7 py-3.5 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-black text-sm shadow-xl shadow-emerald-600/30 transition transform hover:scale-[1.02] flex items-center gap-2 cursor-pointer"
+                    >
+                      <BookOpen className="w-4 h-4" />
+                      <span>Write Chapter 1 Now</span>
+                      <ChevronRight className="w-4 h-4" />
+                    </Link>
+                  ) : (
+                    <button
+                      onClick={handleBookmarkToggle}
+                      className="px-7 py-3.5 rounded-2xl bg-gradient-to-r from-rose-600 to-indigo-600 hover:from-rose-500 hover:to-indigo-500 text-white font-bold text-sm shadow-xl shadow-rose-600/30 transition transform hover:scale-[1.02] flex items-center gap-2 cursor-pointer"
+                    >
+                      <Bookmark className="w-4 h-4 fill-white" />
+                      <span>{isBookmarked ? "Subscribed (Coming Soon)" : "🔔 Subscribe for Release"}</span>
+                    </button>
+                  )
+                ) : (
+                  <>
+                    <button
+                      onClick={() => requireAuth(`/novels/${novel.slug}/chapter/${nextChapterToRead}`)}
+                      className="px-7 py-3.5 rounded-2xl bg-gradient-to-r from-rose-600 to-indigo-600 hover:from-rose-500 hover:to-indigo-500 text-white font-bold text-sm shadow-xl shadow-rose-600/30 transition transform hover:scale-[1.02] flex items-center gap-2 cursor-pointer"
+                    >
+                      <BookOpen className="w-4 h-4" />
+                      <span>
+                        {readingProgress
+                          ? `Continue Chapter ${readingProgress.chapterNumber}`
+                          : `Start Reading Ch. ${firstAvailableChapter}`}
+                      </span>
+                      <ChevronRight className="w-4 h-4" />
+                    </button>
 
-                <button
-                  onClick={() => requireAuth(`/novels/${novel.slug}/chapter/${nextChapterToRead}?listen=true`)}
-                  className="px-6 py-3.5 rounded-2xl bg-gradient-to-r from-rose-600 to-amber-500 hover:opacity-95 text-white font-bold text-sm shadow-xl shadow-rose-600/30 transition transform hover:scale-[1.02] flex items-center gap-2 cursor-pointer"
-                  title="Listen to this chapter with AI Voice Narrator"
-                >
-                  <Headphones className="w-4 h-4" />
-                  <span>Listen to Audiobook</span>
-                </button>
+                    <button
+                      onClick={() => requireAuth(`/novels/${novel.slug}/chapter/${nextChapterToRead}?listen=true`)}
+                      className="px-6 py-3.5 rounded-2xl bg-gradient-to-r from-rose-600 to-amber-500 hover:opacity-95 text-white font-bold text-sm shadow-xl shadow-rose-600/30 transition transform hover:scale-[1.02] flex items-center gap-2 cursor-pointer"
+                      title="Listen to this chapter with AI Voice Narrator"
+                    >
+                      <Headphones className="w-4 h-4" />
+                      <span>Listen to Audiobook</span>
+                    </button>
+                  </>
+                )}
 
                 <button
                   onClick={() => setIsTipModalOpen(true)}
