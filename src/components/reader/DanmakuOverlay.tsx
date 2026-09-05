@@ -22,11 +22,14 @@ export interface DanmakuComment {
   user: string;
   avatar?: string;
   color?: "gold" | "cyan" | "pink" | "purple" | "white" | "emerald";
-  timestamp: number; // in seconds or panel progress
-  topPercent: number; // 5% to 85%
-  speedSeconds: number; // 8s to 14s
+  timestamp: number;
+  leftPercent?: number; // Side margin track position
+  topPercent?: number;
+  speedSeconds: number;
   badge?: string;
 }
+
+const SIDE_TRACKS = [3, 7, 12, 78, 84, 90];
 
 interface DanmakuOverlayProps {
   storyId: string;
@@ -96,12 +99,12 @@ export default function DanmakuOverlay({
         color: r.color as any,
         badge: r.badge,
         timestamp: Date.now(),
-        topPercent: 12 + (i % 6) * 13,
-        speedSeconds: 9 + (i % 5) * 1.5,
+        leftPercent: SIDE_TRACKS[i % SIDE_TRACKS.length],
+        speedSeconds: 10 + (i % 4) * 2,
       }));
     }
 
-    // Interval to spawn bullet comments across the screen
+    // Interval to spawn bullet comments vertically on side margins
     let bulletIndex = 0;
     const interval = setInterval(() => {
       if (!isEnabled) return;
@@ -111,12 +114,12 @@ export default function DanmakuOverlay({
       const newBullet: DanmakuComment = {
         ...seed,
         id: `bullet-${Date.now()}-${Math.random()}`,
-        topPercent: 8 + Math.random() * 75,
-        speedSeconds: 8 + Math.random() * 6,
+        leftPercent: SIDE_TRACKS[bulletIndex % SIDE_TRACKS.length],
+        speedSeconds: 10 + Math.random() * 4,
       };
 
-      setActiveBullets((prev) => [...prev.slice(-15), newBullet]);
-    }, 2800);
+      setActiveBullets((prev) => [...prev.slice(-12), newBullet]);
+    }, 3200);
 
     return () => clearInterval(interval);
   }, [isEnabled, storageKey]);
@@ -139,8 +142,8 @@ export default function DanmakuOverlay({
       color: selectedColor,
       badge: "LIVE",
       timestamp: Date.now(),
-      topPercent: 15 + Math.random() * 60,
-      speedSeconds: 8.5,
+      leftPercent: 84,
+      speedSeconds: 9.5,
     };
 
     setActiveBullets((prev) => [...prev, newBullet]);
@@ -170,20 +173,26 @@ export default function DanmakuOverlay({
             <div
               key={bullet.id}
               onAnimationEnd={() => removeBullet(bullet.id)}
-              className="absolute right-0 flex items-center gap-1.5 px-3 py-1 rounded-full border backdrop-blur-md font-sans text-xs sm:text-sm font-extrabold whitespace-nowrap shadow-lg select-none"
+              className="absolute bottom-0 flex items-center pointer-events-none select-none z-30"
               style={{
-                top: `${bullet.topPercent}%`,
-                animation: `danmakuFly ${bullet.speedSeconds}s linear forwards`,
+                left: `${bullet.leftPercent ?? 84}%`,
+                animation: `danmakuVerticalFly ${bullet.speedSeconds}s linear forwards`,
               }}
             >
-              <div className={`flex items-center gap-1.5 px-2.5 py-0.5 rounded-full border ${COLOR_MAP[bullet.color || "gold"]}`}>
-                <span className="text-xs">{bullet.avatar || "💬"}</span>
+              <div
+                className={`flex items-center gap-1 px-2 py-0.5 rounded-full border backdrop-blur-md shadow-xs ${
+                  COLOR_MAP[bullet.color || "gold"]
+                }`}
+              >
+                <span className="text-[10px] leading-none">{bullet.avatar || "💬"}</span>
                 {bullet.badge && (
-                  <span className="text-[9px] px-1 py-0.2 rounded bg-black/40 font-mono uppercase tracking-wider font-black">
+                  <span className="text-[8px] px-1 py-0.2 rounded bg-black/40 font-mono uppercase tracking-wider font-extrabold leading-tight">
                     {bullet.badge}
                   </span>
                 )}
-                <span className="tracking-wide drop-shadow-md">{bullet.text}</span>
+                <span className="text-[10px] font-bold tracking-tight truncate max-w-[140px] sm:max-w-[200px] leading-tight drop-shadow-xs">
+                  {bullet.text}
+                </span>
               </div>
             </div>
           ))}
@@ -324,23 +333,25 @@ export default function DanmakuOverlay({
           </div>
         )}
 
-        {/* Floating Trigger Pill */}
+        {/* Floating Trigger Pill (Compact Size) */}
         <button
           onClick={() => setIsReactionDrawerOpen(!isReactionDrawerOpen)}
-          className={`px-3.5 py-2 rounded-2xl backdrop-blur-xl border font-black text-xs transition-all duration-300 flex items-center gap-2 shadow-2xl cursor-pointer ${
+          className={`px-2.5 py-1.5 rounded-xl backdrop-blur-xl border font-bold text-[11px] transition-all duration-300 flex items-center gap-1.5 shadow-lg cursor-pointer ${
             isReactionDrawerOpen
-              ? "bg-gradient-to-r from-rose-600 via-amber-500 to-indigo-600 text-white border-white/20 shadow-rose-500/30 scale-105"
+              ? "bg-gradient-to-r from-rose-600 via-amber-500 to-indigo-600 text-white border-white/20 shadow-rose-500/20 scale-102"
               : isEnabled
-              ? "bg-zinc-950/90 text-white border-zinc-800 hover:border-zinc-700 hover:bg-zinc-900"
-              : "bg-zinc-950/60 text-zinc-500 border-zinc-800"
+              ? "bg-zinc-950/85 text-zinc-300 border-zinc-800 hover:border-zinc-700 hover:text-white"
+              : "bg-zinc-950/50 text-zinc-500 border-zinc-800"
           }`}
           title="Toggle Live Danmaku Bullet Comments"
         >
           <div className="relative">
-            <MessageSquare className="w-4 h-4 text-rose-400" />
-            <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
+            <MessageSquare className="w-3.5 h-3.5 text-rose-400" />
+            {isEnabled && (
+              <span className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
+            )}
           </div>
-          <span>Danmaku Live {isEnabled ? "ON" : "OFF"}</span>
+          <span>Danmaku {isEnabled ? "ON" : "OFF"}</span>
           <ChevronUp
             className={`w-3 h-3 transition-transform ${
               isReactionDrawerOpen ? "rotate-180" : ""
@@ -349,14 +360,22 @@ export default function DanmakuOverlay({
         </button>
       </div>
 
-      {/* Global CSS Animation for Danmaku Floating Flight */}
+      {/* Global CSS Animation for Danmaku Vertical Floating Flight */}
       <style jsx global>{`
-        @keyframes danmakuFly {
+        @keyframes danmakuVerticalFly {
           0% {
-            transform: translateX(100vw);
+            transform: translateY(102vh);
+            opacity: 0;
+          }
+          6% {
+            opacity: 0.88;
+          }
+          90% {
+            opacity: 0.88;
           }
           100% {
-            transform: translateX(-120vw);
+            transform: translateY(-15vh);
+            opacity: 0;
           }
         }
       `}</style>
