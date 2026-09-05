@@ -75,7 +75,7 @@ export default function ChapterReaderPage({ params }: ReaderPageProps) {
   const [isBionicReading, setIsBionicReading] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showQuickDock, setShowQuickDock] = useState(true);
-  const [isToolbarVisible, setIsToolbarVisible] = useState(true);
+  const [isToolbarVisible, setIsToolbarVisible] = useState(false);
   const lastScrollY = useRef(0);
   const [isAudiobookOpen, setIsAudiobookOpen] = useState(shouldAutoListen);
   const [isAiAssistantOpen, setIsAiAssistantOpen] = useState(false);
@@ -147,7 +147,21 @@ export default function ChapterReaderPage({ params }: ReaderPageProps) {
     }
   };
 
-  // Scroll listener for reading progress & auto-hiding toolbars
+  // Click-to-toggle reader controls (e-reader pattern: tap anywhere to show/hide toolbars)
+  const handleReaderClick = (e: React.MouseEvent) => {
+    const target = e.target as HTMLElement;
+    // Do not toggle if clicking links, buttons, inputs, modals, or the toolbars themselves
+    if (
+      target.closest(
+        "button, a, input, textarea, select, aside, header, [role='dialog'], nav, form"
+      )
+    ) {
+      return;
+    }
+    setIsToolbarVisible((prev) => !prev);
+  };
+
+  // Scroll listener for reading progress & auto-closing toolbars on scroll
   useEffect(() => {
     const handleScroll = () => {
       const currentScrollY = window.scrollY;
@@ -164,33 +178,17 @@ export default function ChapterReaderPage({ params }: ReaderPageProps) {
         }
       }
 
-      // Auto-hide toolbar logic:
-      // Always show near the top of the chapter (< 70px)
-      if (currentScrollY < 70) {
-        setIsToolbarVisible(true);
-      } else if (scrollDelta > 8) {
-        // User is scrolling DOWN to read -> hide toolbars for distraction-free reading
+      // If user starts scrolling down while controls are open, tuck them away smoothly
+      if (scrollDelta > 15 && currentScrollY > 60) {
         setIsToolbarVisible(false);
-      } else if (scrollDelta < -6) {
-        // User scrolled UP -> reveal toolbars immediately
-        setIsToolbarVisible(true);
       }
 
       lastScrollY.current = currentScrollY;
     };
 
-    // Auto-reveal toolbars if user moves cursor near the top or bottom of viewport
-    const handleMouseMove = (e: MouseEvent) => {
-      if (e.clientY < 65 || e.clientY > window.innerHeight - 75) {
-        setIsToolbarVisible(true);
-      }
-    };
-
     window.addEventListener("scroll", handleScroll, { passive: true });
-    window.addEventListener("mousemove", handleMouseMove, { passive: true });
     return () => {
       window.removeEventListener("scroll", handleScroll);
-      window.removeEventListener("mousemove", handleMouseMove);
     };
   }, [novel, chapterNumber, saveProgress]);
 
@@ -355,7 +353,10 @@ export default function ChapterReaderPage({ params }: ReaderPageProps) {
   };
 
   return (
-    <div className={`min-h-screen transition-colors duration-200 ${getThemeClasses()}`}>
+    <div
+      onClick={handleReaderClick}
+      className={`min-h-screen transition-colors duration-200 cursor-default ${getThemeClasses()}`}
+    >
       {/* 1. TOP PROGRESS BAR */}
       <div className="fixed top-0 left-0 right-0 h-1 bg-zinc-800/20 z-50">
         <div
@@ -1069,6 +1070,18 @@ export default function ChapterReaderPage({ params }: ReaderPageProps) {
           </button>
         </div>
       </aside>
+
+      {/* Subtle Hint Pill When Controls Are Hidden (Click to Toggle) */}
+      {!isToolbarVisible && (
+        <button
+          onClick={() => setIsToolbarVisible(true)}
+          className="fixed bottom-4 left-1/2 -translate-x-1/2 z-30 px-3.5 py-1.5 rounded-full bg-zinc-950/70 hover:bg-zinc-900 text-zinc-400 hover:text-white backdrop-blur-md border border-zinc-800 text-[11px] font-bold shadow-lg transition-all duration-300 flex items-center gap-1.5 cursor-pointer opacity-50 hover:opacity-100 animate-in fade-in"
+          title="Click to show reader controls (or tap anywhere on screen)"
+        >
+          <Sliders className="w-3 h-3 text-rose-400" />
+          <span>Reader Controls</span>
+        </button>
+      )}
 
       {/* 8.5 FLOATING VERTICAL SCROLL NAVIGATION PAD (RIGHT EDGE) */}
       <aside
