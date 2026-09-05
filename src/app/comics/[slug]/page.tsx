@@ -746,7 +746,7 @@ export default function ComicDetailPage({ params }: ComicPageProps) {
                 </button>
               </div>
             </div>
-          <>
+
             {/* 1. VERTICAL SCROLL MODE (Webtoon) */}
             {readingMode === "VERTICAL" && (
               <div
