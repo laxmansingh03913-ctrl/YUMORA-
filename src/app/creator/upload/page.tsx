@@ -1031,7 +1031,7 @@ export default function CreatorUploadWizardPage() {
           }
         } else {
           setCloudPublishStatus("Saving comic to Supabase Cloud Database...");
-          const comicId = `comic-${Date.now()}`;
+          const comicId = crypto.randomUUID();
 
           let episodesToAttach: ComicEpisode[] = [];
 
@@ -1039,7 +1039,7 @@ export default function CreatorUploadWizardPage() {
             episodesToAttach = finalPageUrls.map((pageUrl, idx) => {
               const epNum = idx + 1;
               return {
-                id: `ep-${comicId}-${epNum}-${Date.now() + idx}`,
+                id: crypto.randomUUID(),
                 comicId,
                 episodeNumber: epNum,
                 title: `Episode ${epNum}`,
@@ -1051,7 +1051,7 @@ export default function CreatorUploadWizardPage() {
               };
             });
           } else {
-            const episodeId = `ep-${Date.now()}-1`;
+            const episodeId = crypto.randomUUID();
             episodesToAttach = [
               {
                 id: episodeId,
@@ -1136,7 +1136,7 @@ export default function CreatorUploadWizardPage() {
               const num = parseInt(numStr, 10);
               const words = data.content.trim().split(/\s+/).filter(Boolean).length;
               const existingChapterId = data.id;
-              const chapterId = existingChapterId || `ch-${selectedSeriesId}-${num}-${Date.now() + idx}`;
+              const chapterId = existingChapterId || crypto.randomUUID();
               return {
                 id: chapterId,
                 novelId: selectedSeriesId,
@@ -1154,7 +1154,7 @@ export default function CreatorUploadWizardPage() {
 
           // If no chapters had content in map, fallback to current active
           if (chaptersToSave.length === 0) {
-            const chapterId = novelChaptersMap[chapterNumber]?.id || `ch-${selectedSeriesId}-${chapterNumber}-${Date.now()}`;
+            const chapterId = novelChaptersMap[chapterNumber]?.id || crypto.randomUUID();
             chaptersToSave.push({
               id: chapterId,
               novelId: selectedSeriesId,
@@ -1179,7 +1179,7 @@ export default function CreatorUploadWizardPage() {
           }
         } else {
           setCloudPublishStatus("Saving novel manuscript directly to Supabase Cloud Database...");
-          const novelId = `novel-${Date.now()}`;
+          const novelId = crypto.randomUUID();
 
           // Collect all written chapters from novelChaptersMap
           const allSavedChapters = {
@@ -1196,7 +1196,7 @@ export default function CreatorUploadWizardPage() {
               const num = parseInt(numStr, 10);
               const words = data.content.trim().split(/\s+/).filter(Boolean).length;
               return {
-                id: `ch-${novelId}-${num}-${Date.now() + idx}`,
+                id: crypto.randomUUID(),
                 novelId,
                 chapterNumber: num,
                 title: data.title || `Chapter ${num}`,
