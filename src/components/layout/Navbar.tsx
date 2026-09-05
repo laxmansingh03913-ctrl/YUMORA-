@@ -27,6 +27,7 @@ import {
   Coins,
   Plus,
   Menu,
+  Flame,
 } from "lucide-react";
 import { useAuth, isMasterAdmin } from "@/context/AuthContext";
 import { useTheme } from "@/context/ThemeContext";
@@ -41,8 +42,8 @@ import { Role, LanguageCode, NotificationItem } from "@/lib/types";
 
 const NAV_LINKS = [
   { name: "Discover", href: "/discover", icon: Compass },
+  { name: "Manga", href: "/comics", icon: Flame, badge: "Hot" },
   { name: "Novels", href: "/novels", icon: BookOpen },
-  { name: "Comics", href: "/comics", icon: ImageIcon },
   { name: "Contests", href: "/contests", icon: Trophy, badge: "$500" },
   { name: "Community", href: "/community", icon: Users },
 ];
@@ -251,9 +252,12 @@ export function Navbar() {
 
   return (
     <>
-      <header className="sticky top-0 z-40 w-full border-b border-border bg-card/95 dark:bg-card/95 backdrop-blur-md transition-colors">
-        <div className="w-full px-3 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-3 sm:gap-6">
-          {/* ZONE 1: LEFT - Sidebar Toggle & Brand Logo */}
+      <header className="sticky top-0 z-40 w-full border-b border-border/80 bg-card/95 dark:bg-zinc-950/90 backdrop-blur-xl transition-colors shadow-xs">
+        {/* Subtle Ambient Top Accent Glow */}
+        <div className="h-[1px] w-full bg-gradient-to-r from-transparent via-rose-500/40 via-indigo-500/40 to-transparent" />
+
+        <div className="w-full px-3 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-2 sm:gap-4 xl:gap-6">
+          {/* ZONE 1: LEFT - Sidebar Toggle, Brand Logo & Desktop Category Navigation */}
           <div className="flex items-center gap-2 sm:gap-3.5 flex-shrink-0">
             <button
               onClick={() => {
@@ -288,20 +292,51 @@ export function Navbar() {
                 </span>
               </div>
             </Link>
+
+            {/* Desktop Direct Category Navigation Links */}
+            <nav className="hidden lg:flex items-center gap-1 xl:gap-1.5 ml-1 xl:ml-3">
+              {NAV_LINKS.map((link) => {
+                const Icon = link.icon;
+                const isActive = link.href === "/" ? pathname === "/" : pathname.startsWith(link.href);
+                return (
+                  <Link
+                    key={link.name}
+                    href={link.href}
+                    className={`relative flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all duration-150 select-none ${
+                      isActive
+                        ? "text-[#D91E18] dark:text-rose-400 bg-rose-500/10 dark:bg-rose-500/15 border border-rose-500/20"
+                        : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-950 dark:hover:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-800/60"
+                    }`}
+                  >
+                    <Icon className={`w-3.5 h-3.5 ${isActive ? "text-[#D91E18] dark:text-rose-400" : "text-zinc-400 group-hover:text-zinc-600 dark:group-hover:text-zinc-200"}`} />
+                    <span>{link.name}</span>
+                    {link.badge && (
+                      <span className={`px-1.5 py-0.2 rounded-full text-[9px] font-black uppercase tracking-wider ${
+                        link.badge === "Hot"
+                          ? "bg-rose-500 text-white animate-pulse"
+                          : "bg-amber-500/20 text-amber-500 dark:text-amber-400 border border-amber-500/30"
+                      }`}>
+                        {link.badge}
+                      </span>
+                    )}
+                  </Link>
+                );
+              })}
+            </nav>
           </div>
 
           {/* ZONE 2: CENTER - Wide Prominent Spotlight Search */}
-          <div className="hidden sm:flex flex-1 items-center justify-center max-w-md lg:max-w-xl px-2">
+          <div className="hidden md:flex flex-1 items-center justify-center max-w-xs xl:max-w-md px-2">
             <button
               onClick={() => setIsSearchOpen(true)}
-              className="w-full flex items-center justify-between gap-2 h-10 px-4 rounded-xl bg-zinc-50 dark:bg-zinc-900/90 border border-zinc-200 dark:border-zinc-800 text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200 hover:border-zinc-300 dark:hover:border-zinc-700 transition text-xs shadow-2xs cursor-pointer group"
+              className="w-full flex items-center justify-between gap-2 h-9 xl:h-10 px-3.5 rounded-xl bg-zinc-50 dark:bg-zinc-900/90 border border-zinc-200 dark:border-zinc-800 text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200 hover:border-zinc-300 dark:hover:border-zinc-700 transition text-xs shadow-2xs cursor-pointer group"
               title="Global Spotlight Search (Ctrl + K)"
             >
               <div className="flex items-center gap-2.5 min-w-0 overflow-hidden">
-                <Search className="w-4 h-4 text-zinc-400 group-hover:text-[#D91E18] transition flex-shrink-0" />
-                <span className="truncate text-zinc-400 text-xs font-medium">Search stories, webtoons, authors, genres...</span>
+                <Search className="w-3.5 h-3.5 text-zinc-400 group-hover:text-[#D91E18] transition flex-shrink-0" />
+                <span className="truncate text-zinc-400 text-xs font-medium">Search stories, manga, creators...</span>
               </div>
-              <kbd className="hidden lg:inline-flex items-center gap-0.5 px-2 py-0.5 rounded-lg bg-zinc-200/80 dark:bg-zinc-800 text-[10px] font-mono font-bold text-zinc-500 border border-zinc-300 dark:border-zinc-700">
+              <kbd className="hidden xl:inline-flex items-center gap-0.5 px-2 py-0.5 rounded-lg bg-zinc-200/80 dark:bg-zinc-800 text-[10px] font-mono font-bold text-zinc-500 border border-zinc-300 dark:border-zinc-700">
                 Ctrl K
               </kbd>
             </button>
@@ -544,7 +579,7 @@ export function Navbar() {
 
                 <Link
                   href="/creator/upload"
-                  className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-[#D91E18] hover:bg-[#B71813] text-white font-bold text-xs shadow-xs transition transform hover:scale-[1.02] active:scale-[0.98] whitespace-nowrap"
+                  className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-[#D91E18] via-rose-600 to-indigo-600 hover:from-rose-600 hover:to-indigo-500 text-white font-black text-xs shadow-md shadow-rose-600/15 transition transform hover:scale-[1.02] active:scale-[0.98] whitespace-nowrap"
                   title="Create new story or episode"
                 >
                   <PenTool className="w-3.5 h-3.5" />
@@ -709,14 +744,14 @@ export function Navbar() {
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => requireAuth("/creator/upload")}
-                  className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-[#D91E18] hover:bg-[#B71813] text-white font-bold text-xs shadow-xs transition transform hover:scale-[1.02] active:scale-[0.98] whitespace-nowrap"
+                  className="hidden sm:flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-[#D91E18] via-rose-600 to-indigo-600 hover:from-rose-600 hover:to-indigo-500 text-white font-black text-xs shadow-md shadow-rose-600/15 transition transform hover:scale-[1.02] active:scale-[0.98] whitespace-nowrap cursor-pointer"
                 >
                   <PenTool className="w-3.5 h-3.5" />
                   <span>Create</span>
                 </button>
                 <button
                   onClick={() => openAuthModal("login")}
-                  className="px-3.5 py-1.5 rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-zinc-800 dark:text-zinc-200 hover:border-black dark:hover:border-white font-bold text-xs transition whitespace-nowrap"
+                  className="px-4 py-1.5 rounded-xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 hover:border-zinc-400 dark:hover:border-zinc-500 font-extrabold text-xs shadow-2xs transition whitespace-nowrap cursor-pointer hover:bg-zinc-50 dark:hover:bg-zinc-800"
                 >
                   Sign In
                 </button>

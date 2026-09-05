@@ -3,7 +3,7 @@
 import React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Compass, BookOpen, PenTool, Trophy, Bookmark, User } from "lucide-react";
+import { Home, Compass, PenTool, Trophy, Bookmark, User } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 
 export function MobileNav() {
@@ -16,7 +16,7 @@ export function MobileNav() {
   }
 
   const links = [
-    { name: "Home", href: "/", icon: BookOpen },
+    { name: "Home", href: "/", icon: Home },
     { name: "Discover", href: "/discover", icon: Compass },
     { name: "Create", href: "/creator/upload", icon: PenTool, highlight: true },
     { name: "Contests", href: "/contests", icon: Trophy },
@@ -24,7 +24,7 @@ export function MobileNav() {
   ];
 
   return (
-    <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-card/95 dark:bg-card/95 backdrop-blur-md border-t border-border px-3 py-1 flex items-center justify-around shadow-lg safe-area-pb">
+    <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-card/95 dark:bg-zinc-950/95 backdrop-blur-xl border-t border-border/80 dark:border-zinc-800/80 px-3 py-1 flex items-center justify-around shadow-2xl safe-area-pb">
       {links.map((link) => {
         const isActive = pathname === link.href;
         if (link.highlight) {
@@ -32,12 +32,12 @@ export function MobileNav() {
             <Link
               key={link.name}
               href={link.href}
-              className="flex flex-col items-center justify-center -mt-4"
+              className="flex flex-col items-center justify-center -mt-5"
             >
-              <div className="w-10 h-10 rounded-lg bg-accent flex items-center justify-center text-white shadow-md transform active:scale-95 transition">
-                <link.icon className="w-4 h-4" />
+              <div className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-[#D91E18] via-rose-600 to-indigo-600 shadow-lg shadow-rose-600/30 flex items-center justify-center text-white transform active:scale-95 transition ring-4 ring-white dark:ring-zinc-950">
+                <link.icon className="w-5 h-5" />
               </div>
-              <span className="text-[9px] font-black text-accent mt-0.5 uppercase tracking-wider">{link.name}</span>
+              <span className="text-[9px] font-black text-[#D91E18] dark:text-rose-400 mt-1 uppercase tracking-wider">{link.name}</span>
             </Link>
           );
         }
