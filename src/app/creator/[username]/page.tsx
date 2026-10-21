@@ -156,43 +156,52 @@ export default function CreatorProfilePage({ params }: CreatorProfileProps) {
         return;
       }
 
-      // 3. Query server API (/api/creator/${username})
-      try {
-        const res = await fetch(`/api/creator/${encodeURIComponent(username)}`);
-        if (res.ok) {
-          const json = await res.json();
-          if (json?.success && json?.creator && isMounted) {
+      // 3+4. Remote lookups (site API, then Supabase directly). A cold
+      // first visit can miss on a transient network hiccup, so retry
+      // once before showing the "Unable to Load" state.
+      const attemptRemote = async (): Promise<boolean> => {
+        try {
+          const res = await fetch(`/api/creator/${encodeURIComponent(username)}`);
+          if (res.ok) {
+            const json = await res.json();
+            if (json?.success && json?.creator) {
+              try {
+                dataStore.updateUserProfile(json.creator.id, json.creator);
+              } catch {
+                // ignore
+              }
+              if (isMounted) setAsyncCreator(json.creator);
+              return true;
+            }
+          }
+        } catch (e) {
+          console.warn("API fetch creator warning:", e);
+        }
+
+        try {
+          const cloud = await dbService.getProfileByUsername(username);
+          if (cloud) {
             try {
-              dataStore.updateUserProfile(json.creator.id, json.creator);
+              dataStore.updateUserProfile(cloud.id, cloud);
             } catch {
               // ignore
             }
-            setAsyncCreator(json.creator);
-            setIsLoadingProfile(false);
-            return;
+            if (isMounted) setAsyncCreator(cloud);
+            return true;
           }
+        } catch (e) {
+          console.warn("Supabase fetch profile error:", e);
         }
-      } catch (e) {
-        console.warn("API fetch creator warning:", e);
-      }
+        return false;
+      };
 
-      // 4. Query Supabase profiles table directly across all accounts / browsers
-      try {
-        const cloud = await dbService.getProfileByUsername(username);
-        if (cloud && isMounted) {
-          try {
-            dataStore.updateUserProfile(cloud.id, cloud);
-          } catch {
-            // ignore
-          }
-          setAsyncCreator(cloud);
-        }
-      } catch (e) {
-        console.warn("Supabase fetch profile error:", e);
-      } finally {
-        if (isMounted) {
-          setIsLoadingProfile(false);
-        }
+      let found = await attemptRemote();
+      if (!found && isMounted) {
+        await new Promise((r) => setTimeout(r, 1200));
+        found = await attemptRemote();
+      }
+      if (isMounted) {
+        setIsLoadingProfile(false);
       }
     };
 
@@ -746,7 +755,7 @@ export default function CreatorProfilePage({ params }: CreatorProfileProps) {
             {/* Left: Glowing Multi-Layer Avatar + Details */}
             <div className="flex flex-col sm:flex-row items-start sm:items-end gap-5 sm:gap-7">
               <div className="-mt-16 sm:-mt-20 md:-mt-24 relative group flex-shrink-0 z-10">
-                <div className="relative w-32 h-32 sm:w-36 sm:h-36 md:w-40 md:h-40 rounded-3xl p-1 bg-gradient-to-tr from-[#D91E18] to-rose-400 shadow-2xl shadow-rose-950/30 dark:shadow-rose-950/60 transition-transform duration-300 group-hover:scale-105">
+                <div className="relative w-32 h-32 sm:w-36 sm:h-36 md:w-40 md:h-40 rounded-3xl p-1 bg-gradient-to-tr from-[#0891B2] to-cyan-400 shadow-2xl shadow-rose-950/30 dark:shadow-rose-950/60 transition-transform duration-300 group-hover:scale-105">
                   <div className="w-full h-full rounded-[22px] overflow-hidden bg-zinc-950 flex items-center justify-center text-white font-black text-4xl sm:text-5xl relative">
                     {creator.avatar && !avatarError ? (
                       <img
@@ -756,7 +765,7 @@ export default function CreatorProfilePage({ params }: CreatorProfileProps) {
                         className="w-full h-full object-cover transition duration-300 group-hover:scale-105"
                       />
                     ) : (
-                      <div className="w-full h-full bg-gradient-to-br from-rose-700 via-[#D91E18] to-rose-500 flex items-center justify-center">
+                      <div className="w-full h-full bg-gradient-to-br from-cyan-700 via-[#0891B2] to-cyan-500 flex items-center justify-center">
                         <span className="tracking-tight drop-shadow-md">{initials}</span>
                       </div>
                     )}
@@ -815,7 +824,7 @@ export default function CreatorProfilePage({ params }: CreatorProfileProps) {
                       creator.role === "ADMIN"
                         ? "bg-amber-500/15 text-amber-500 border border-amber-500/30"
                         : creator.isVerified
-                          ? "bg-[#D91E18]/15 text-[#D91E18] border border-[#D91E18]/30"
+                          ? "bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border border-cyan-500/30"
                           : "bg-zinc-500/10 text-zinc-500 dark:text-zinc-400 border border-zinc-500/25"
                     }`}
                   >
@@ -1015,7 +1024,7 @@ export default function CreatorProfilePage({ params }: CreatorProfileProps) {
                 setListModalType("followers");
                 setListSearchQuery("");
               }}
-              className="p-5 text-left rounded-2xl bg-white dark:bg-zinc-900/80 border border-zinc-200/80 dark:border-white/10 hover:border-[#D91E18]/60 transition cursor-pointer"
+              className="p-5 text-left rounded-2xl bg-white dark:bg-zinc-900/80 border border-zinc-200/80 dark:border-white/10 hover:border-cyan-500/60 transition cursor-pointer"
             >
               <p className="text-[11px] font-bold text-zinc-400 uppercase tracking-widest">
                 Followers
@@ -1031,7 +1040,7 @@ export default function CreatorProfilePage({ params }: CreatorProfileProps) {
                 setListModalType("following");
                 setListSearchQuery("");
               }}
-              className="p-5 text-left rounded-2xl bg-white dark:bg-zinc-900/80 border border-zinc-200/80 dark:border-white/10 hover:border-[#D91E18]/60 transition cursor-pointer"
+              className="p-5 text-left rounded-2xl bg-white dark:bg-zinc-900/80 border border-zinc-200/80 dark:border-white/10 hover:border-cyan-500/60 transition cursor-pointer"
             >
               <p className="text-[11px] font-bold text-zinc-400 uppercase tracking-widest">
                 Following
