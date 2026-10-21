@@ -670,7 +670,7 @@ export default function IndexPage() {
 
         {/* Contest or Creator Callout Banner */}
         <div className="px-4 sm:px-6 lg:px-10 max-w-screen-2xl mx-auto">
-          {activeContest ? (
+          {activeContest && (getContestStatus(activeContest) === "LIVE" || getContestStatus(activeContest) === "SCHEDULED") ? (
             <div className="relative rounded-3xl overflow-hidden border border-indigo-500/30 bg-gradient-to-r from-zinc-950 via-indigo-950/40 to-zinc-950 p-6 sm:p-10 lg:p-12 shadow-2xl">
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
                 <div className="space-y-4">
@@ -711,19 +711,19 @@ export default function IndexPage() {
           ) : (
             <div className="relative rounded-3xl overflow-hidden border border-indigo-500/20 bg-gradient-to-r from-zinc-950 via-indigo-950/20 to-zinc-950 p-8 sm:p-12 lg:p-14 text-center shadow-xl">
               <p className="text-[11px] font-black text-indigo-400 uppercase tracking-widest mb-3">
-                Creator Launchpad
+                Official Creator Tournament
               </p>
               <h2
                 className="font-black text-white leading-tight mb-4"
                 style={{ fontSize: "clamp(2rem, 5vw, 3.5rem)" }}
               >
-                Create. Publish.<br />
+                Story Contests<br />
                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 via-purple-400 to-rose-400">
-                  Build Your Fandom.
+                  Coming Soon.
                 </span>
               </h2>
               <p className="text-sm sm:text-base text-zinc-400 max-w-xl mx-auto mb-6 leading-relaxed">
-                Yomika equips creators with 2-tier series registration, motion manga dubbing, and direct monetization. Launch your stories to readers worldwide.
+                Our monthly story challenge is being prepared. Prize details, dates and rules will be announced here first — keep writing and get your story ready for launch day.
               </p>
               <button
                 type="button"
@@ -731,7 +731,7 @@ export default function IndexPage() {
                 className="inline-flex items-center gap-2.5 px-8 py-3.5 rounded-2xl bg-gradient-to-r from-indigo-600 via-purple-600 to-rose-600 hover:from-indigo-500 hover:to-rose-500 text-white font-black text-sm tracking-wide transition shadow-lg shadow-indigo-600/30 transform hover:scale-105 active:scale-95 cursor-pointer"
               >
                 <PenTool className="w-4 h-4" />
-                <span>Start Creating Today</span>
+                <span>Start Writing Today</span>
               </button>
             </div>
           )}

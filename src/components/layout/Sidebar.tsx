@@ -60,7 +60,7 @@ export function Sidebar() {
   const PRIMARY_NAV = [
     { name: "Home", href: "/", icon: Home },
     { name: "Discover", href: "/discover", icon: Compass },
-    { name: "Contests", href: "/contests", icon: Trophy, badge: "$500" },
+    { name: "Contests", href: "/contests", icon: Trophy },
     { name: "Community", href: "/community", icon: Users },
   ];
 

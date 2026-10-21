@@ -331,6 +331,50 @@ export default function ContestsPage() {
         { name: "MysticPen", avatar: "https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?w=150&auto=format&fit=crop&q=80" },
       ];
 
+  // Coming Soon state: no live/scheduled contest -> no prize promises, no entries.
+  const computedStatus = getContestStatus(contest);
+  if (computedStatus !== "LIVE" && computedStatus !== "SCHEDULED") {
+    return (
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 bg-white dark:bg-zinc-950 min-h-screen text-[#111111] dark:text-zinc-100 font-sans">
+        <div className="max-w-2xl mx-auto text-center space-y-6">
+          <div className="w-16 h-16 mx-auto rounded-2xl bg-red-50 dark:bg-red-950/50 text-[#D91E18] flex items-center justify-center">
+            <Trophy className="w-8 h-8" />
+          </div>
+          <div className="space-y-2">
+            <p className="text-[10px] font-black tracking-widest uppercase text-[#D91E18]">
+              Yomika Monthly Challenge
+            </p>
+            <h1 className="text-3xl sm:text-4xl font-black tracking-tight uppercase">
+              Story Contests — Coming Soon
+            </h1>
+          </div>
+          <p className="text-sm sm:text-base text-zinc-500 dark:text-zinc-400 leading-relaxed">
+            Our monthly story challenge is being prepared. Prize details, dates and
+            rules will be announced on this page first — submissions are currently
+            closed. Keep writing and get your story ready for launch day.
+          </p>
+          <p className="text-xs text-zinc-400 dark:text-zinc-500">
+            Thank you to every writer who took part in the previous challenge.
+          </p>
+          <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
+            <Link
+              href="/discover"
+              className="px-6 py-3 rounded-lg bg-[#D91E18] hover:bg-[#B71813] text-white font-black text-xs sm:text-sm uppercase tracking-wider transition"
+            >
+              Browse Stories
+            </Link>
+            <Link
+              href="/"
+              className="px-6 py-3 rounded-lg border border-zinc-200 dark:border-zinc-800 font-black text-xs sm:text-sm uppercase tracking-wider hover:bg-zinc-50 dark:hover:bg-zinc-900 transition"
+            >
+              Back to Home
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-10 bg-white dark:bg-zinc-950 min-h-screen text-[#111111] dark:text-zinc-100 font-sans">
       

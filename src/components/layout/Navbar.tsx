@@ -43,7 +43,7 @@ const NAV_LINKS = [
   { name: "Discover", href: "/discover", icon: Compass },
   { name: "Novels", href: "/novels", icon: BookOpen },
   { name: "Comics", href: "/comics", icon: ImageIcon },
-  { name: "Contests", href: "/contests", icon: Trophy, badge: "$500" },
+  { name: "Contests", href: "/contests", icon: Trophy },
   { name: "Community", href: "/community", icon: Users },
 ];
 

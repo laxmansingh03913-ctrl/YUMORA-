@@ -544,7 +544,7 @@ export function SearchModal({ isOpen, onClose }: SearchModalProps) {
                     <div className="space-y-0.5 min-w-0">
                       <div className="flex items-center gap-2">
                         <span className="px-2 py-0.5 rounded-md bg-amber-500 text-zinc-950 text-[9px] font-black uppercase">
-                          ${(contest as any).prizePoolTotal || contest.prizePool || 500} Prize
+                          Contest — Coming Soon
                         </span>
                         <h4 className="font-black text-xs sm:text-sm text-zinc-900 dark:text-zinc-100 truncate group-hover:text-[#D91E18] transition">
                           {contest.title}
