@@ -26,132 +26,64 @@ import { useAuth } from "@/context/AuthContext";
 import { ContinueReadingWidget } from "@/components/home/ContinueReadingWidget";
 import { formatNumber, formatDate } from "@/lib/utils";
 import { formatContestDeadline, getContestStatus } from "@/lib/utils/contest";
-import { Novel, Comic } from "@/lib/types";
+import { Novel, Comic, getStoryFormat } from "@/lib/types";
 import { dbService } from "@/lib/supabase/db";
 
 // ─────────────────────────────────────────────────────────────────────────────
-// TOP 10 CURATED LEADERBOARD BENCHMARKS
+// CHARTS — built only from stories that actually exist in the Yomika catalog.
+// Items are assembled at runtime from dbService results (novels / comics
+// state), ranked by real views, reads and rating. No curated or third-party
+// titles are ever listed here.
 // ─────────────────────────────────────────────────────────────────────────────
-const TOP_10_CURATED = [
-  {
-    id: "top-1",
-    title: "SOLO LEVELING: ARISE",
-    slug: "solo-leveling-arise",
-    coverUrl: "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=600&auto=format&fit=crop&q=80",
-    genre: "Action",
-    tags: ["Fantasy", "Action", "Magic"],
-    rating: "4.9",
-    views: "18.5M Views",
-    type: "COMIC",
-  },
-  {
-    id: "top-2",
-    title: "WORLD GOVERNED BY CELESTIAL CONSTELLATION",
-    slug: "world-governed-by-celestial-constellation-looms",
-    coverUrl: "https://images.unsplash.com/photo-1534447677768-be436bb09401?w=600&auto=format&fit=crop&q=80",
-    genre: "Fantasy",
-    tags: ["Action", "Constellation", "Magic"],
-    rating: "4.9",
-    views: "1.2M Reads",
-    type: "COMIC",
-  },
-  {
-    id: "top-3",
-    title: "Omniscient Reader's Viewpoint",
-    slug: "omniscient-readers-viewpoint",
-    coverUrl: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=600&auto=format&fit=crop&q=80",
-    genre: "Fantasy",
-    tags: ["Fantasy", "Action"],
-    rating: "4.9",
-    views: "14.2M Views",
-    type: "COMIC",
-  },
-  {
-    id: "top-4",
-    title: "The Beginning After the End",
-    slug: "the-beginning-after-the-end",
-    coverUrl: "https://images.unsplash.com/photo-1563089145-599997674d42?w=600&auto=format&fit=crop&q=80",
-    genre: "Magic",
-    tags: ["Reincarnation", "Action"],
-    rating: "4.9",
-    views: "11.8M Views",
-    type: "COMIC",
-  },
-  {
-    id: "top-5",
-    title: "Villains Are Destined to Die",
-    slug: "villains-are-destined-to-die",
-    coverUrl: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=600&auto=format&fit=crop&q=80",
-    genre: "Romance",
-    tags: ["Romance", "Otome", "Drama"],
-    rating: "4.8",
-    views: "9.4M Views",
-    type: "COMIC",
-  },
-  {
-    id: "top-6",
-    title: "Return of the Blossoming Blade",
-    slug: "return-of-the-blossoming-blade",
-    coverUrl: "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=600&auto=format&fit=crop&q=80",
-    genre: "Murim",
-    tags: ["Martial Arts", "Comedy"],
-    rating: "4.9",
-    views: "8.7M Views",
-    type: "COMIC",
-  },
-  {
-    id: "top-7",
-    title: "Summer Korean Sough",
-    slug: "summer-korean-sough",
-    coverUrl: "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=600&auto=format&fit=crop&q=80",
-    genre: "Drama",
-    tags: ["Romance", "School"],
-    rating: "4.8",
-    views: "7.1M Views",
-    type: "COMIC",
-  },
-  {
-    id: "top-8",
-    title: "The Bastard of the Red Star",
-    slug: "the-bastard-of-the-red-star",
-    coverUrl: "https://images.unsplash.com/photo-1509198397868-475647b2a1e5?w=600&auto=format&fit=crop&q=80",
-    genre: "Dark Fantasy",
-    tags: ["Revenge", "Magic"],
-    rating: "4.7",
-    views: "6.5M Views",
-    type: "COMIC",
-  },
-  {
-    id: "top-9",
-    title: "Tower of God: S3",
-    slug: "tower-of-god",
-    coverUrl: "https://images.unsplash.com/photo-1541701494587-cb58502866ab?w=600&auto=format&fit=crop&q=80",
-    genre: "Adventure",
-    tags: ["Tower", "Action"],
-    rating: "4.9",
-    views: "16.1M Views",
-    type: "COMIC",
-  },
-  {
-    id: "top-10",
-    title: "Eleceed: Lightning Awakens",
-    slug: "eleceed",
-    coverUrl: "https://images.unsplash.com/photo-1514565131-fce0801e5785?w=600&auto=format&fit=crop&q=80",
-    genre: "Supernatural",
-    tags: ["Action", "Comedy"],
-    rating: "4.9",
-    views: "12.3M Views",
-    type: "COMIC",
-  },
-];
+type ChartItem = {
+  id: string;
+  title: string;
+  slug: string;
+  coverUrl: string;
+  genre: string;
+  tags: string[];
+  rating: string;
+  views: string;
+  type: "COMIC" | "NOVEL";
+};
 
-const FORMATS = [
-  { name: "Web Novels", href: "/discover?format=web_novels", emoji: "📖", desc: "480+ stories" },
-  { name: "Light Novels", href: "/discover?format=light_novels", emoji: "✨", desc: "210+ stories" },
-  { name: "Manga", href: "/discover?format=manga", emoji: "🖤", desc: "190+ stories" },
-  { name: "Webtoons", href: "/discover?format=webtoons", emoji: "📱", desc: "140+ stories" },
-  { name: "Comics", href: "/comics", emoji: "🎨", desc: "80+ stories" },
-];
+const byPopularity = (a: Novel | Comic, b: Novel | Comic) =>
+  (b.views || 0) - (a.views || 0) ||
+  (b.reads || 0) - (a.reads || 0) ||
+  (b.rating || 0) - (a.rating || 0);
+
+const toChartItem = (item: Novel | Comic, type: "COMIC" | "NOVEL"): ChartItem => ({
+  id: item.id,
+  title: (item.title || "Untitled").trim(),
+  slug: item.slug,
+  coverUrl: item.coverUrl,
+  genre: item.genre,
+  tags: item.tags && item.tags.length > 0 ? item.tags : [item.genre],
+  rating: Number(item.rating || 0).toFixed(1),
+  views: `${formatNumber(item.views || 0)} Views`,
+  type,
+});
+
+const isLightNovel = (n: Novel) =>
+  getStoryFormat({ ...n, type: "NOVEL" }).key === "LIGHT_NOVEL";
+
+const buildFormatCards = (novels: Novel[], comics: Comic[]) => {
+  const count = (n: number) => `${n} ${n === 1 ? "story" : "stories"}`;
+  const lightNovels = novels.filter(isLightNovel).length;
+  const manga = comics.filter(
+    (c) => getStoryFormat({ ...c, type: "COMIC" }).key === "MANGA"
+  ).length;
+  const webtoons = comics.filter(
+    (c) => getStoryFormat({ ...c, type: "COMIC" }).key === "WEBTOON"
+  ).length;
+  return [
+    { name: "Web Novels", href: "/discover?format=web_novels", emoji: "📖", desc: count(novels.length - lightNovels) },
+    { name: "Light Novels", href: "/discover?format=light_novels", emoji: "✨", desc: count(lightNovels) },
+    { name: "Manga", href: "/discover?format=manga", emoji: "🖤", desc: count(manga) },
+    { name: "Webtoons", href: "/discover?format=webtoons", emoji: "📱", desc: count(webtoons) },
+    { name: "Comics", href: "/comics", emoji: "🎨", desc: count(comics.length) },
+  ];
+};
 
 // ─── Section Header ───────────────────────────────────────────────────────────
 function SectionHeader({
@@ -263,8 +195,16 @@ function HorizontalShelf({ children }: { children: React.ReactNode }) {
   );
 }
 
-// ─── Top 10 Trending Leaderboard ──────────────────────────────────────────────
-function Top10Leaderboard({ items }: { items: any[] }) {
+// ─── Ranked Chart (built from real catalog items only) ────────────────────────
+function Top10Leaderboard({
+  items,
+  title = "Top 10 Trending Manga and Webtoon",
+  href = "/comics",
+}: {
+  items: any[];
+  title?: string;
+  href?: string;
+}) {
   return (
     <div className="px-4 sm:px-6 lg:px-10 max-w-screen-2xl mx-auto space-y-4">
       <div className="flex items-center justify-between">
@@ -272,15 +212,15 @@ function Top10Leaderboard({ items }: { items: any[] }) {
           <div className="flex items-center gap-2">
             <span className="w-2 h-2 rounded-full bg-indigo-500 animate-ping" />
             <p className="text-[11px] font-black tracking-widest text-indigo-400 uppercase">
-              Real-Time Global Rankings
+              Real-Time Rankings
             </p>
           </div>
           <h2 className="text-xl sm:text-2xl lg:text-3xl font-black text-zinc-900 dark:text-white tracking-tight">
-            Top 10 Trending Manga and Webtoon
+            {title}
           </h2>
         </div>
         <Link
-          href="/comics"
+          href={href}
           className="text-xs font-bold text-indigo-400 hover:text-indigo-300 flex items-center gap-1 transition"
         >
           <span>Explore Charts</span>
@@ -349,10 +289,10 @@ function Top10Leaderboard({ items }: { items: any[] }) {
                   <div className="flex items-center justify-between pt-0.5 text-[10px] text-zinc-300 font-bold">
                     <span className="flex items-center gap-1 text-amber-400">
                       <Star className="w-2.5 h-2.5 fill-amber-400" />
-                      {item.rating || "4.9"}
+                      {item.rating || "—"}
                     </span>
                     <span className="text-zinc-400">
-                      {item.views || "18.5M Views"}
+                      {item.views || ""}
                     </span>
                   </div>
                 </div>
@@ -390,33 +330,32 @@ export default function IndexPage() {
   const activeContest = dataStore.getActiveContest();
   const followingFeed = mounted && user ? dataStore.getFollowingFeed() : [];
 
-  // Assemble curated Hero Slides
+  // Assemble Hero Slides from the real catalog only (top comic + top novels)
   const heroSlides = [
-    {
-      id: "celestial-constellation",
-      title: "WORLD GOVERNED BY CELESTIAL CONSTELLATION",
-      slug: "world-governed-by-celestial-constellation-looms",
+    ...[...comics].sort(byPopularity).slice(0, 1).map((c) => ({
+      id: c.id,
+      title: (c.title || "Untitled").trim(),
+      slug: c.slug,
       type: "COMIC",
       description:
-        "In an ancient cosmos where constellations choose mortal vessels, an academy outlander unlocks the forbidden Void Constellation, shattering the thousand-year balance of powers.",
-      coverUrl:
-        "https://images.unsplash.com/photo-1534447677768-be436bb09401?w=1600&auto=format&fit=crop&q=80",
-      genre: "Celestial Fantasy",
-      rating: "4.9",
-      views: "1.2M Reads",
-      tags: ["Action", "Fantasy", "Romance"],
-    },
-    ...novels.slice(0, 3).map((n) => ({
+        c.description || "A captivating story from our verified creators on Yomika.",
+      coverUrl: c.coverUrl,
+      genre: c.genre,
+      rating: Number(c.rating || 0).toFixed(1),
+      views: `${formatNumber(c.reads || 0)} Reads`,
+      tags: c.tags && c.tags.length > 0 ? c.tags.slice(0, 3) : [c.genre],
+    })),
+    ...[...novels].sort(byPopularity).slice(0, 3).map((n) => ({
       id: n.id,
-      title: n.title,
+      title: (n.title || "Untitled").trim(),
       slug: n.slug,
       type: "NOVEL",
       description: n.description || "A captivating story from our top verified authors on Yomika.",
       coverUrl: n.coverUrl,
       genre: n.genre,
-      rating: String(n.rating),
-      views: `${formatNumber(n.reads)} Reads`,
-      tags: [n.genre, "Web Novel"],
+      rating: Number(n.rating || 0).toFixed(1),
+      views: `${formatNumber(n.reads || 0)} Reads`,
+      tags: n.tags && n.tags.length > 0 ? n.tags.slice(0, 3) : [n.genre, "Web Novel"],
     })),
   ];
 
@@ -461,21 +400,23 @@ export default function IndexPage() {
     fn();
   };
 
-  // Merge items for Top 10 Leaderboard
-  const top10Items = TOP_10_CURATED.map((curated, idx) => {
-    if (idx === 1 && comics.length > 0) {
-      const match = comics.find((c) => c.slug === "world-governed-by-celestial-constellation-looms");
-      if (match) {
-        return {
-          ...curated,
-          title: match.title,
-          slug: match.slug,
-          coverUrl: match.coverUrl || curated.coverUrl,
-        };
-      }
-    }
-    return curated;
-  });
+  // Ranked charts — real catalog entries only, top 5 per chart
+  const comicsChart = [...comics]
+    .sort(byPopularity)
+    .slice(0, 5)
+    .map((c) => toChartItem(c, "COMIC"));
+  const novelsChart = novels
+    .filter((n) => !isLightNovel(n))
+    .sort(byPopularity)
+    .slice(0, 5)
+    .map((n) => toChartItem(n, "NOVEL"));
+  const lightNovelsChart = novels
+    .filter((n) => isLightNovel(n))
+    .sort(byPopularity)
+    .slice(0, 5)
+    .map((n) => toChartItem(n, "NOVEL"));
+
+  const formatCards = buildFormatCards(novels, comics);
 
   const trendingList = novels.length >= 4 ? novels : [...novels];
   const originalsList = novels.length >= 6 ? novels.slice(0, 6) : [...novels].slice(0, 6);
@@ -485,6 +426,7 @@ export default function IndexPage() {
       {/* ─────────────────────────────────────────────────────────────
           1. CINEMATIC HERO SPOTLIGHT BANNER (DESIGN 1 SPEC)
       ───────────────────────────────────────────────────────────── */}
+      {slide && (
       <section className="relative w-full max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-10 pt-4 sm:pt-6 pb-10">
         {/* Ambient Glow Halo */}
         <div className="absolute top-16 left-1/2 -translate-x-1/2 w-4/5 h-72 bg-indigo-600/15 blur-[120px] pointer-events-none rounded-full" />
@@ -594,12 +536,25 @@ export default function IndexPage() {
           </div>
         </div>
       </section>
+      )}
 
       {/* ─────────────────────────────────────────────────────────────
-          2. TOP 10 TRENDING MANGA AND WEBTOON (DESIGN 1 SPEC)
+          2. RANKED CHARTS — REAL CATALOG ONLY
       ───────────────────────────────────────────────────────────── */}
-      <section className="py-4">
-        <Top10Leaderboard items={top10Items} />
+      <section className="py-4 space-y-12">
+        {comicsChart.length > 0 && (
+          <Top10Leaderboard items={comicsChart} title="Top Comics Chart" href="/comics" />
+        )}
+        {novelsChart.length > 0 && (
+          <Top10Leaderboard items={novelsChart} title="Top Novels Chart" href="/novels" />
+        )}
+        {lightNovelsChart.length > 0 && (
+          <Top10Leaderboard
+            items={lightNovelsChart}
+            title="Top Light Novels Chart"
+            href="/discover?format=light_novels"
+          />
+        )}
       </section>
 
       {/* ─────────────────────────────────────────────────────────────
@@ -635,7 +590,7 @@ export default function IndexPage() {
         <div className="px-4 sm:px-6 lg:px-10 max-w-screen-2xl mx-auto">
           <SectionHeader eyebrow="Browse" title="Explore Story Formats" />
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
-            {FORMATS.map((f) => (
+            {formatCards.map((f) => (
               <Link
                 key={f.name}
                 href={f.href}
