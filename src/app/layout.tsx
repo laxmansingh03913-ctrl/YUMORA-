@@ -32,6 +32,9 @@ const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://youmika.site";
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
+  verification: {
+    google: "RGkMXtO24Rfbhe--k3NKqy4fOGi-b9flPgTID1TlpAk",
+  },
   title: {
     default: "Yomika — Stories. Comics. Worlds.",
     template: "%s | Yomika",
