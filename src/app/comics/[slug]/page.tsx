@@ -82,6 +82,9 @@ export default function ComicDetailPage({ params }: ComicPageProps) {
   const [activePageIndex, setActivePageIndex] = useState(0);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [autoScrollSpeed, setAutoScrollSpeed] = useState<number>(0);
+  const [readProgress, setReadProgress] = useState(0);
+  const [stageInView, setStageInView] = useState(false);
+  const readerStageRef = React.useRef<HTMLDivElement>(null);
 
   // Vertical Hands-free Auto-Scroll Effect
   useEffect(() => {
@@ -363,6 +366,28 @@ export default function ComicDetailPage({ params }: ComicPageProps) {
     }
   };
 
+  // Immersive reading progress: vertical mode follows scroll through the
+  // stage; paged modes follow the current page.
+  useEffect(() => {
+    if (readingMode !== "VERTICAL") {
+      setReadProgress(pages.length ? ((activePageIndex + 1) / pages.length) * 100 : 0);
+      setStageInView(true);
+      return;
+    }
+    const onScroll = () => {
+      const el = readerStageRef.current;
+      if (!el) return;
+      const rect = el.getBoundingClientRect();
+      const total = rect.height - window.innerHeight;
+      const done = Math.min(Math.max(-rect.top, 0), Math.max(total, 1));
+      setReadProgress(total > 0 ? (done / total) * 100 : 100);
+      setStageInView(rect.bottom > 0 && rect.top < window.innerHeight);
+    };
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, [readingMode, activePageIndex, pages.length, activeEpisodeIdx]);
+
   const creator = comic.creator || {
     id: comic.creatorId || "creator",
     name: "Original Creator",
@@ -632,10 +657,10 @@ export default function ComicDetailPage({ params }: ComicPageProps) {
             </div>
           </div>
         ) : (
-          <>
+          <div ref={readerStageRef} className="bg-black rounded-[2rem] ring-1 ring-zinc-800/80 shadow-2xl px-3 sm:px-5 py-4 space-y-4">
             {/* Floating Reader Toolbar (Only when episodes exist) */}
             <div
-              className="sticky top-16 z-30 mx-auto w-full flex flex-wrap items-center justify-between gap-3 p-3.5 rounded-2xl bg-zinc-900/95 border border-zinc-800 backdrop-blur-md text-xs text-zinc-300 shadow-2xl"
+              className="sticky top-16 z-30 mx-auto w-full flex flex-wrap items-center justify-between gap-2 px-4 py-2 rounded-full bg-zinc-900/70 border border-white/10 backdrop-blur-xl text-xs text-zinc-300 shadow-xl"
               style={{ maxWidth: `${readingMode === "VERTICAL" ? zoomLevel * 8.5 : zoomLevel * 7.5}px` }}
             >
               <div className="flex items-center gap-2">
@@ -753,7 +778,7 @@ export default function ComicDetailPage({ params }: ComicPageProps) {
             {/* 1. VERTICAL SCROLL MODE (Webtoon) */}
             {readingMode === "VERTICAL" && (
               <div
-                className="mx-auto flex flex-col items-center bg-black rounded-3xl overflow-hidden shadow-2xl border border-zinc-800 transition-all duration-200"
+                className="mx-auto flex flex-col items-center transition-all duration-200"
                 style={{ maxWidth: `${zoomLevel * 8.5}px` }}
               >
                 {pages.map((imgUrl, idx) => {
@@ -784,7 +809,7 @@ export default function ComicDetailPage({ params }: ComicPageProps) {
             {readingMode !== "VERTICAL" && (
               <div className="space-y-4">
                 <div
-                  className="mx-auto aspect-[3/4] bg-black rounded-3xl overflow-hidden shadow-2xl border border-zinc-800 relative flex items-center justify-center transition-all"
+                  className="mx-auto aspect-[3/4] relative flex items-center justify-center transition-all"
                   style={{ maxWidth: `${zoomLevel * 7.5}px` }}
                 >
                   {pages[activePageIndex] ? (
@@ -852,7 +877,17 @@ export default function ComicDetailPage({ params }: ComicPageProps) {
                 </div>
               </div>
             )}
-          </>
+          </div>
+        )}
+
+        {/* Reading progress line — hair-thin coral bar at the screen's bottom edge */}
+        {hasEpisodes && stageInView && (
+          <div className="fixed bottom-0 left-0 right-0 h-[3px] z-[70] pointer-events-none">
+            <div
+              className="h-full bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.8)] transition-[width] duration-150"
+              style={{ width: `${readProgress}%` }}
+            />
+          </div>
         )}
 
         {/* Episode Pagination & Navigation */}
