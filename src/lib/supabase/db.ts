@@ -452,14 +452,10 @@ export const dbService = {
       if (error || !data) return null;
       const row: any = data;
 
-      // Increment views & reads in database in background
+      // Increment views & reads via a narrow security-definer RPC
+      // (direct table UPDATE is no longer open to anonymous clients).
       supabase
-        .from("comics")
-        .update({
-          views: (row.views || 0) + 1,
-          reads: (row.reads || 0) + 1,
-        })
-        .eq("id", row.id)
+        .rpc("bump_comic_views", { comic_id: row.id })
         .then(() => {}, () => {});
 
       row.views = (row.views || 0) + 1;
