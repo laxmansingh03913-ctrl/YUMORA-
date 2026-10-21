@@ -291,7 +291,7 @@ export default function CreatorProfilePage({ params }: CreatorProfileProps) {
     if (creator) {
       try {
         setFollowersCount(
-          dataStore.getFollowerCount(creator.id) || creator.followersCount || 0
+          creator.followersCount || dataStore.getFollowerCount(creator.id) || 0
         );
         setFollowingCount(
           creator.followingCount || dataStore.getFollowingCount(creator.id) || 0
@@ -405,16 +405,41 @@ export default function CreatorProfilePage({ params }: CreatorProfileProps) {
     return novelLikes + comicLikes;
   }, [creatorNovels, creatorComics]);
 
-  // Followers & Following Lists
+  // Followers & Following Lists — loaded from the backend (the follows
+  // table is the source of truth); the local store is only a fallback
+  // while the request is in flight.
+  const [dbFollowersList, setDbFollowersList] = useState<any[] | null>(null);
+  const [dbFollowingList, setDbFollowingList] = useState<any[] | null>(null);
+
+  useEffect(() => {
+    if (!creator?.id) return;
+    let cancelled = false;
+    (async () => {
+      const [fw, fg, counts] = await Promise.all([
+        dbService.getFollowersOf(creator.id),
+        dbService.getFollowingOf(creator.id),
+        dbService.getFollowCounts(creator.id),
+      ]);
+      if (cancelled) return;
+      setDbFollowersList(fw);
+      setDbFollowingList(fg);
+      setFollowersCount(counts.followers);
+      setFollowingCount(counts.following);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [creator?.id]);
+
   const followersList = useMemo(() => {
     if (!creator?.id) return [];
-    return dataStore.getFollowers(creator.id);
-  }, [creator?.id, followersCount]);
+    return dbFollowersList ?? dataStore.getFollowers(creator.id);
+  }, [creator?.id, followersCount, dbFollowersList]);
 
   const followingList = useMemo(() => {
     if (!creator?.id) return [];
-    return dataStore.getFollowing(creator.id);
-  }, [creator?.id, followingCount]);
+    return dbFollowingList ?? dataStore.getFollowing(creator.id);
+  }, [creator?.id, followingCount, dbFollowingList]);
 
   if (isLoadingProfile && !creator) {
     return (
@@ -462,8 +487,10 @@ export default function CreatorProfilePage({ params }: CreatorProfileProps) {
     );
   }
 
-  // Follow Toggle with Optimistic UI & Error Rollback
-  const handleFollowAction = () => {
+  // Follow Toggle: optimistic UI, confirmed against the backend.
+  // If the database write fails, both the UI and the local store roll
+  // back — the button never claims a follow that was not saved.
+  const handleFollowAction = async () => {
     if (!isAuthenticated || !user) {
       openAuthModal();
       return;
@@ -475,42 +502,43 @@ export default function CreatorProfilePage({ params }: CreatorProfileProps) {
 
     const prevFollowing = isFollowing;
     const prevCount = followersCount;
+    const want = !prevFollowing;
 
-    if (prevFollowing) {
-      // Optimistic Unfollow
-      setIsFollowing(false);
-      setFollowersCount((prev) => Math.max(0, prev - 1));
-      setShowFollowDropdown(false);
+    // Optimistic update
+    setIsFollowing(want);
+    setFollowersCount((prev) => Math.max(0, prev + (want ? 1 : -1)));
+    if (!want) setShowFollowDropdown(false);
 
-      const res = dataStore.unfollowCreator(user.id, creator.id);
-      if (!res.success) {
-        setIsFollowing(prevFollowing);
-        setFollowersCount(prevCount);
-        showToast(res.error || "Failed to unfollow creator");
-      } else {
-        showToast(`Unfollowed @${creator.username}`);
+    const res = want
+      ? dataStore.followCreator(user.id, creator.id, notifPreferences)
+      : dataStore.unfollowCreator(user.id, creator.id);
+
+    const saved = res.success
+      ? await dbService.setFollow(user.id, creator.id, want)
+      : false;
+
+    if (!saved) {
+      // Roll back local store + UI
+      if (want) dataStore.unfollowCreator(user.id, creator.id);
+      else dataStore.followCreator(user.id, creator.id, notifPreferences);
+      setIsFollowing(prevFollowing);
+      setFollowersCount(prevCount);
+      showToast(res.error || "Could not save. Please check your connection and try again.");
+    } else if (want) {
+      try {
+        confetti({ particleCount: 50, spread: 60, origin: { y: 0.7 } });
+      } catch {
+        // ignore
       }
+      showToast(`✓ Following @${creator.username}! Release notifications enabled.`);
+      // Refresh the followers list so the new follower appears immediately
+      dbService.getFollowersOf(creator.id).then(setDbFollowersList).catch(() => {});
     } else {
-      // Optimistic Follow
-      setIsFollowing(true);
-      setFollowersCount((prev) => prev + 1);
-
-      const res = dataStore.followCreator(user.id, creator.id, notifPreferences);
-      if (!res.success) {
-        setIsFollowing(prevFollowing);
-        setFollowersCount(prevCount);
-        showToast(res.error || "Failed to follow creator");
-      } else {
-        try {
-          confetti({ particleCount: 50, spread: 60, origin: { y: 0.7 } });
-        } catch {
-          // ignore
-        }
-        showToast(`✓ Following @${creator.username}! Release notifications enabled.`);
-      }
+      showToast(`Unfollowed @${creator.username}`);
+      dbService.getFollowersOf(creator.id).then(setDbFollowersList).catch(() => {});
     }
 
-    setTimeout(() => setIsFollowLoading(false), 300);
+    setIsFollowLoading(false);
   };
 
   // Update Notification Preferences
@@ -772,10 +800,16 @@ export default function CreatorProfilePage({ params }: CreatorProfileProps) {
                     className={`px-3 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider shadow-xs ${
                       creator.role === "ADMIN"
                         ? "bg-amber-500/15 text-amber-500 border border-amber-500/30"
-                        : "bg-[#D91E18]/15 text-[#D91E18] border border-[#D91E18]/30"
+                        : creator.isVerified
+                          ? "bg-[#D91E18]/15 text-[#D91E18] border border-[#D91E18]/30"
+                          : "bg-zinc-500/10 text-zinc-500 dark:text-zinc-400 border border-zinc-500/25"
                     }`}
                   >
-                    {creator.role === "ADMIN" ? "★ Official Team" : "✓ Verified Storyteller"}
+                    {creator.role === "ADMIN"
+                      ? "★ Official Team"
+                      : creator.isVerified
+                        ? "✓ Verified Storyteller"
+                        : "Storyteller"}
                   </span>
                 </div>
 
@@ -950,12 +984,12 @@ export default function CreatorProfilePage({ params }: CreatorProfileProps) {
           {/* 2. CREATOR PREMIUM GLASSMORPHIC STATISTICS CARDS */}
           <div className="mt-6 grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
             {/* Card 1: Total Reads */}
-            <div className="group p-4 rounded-2xl bg-white dark:bg-zinc-900/90 border border-zinc-200/80 dark:border-zinc-800/80 shadow-sm hover:border-teal-500/40 dark:hover:border-teal-500/40 transition-all duration-300 hover:-translate-y-0.5">
+            <div className="group p-4 rounded-2xl bg-white dark:bg-zinc-900/90 border border-zinc-200/80 dark:border-zinc-800/80 shadow-sm hover:border-rose-500/40 dark:hover:border-rose-500/40 transition-all duration-300 hover:-translate-y-0.5">
               <div className="flex items-center justify-between pb-1.5">
                 <span className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider">
                   Total Reads
                 </span>
-                <div className="w-8 h-8 rounded-xl bg-teal-500/10 dark:bg-teal-500/20 text-teal-600 dark:text-teal-400 flex items-center justify-center border border-teal-500/20 group-hover:scale-110 transition">
+                <div className="w-8 h-8 rounded-xl bg-rose-500/10 dark:bg-rose-500/20 text-rose-600 dark:text-rose-400 flex items-center justify-center border border-rose-500/20 group-hover:scale-110 transition">
                   <Eye className="w-4 h-4" />
                 </div>
               </div>
@@ -971,30 +1005,30 @@ export default function CreatorProfilePage({ params }: CreatorProfileProps) {
                 setListModalType("followers");
                 setListSearchQuery("");
               }}
-              className="group text-left p-4 rounded-2xl bg-white dark:bg-zinc-900/90 border border-zinc-200/80 dark:border-zinc-800/80 shadow-sm hover:border-indigo-500/40 dark:hover:border-indigo-500/40 transition-all duration-300 hover:-translate-y-0.5 cursor-pointer"
+              className="group text-left p-4 rounded-2xl bg-white dark:bg-zinc-900/90 border border-zinc-200/80 dark:border-zinc-800/80 shadow-sm hover:border-rose-500/40 dark:hover:border-rose-500/40 transition-all duration-300 hover:-translate-y-0.5 cursor-pointer"
             >
               <div className="flex items-center justify-between pb-1.5">
                 <span className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider flex items-center gap-1">
                   <span>Followers</span>
-                  <span className="text-[9px] text-indigo-500 font-bold">↗</span>
+                  <span className="text-[9px] text-rose-500 font-bold">↗</span>
                 </span>
-                <div className="w-8 h-8 rounded-xl bg-indigo-500/10 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 flex items-center justify-center border border-indigo-500/20 group-hover:scale-110 transition">
+                <div className="w-8 h-8 rounded-xl bg-rose-500/10 dark:bg-rose-500/20 text-rose-600 dark:text-rose-400 flex items-center justify-center border border-rose-500/20 group-hover:scale-110 transition">
                   <Users className="w-4 h-4" />
                 </div>
               </div>
-              <p className="text-2xl sm:text-3xl font-black text-indigo-600 dark:text-indigo-400 tracking-tight">
+              <p className="text-2xl sm:text-3xl font-black text-zinc-900 dark:text-white tracking-tight">
                 {formatNumber(followersCount)}
               </p>
               <p className="text-[10px] text-zinc-400 font-medium pt-0.5">Subscribed fans & readers</p>
             </button>
 
             {/* Card 3: Published Works */}
-            <div className="group p-4 rounded-2xl bg-white dark:bg-zinc-900/90 border border-zinc-200/80 dark:border-zinc-800/80 shadow-sm hover:border-amber-500/40 dark:hover:border-amber-500/40 transition-all duration-300 hover:-translate-y-0.5">
+            <div className="group p-4 rounded-2xl bg-white dark:bg-zinc-900/90 border border-zinc-200/80 dark:border-zinc-800/80 shadow-sm hover:border-rose-500/40 dark:hover:border-rose-500/40 transition-all duration-300 hover:-translate-y-0.5">
               <div className="flex items-center justify-between pb-1.5">
                 <span className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider">
                   Published Works
                 </span>
-                <div className="w-8 h-8 rounded-xl bg-amber-500/10 dark:bg-amber-500/20 text-amber-600 dark:text-amber-400 flex items-center justify-center border border-amber-500/20 group-hover:scale-110 transition">
+                <div className="w-8 h-8 rounded-xl bg-rose-500/10 dark:bg-rose-500/20 text-rose-600 dark:text-rose-400 flex items-center justify-center border border-rose-500/20 group-hover:scale-110 transition">
                   <BookOpen className="w-4 h-4" />
                 </div>
               </div>
@@ -1716,7 +1750,13 @@ export default function CreatorProfilePage({ params }: CreatorProfileProps) {
                               dataStore.followCreator(user.id, person.id);
                               showToast(`✓ Following @${person.username}`);
                             }
-                            setFollowersCount(dataStore.getFollowerCount(creator.id));
+                            // Refresh counts + lists from the backend (source of truth)
+                            dbService.getFollowCounts(creator.id).then((c) => {
+                              setFollowersCount(c.followers);
+                              setFollowingCount(c.following);
+                            }).catch(() => {});
+                            dbService.getFollowersOf(creator.id).then(setDbFollowersList).catch(() => {});
+                            dbService.getFollowingOf(creator.id).then(setDbFollowingList).catch(() => {});
                           }}
                           className={`px-3 py-1.5 rounded-xl font-bold text-[11px] transition ${
                             isUserFollowingPerson

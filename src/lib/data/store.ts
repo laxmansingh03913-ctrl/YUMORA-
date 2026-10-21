@@ -466,6 +466,11 @@ class DataStore {
       this.setItem(STORAGE_KEYS.FOLLOWS, flatFollows);
     }
 
+    // Persist to the backend so the follow survives across devices/logins.
+    // (The profile page also confirms via dbService.setFollow and rolls
+    // back its optimistic UI if the write fails.)
+    void dbService.setFollow(followerId, targetId, true).catch(() => {});
+
     // Auto-generate a welcome notification
     this.createFollowNotification({
       id: `notif-${Date.now()}`,
@@ -497,6 +502,9 @@ class DataStore {
 
     const flatFollows = this.getFollows().filter((id) => id !== targetId);
     this.setItem(STORAGE_KEYS.FOLLOWS, flatFollows);
+
+    // Persist the unfollow to the backend as well
+    void dbService.setFollow(followerId, targetId, false).catch(() => {});
 
     return { success: true };
   }

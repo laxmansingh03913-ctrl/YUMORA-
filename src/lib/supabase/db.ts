@@ -1186,59 +1186,140 @@ export const dbService = {
     }
   },
 
-  async toggleFollow(followerId: string, followingId: string): Promise<boolean> {
+  // Idempotent, error-checked follow/unfollow. Returns true only when the
+  // database row is in the requested state afterwards. Profile follower /
+  // following counters are maintained by the follows_sync_counts trigger.
+  async setFollow(followerId: string, followingId: string, want: boolean): Promise<boolean> {
     try {
       if (!followerId || !followingId || followerId === followingId) return false;
-      const validFollower = ensureUuid(followerId);
-      const validFollowing = ensureUuid(followingId);
+      const uuidRe = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      if (!uuidRe.test(followerId) || !uuidRe.test(followingId)) return false;
 
-      const { data: existing } = await supabase
+      const { data: existing, error: readErr } = await supabase
         .from("follows")
         .select("id")
-        .eq("follower_id", validFollower)
-        .eq("following_id", validFollowing)
+        .eq("follower_id", followerId)
+        .eq("following_id", followingId)
         .maybeSingle();
-
-      if (existing) {
-        await supabase.from("follows").delete().eq("id", existing.id);
+      if (readErr) {
+        console.warn("[FOLLOW READ ERROR]", readErr.message);
         return false;
-      } else {
-        await supabase.from("follows").insert([
-          {
-            follower_id: validFollower,
-            following_id: validFollowing,
-          },
-        ]);
+      }
 
-        // Send database notification to the user being followed
+      if (want && !existing) {
+        const { error: insErr } = await supabase
+          .from("follows")
+          .insert([{ follower_id: followerId, following_id: followingId }]);
+        if (insErr) {
+          console.warn("[FOLLOW INSERT ERROR]", insErr.message);
+          return false;
+        }
+        // Notify the user being followed (best-effort)
         try {
           const { data: sender } = await supabase
             .from("profiles")
             .select("name, avatar")
-            .eq("id", validFollower)
+            .eq("id", followerId)
             .maybeSingle();
-
-          const senderName = sender?.name || "A Reader";
-          const senderAvatar = sender?.avatar || "/hero-character.png";
-
           await supabase.from("notifications").insert([
             {
-              user_id: validFollowing,
+              user_id: followingId,
               title: "New Follower! 👤",
-              message: `${senderName} started following your profile!`,
+              message: `${sender?.name || "A Reader"} started following your profile!`,
               type: "FOLLOW",
-              creator_name: senderName,
-              creator_avatar: senderAvatar,
+              creator_name: sender?.name || "A Reader",
+              creator_avatar: sender?.avatar || "/hero-character.png",
             },
           ]);
         } catch (notifErr) {
           console.warn("[FOLLOW NOTIFICATION ERROR]", notifErr);
         }
-
         return true;
       }
+
+      if (!want && existing) {
+        const { error: delErr } = await supabase.from("follows").delete().eq("id", existing.id);
+        if (delErr) {
+          console.warn("[UNFOLLOW DELETE ERROR]", delErr.message);
+          return false;
+        }
+        return true;
+      }
+
+      return true; // already in the requested state
+    } catch (e) {
+      console.warn("[SET FOLLOW ERROR]", e);
+      return false;
+    }
+  },
+
+  async toggleFollow(followerId: string, followingId: string): Promise<boolean> {
+    try {
+      if (!followerId || !followingId || followerId === followingId) return false;
+      const { data: existing } = await supabase
+        .from("follows")
+        .select("id")
+        .eq("follower_id", followerId)
+        .eq("following_id", followingId)
+        .maybeSingle();
+      const want = !existing;
+      const ok = await this.setFollow(followerId, followingId, want);
+      return ok ? want : !!existing;
     } catch {
       return false;
+    }
+  },
+
+  async getFollowCounts(userId: string): Promise<{ followers: number; following: number }> {
+    try {
+      if (!userId) return { followers: 0, following: 0 };
+      const [f1, f2] = await Promise.all([
+        supabase.from("follows").select("id", { count: "exact", head: true }).eq("following_id", userId),
+        supabase.from("follows").select("id", { count: "exact", head: true }).eq("follower_id", userId),
+      ]);
+      return { followers: f1.count || 0, following: f2.count || 0 };
+    } catch {
+      return { followers: 0, following: 0 };
+    }
+  },
+
+  async getFollowersOf(userId: string): Promise<UserProfile[]> {
+    try {
+      if (!userId) return [];
+      const { data: rows } = await supabase
+        .from("follows")
+        .select("follower_id")
+        .eq("following_id", userId)
+        .order("created_at", { ascending: false })
+        .limit(200);
+      const ids = (rows || []).map((r: any) => r.follower_id).filter(Boolean);
+      if (!ids.length) return [];
+      const { data: profs } = await supabase.from("profiles").select("*").in("id", ids);
+      return (profs || [])
+        .map((row: any) => mapProfileFromDb(row))
+        .filter((p: UserProfile | null): p is UserProfile => p !== null);
+    } catch {
+      return [];
+    }
+  },
+
+  async getFollowingOf(userId: string): Promise<UserProfile[]> {
+    try {
+      if (!userId) return [];
+      const { data: rows } = await supabase
+        .from("follows")
+        .select("following_id")
+        .eq("follower_id", userId)
+        .order("created_at", { ascending: false })
+        .limit(200);
+      const ids = (rows || []).map((r: any) => r.following_id).filter(Boolean);
+      if (!ids.length) return [];
+      const { data: profs } = await supabase.from("profiles").select("*").in("id", ids);
+      return (profs || [])
+        .map((row: any) => mapProfileFromDb(row))
+        .filter((p: UserProfile | null): p is UserProfile => p !== null);
+    } catch {
+      return [];
     }
   },
 
