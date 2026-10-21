@@ -62,7 +62,7 @@ function loadRazorpayScript(): Promise<boolean> {
 export function CoinShopModal({ isOpen, onClose, onCoinsUpdated }: CoinShopModalProps) {
   const { user, openAuthModal } = useAuth();
   const [selectedPack, setSelectedPack] = useState<CoinPackage>(COIN_PACKAGES[1] || COIN_PACKAGES[0]);
-  const [currency, setCurrency] = useState<"INR" | "USD">("INR");
+  const [currency, setCurrency] = useState<"INR" | "USD">("USD");
   const [isProcessing, setIsProcessing] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
@@ -170,7 +170,7 @@ export function CoinShopModal({ isOpen, onClose, onCoinsUpdated }: CoinShopModal
                 creatorName: "Youmika Treasury",
                 creatorAvatar: "/hero-character.png",
                 title: `🪙 +${verifiedCoins.toLocaleString()} Coins Added!`,
-                message: `Successfully purchased ${selectedPack.label} for ₹${selectedPack.priceInr}. TxID: ${response.razorpay_payment_id || "Live"}`,
+                message: `Successfully purchased ${selectedPack.label} for ${currency === "INR" ? `₹${selectedPack.priceInr}` : `$${selectedPack.priceUsd}`}. TxID: ${response.razorpay_payment_id || "Live"}`,
                 contentUrl: "/library",
                 type: "SYSTEM",
                 isRead: false,
@@ -231,7 +231,7 @@ export function CoinShopModal({ isOpen, onClose, onCoinsUpdated }: CoinShopModal
           userId: user.id,
           amount: totalCoinsInPack,
           type: "COIN_PURCHASE_SIMULATED",
-          description: `Simulated purchase of ${selectedPack.label} (${totalCoinsInPack} coins) for ₹${selectedPack.priceInr}`,
+          description: `Simulated purchase of ${selectedPack.label} (${totalCoinsInPack} coins) for ${currency === "INR" ? `₹${selectedPack.priceInr}` : `$${selectedPack.priceUsd}`}`,
         })
         .catch((err) => console.warn("Simulated payment database sync failed:", err));
 
@@ -241,7 +241,7 @@ export function CoinShopModal({ isOpen, onClose, onCoinsUpdated }: CoinShopModal
         creatorName: "Yomika Treasury",
         creatorAvatar: "/hero-character.png",
         title: `🪙 +${totalCoinsInPack.toLocaleString()} Coins Added!`,
-        message: `Successfully purchased ${selectedPack.label} for ₹${selectedPack.priceInr}. Your balance is ${newBalance.toLocaleString()} Coins.`,
+        message: `Successfully purchased ${selectedPack.label} for ${currency === "INR" ? `₹${selectedPack.priceInr}` : `$${selectedPack.priceUsd}`}. Your balance is ${newBalance.toLocaleString()} Coins.`,
         contentUrl: "/library",
         type: "SYSTEM",
         isRead: false,
