@@ -233,6 +233,29 @@ export default function ComicDetailPage({ params }: ComicPageProps) {
     });
   }, [comic, activeEpisodeIdx, hasEpisodes, activeEpisode]);
 
+  // Immersive reading progress: vertical mode follows scroll through the
+  // stage; paged modes follow the current page. (Must stay above the
+  // early return below — hooks rule.)
+  useEffect(() => {
+    if (readingMode !== "VERTICAL") {
+      setReadProgress(pages.length ? ((activePageIndex + 1) / pages.length) * 100 : 0);
+      setStageInView(true);
+      return;
+    }
+    const onScroll = () => {
+      const el = readerStageRef.current;
+      if (!el) return;
+      const rect = el.getBoundingClientRect();
+      const total = rect.height - window.innerHeight;
+      const done = Math.min(Math.max(-rect.top, 0), Math.max(total, 1));
+      setReadProgress(total > 0 ? (done / total) * 100 : 100);
+      setStageInView(rect.bottom > 0 && rect.top < window.innerHeight);
+    };
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, [readingMode, activePageIndex, pages.length, activeEpisodeIdx]);
+
   if (!comic) {
     if (isLoading || !mounted) {
       return (
@@ -365,28 +388,6 @@ export default function ComicDetailPage({ params }: ComicPageProps) {
       setIsFullscreen(false);
     }
   };
-
-  // Immersive reading progress: vertical mode follows scroll through the
-  // stage; paged modes follow the current page.
-  useEffect(() => {
-    if (readingMode !== "VERTICAL") {
-      setReadProgress(pages.length ? ((activePageIndex + 1) / pages.length) * 100 : 0);
-      setStageInView(true);
-      return;
-    }
-    const onScroll = () => {
-      const el = readerStageRef.current;
-      if (!el) return;
-      const rect = el.getBoundingClientRect();
-      const total = rect.height - window.innerHeight;
-      const done = Math.min(Math.max(-rect.top, 0), Math.max(total, 1));
-      setReadProgress(total > 0 ? (done / total) * 100 : 100);
-      setStageInView(rect.bottom > 0 && rect.top < window.innerHeight);
-    };
-    onScroll();
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
-  }, [readingMode, activePageIndex, pages.length, activeEpisodeIdx]);
 
   const creator = comic.creator || {
     id: comic.creatorId || "creator",
