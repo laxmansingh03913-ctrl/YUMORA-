@@ -1207,9 +1207,14 @@ export const dbService = {
       }
 
       if (want && !existing) {
+        // Upsert with ignoreDuplicates: concurrent follow calls (local-store
+        // write-through + UI confirmation) must not fail on the unique pair.
         const { error: insErr } = await supabase
           .from("follows")
-          .insert([{ follower_id: followerId, following_id: followingId }]);
+          .upsert([{ follower_id: followerId, following_id: followingId }], {
+            onConflict: "follower_id,following_id",
+            ignoreDuplicates: true,
+          });
         if (insErr) {
           console.warn("[FOLLOW INSERT ERROR]", insErr.message);
           return false;
