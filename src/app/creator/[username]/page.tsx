@@ -699,15 +699,29 @@ export default function CreatorProfilePage({ params }: CreatorProfileProps) {
       {/* 1. CREATOR HERO BANNER & PROFILE HEADER */}
       <div className="relative">
         {/* Banner with Ambient Shimmer & Gradient Overlay */}
-        <div className="h-48 sm:h-60 md:h-72 w-full bg-gradient-to-r from-rose-950 via-zinc-900 to-indigo-950 overflow-hidden relative group">
-          <img
-            src={
-              creator.banner ||
-              "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=1600&auto=format&fit=crop&q=85"
-            }
-            alt={creator.name}
-            className="w-full h-full object-cover opacity-60 mix-blend-overlay scale-105 transition duration-700 hover:scale-100"
-          />
+        <div className="h-56 sm:h-72 md:h-80 w-full bg-zinc-950 overflow-hidden relative group">
+          {creator.banner ? (
+            <img
+              src={creator.banner}
+              alt={creator.name}
+              className="w-full h-full object-cover"
+            />
+          ) : (
+            <div className="absolute inset-0 flex">
+              {[...creatorNovels, ...creatorComics].slice(0, 5).map((w: any) => (
+                <img
+                  key={w.id}
+                  src={w.coverUrl}
+                  alt=""
+                  className="h-full flex-1 min-w-0 object-cover"
+                />
+              ))}
+              {totalWorks === 0 && (
+                <div className="w-full h-full bg-gradient-to-r from-rose-950 via-zinc-900 to-zinc-950" />
+              )}
+              <div className="absolute inset-0 bg-black/50" />
+            </div>
+          )}
           {/* Multi-Stop Depth Gradients */}
           <div className="absolute inset-0 bg-gradient-to-t from-[#FAFAFA] dark:from-[#0B0B0C] via-transparent to-black/30" />
           <div className="absolute inset-0 bg-radial-gradient from-transparent via-black/20 to-black/60 pointer-events-none" />
@@ -732,7 +746,7 @@ export default function CreatorProfilePage({ params }: CreatorProfileProps) {
             {/* Left: Glowing Multi-Layer Avatar + Details */}
             <div className="flex flex-col sm:flex-row items-start sm:items-end gap-5 sm:gap-7">
               <div className="-mt-16 sm:-mt-20 md:-mt-24 relative group flex-shrink-0 z-10">
-                <div className="relative w-32 h-32 sm:w-36 sm:h-36 md:w-40 md:h-40 rounded-3xl p-1 bg-gradient-to-tr from-rose-500 via-amber-500 to-indigo-500 shadow-2xl shadow-rose-950/30 dark:shadow-rose-950/60 transition-transform duration-300 group-hover:scale-105">
+                <div className="relative w-32 h-32 sm:w-36 sm:h-36 md:w-40 md:h-40 rounded-3xl p-1 bg-gradient-to-tr from-[#D91E18] to-rose-400 shadow-2xl shadow-rose-950/30 dark:shadow-rose-950/60 transition-transform duration-300 group-hover:scale-105">
                   <div className="w-full h-full rounded-[22px] overflow-hidden bg-zinc-950 flex items-center justify-center text-white font-black text-4xl sm:text-5xl relative">
                     {creator.avatar && !avatarError ? (
                       <img
@@ -742,7 +756,7 @@ export default function CreatorProfilePage({ params }: CreatorProfileProps) {
                         className="w-full h-full object-cover transition duration-300 group-hover:scale-105"
                       />
                     ) : (
-                      <div className="w-full h-full bg-gradient-to-br from-indigo-600 via-rose-600 to-amber-600 flex items-center justify-center">
+                      <div className="w-full h-full bg-gradient-to-br from-rose-700 via-[#D91E18] to-rose-500 flex items-center justify-center">
                         <span className="tracking-tight drop-shadow-md">{initials}</span>
                       </div>
                     )}
@@ -814,18 +828,18 @@ export default function CreatorProfilePage({ params }: CreatorProfileProps) {
                 </div>
 
                 <div className="flex flex-wrap items-center gap-3 text-xs text-zinc-600 dark:text-zinc-400 font-medium">
-                  <span className="font-bold text-zinc-900 dark:text-zinc-200 px-2.5 py-1 rounded-lg bg-zinc-100 dark:bg-zinc-800/80 border border-zinc-200 dark:border-zinc-700/60 font-mono text-[11px]">
+                  <span className="font-bold text-zinc-500 dark:text-zinc-400 text-xs sm:text-sm">
                     @{creator.username}
                   </span>
 
                   {creator.country && (
-                    <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-zinc-100 dark:bg-zinc-800/50 border border-zinc-200/60 dark:border-zinc-800 text-[11px]">
+                    <span className="flex items-center gap-1.5 text-[11px] sm:text-xs">
                       <MapPin className="w-3.5 h-3.5 text-[#D91E18]" />
                       <span>{creator.country}</span>
                     </span>
                   )}
 
-                  <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-zinc-100 dark:bg-zinc-800/50 border border-zinc-200/60 dark:border-zinc-800 text-[11px]">
+                  <span className="flex items-center gap-1.5 text-[11px] sm:text-xs">
                     <Calendar className="w-3.5 h-3.5 text-zinc-400" />
                     <span>Joined {creator.createdAt ? formatDate(creator.createdAt) : "Recently"}</span>
                   </span>
@@ -859,10 +873,10 @@ export default function CreatorProfilePage({ params }: CreatorProfileProps) {
                   <button
                     onClick={handleFollowAction}
                     disabled={isFollowLoading}
-                    className={`flex-1 sm:flex-none px-6 py-2.5 rounded-xl font-bold text-xs shadow-md transition flex items-center justify-center gap-2 cursor-pointer ${
+                    className={`flex-1 sm:flex-none px-7 py-3 rounded-xl font-bold text-sm shadow-md transition flex items-center justify-center gap-2 cursor-pointer ${
                       isFollowing
                         ? "bg-zinc-800 text-zinc-200 border border-zinc-700 hover:bg-zinc-700"
-                        : "bg-gradient-to-r from-rose-600 via-rose-500 to-rose-700 hover:opacity-95 text-white shadow-rose-600/30 transform hover:scale-[1.02] active:scale-[0.98]"
+                        : "bg-[#D91E18] hover:bg-[#B71813] text-white shadow-rose-950/25"
                     }`}
                   >
                     {isFollowing ? (
@@ -873,7 +887,7 @@ export default function CreatorProfilePage({ params }: CreatorProfileProps) {
                     ) : (
                       <>
                         <UserPlus className="w-4 h-4" />
-                        <span>+ Follow Storyteller</span>
+                        <span>Follow</span>
                       </>
                     )}
                   </button>
@@ -925,11 +939,11 @@ export default function CreatorProfilePage({ params }: CreatorProfileProps) {
                   {/* Tip Creator Button */}
                   <button
                     onClick={() => setIsTipModalOpen(true)}
-                    className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 via-amber-600 to-rose-600 hover:opacity-95 text-white font-black text-xs shadow-md shadow-amber-500/25 transition transform hover:scale-[1.02] active:scale-[0.98] flex items-center gap-1.5 cursor-pointer"
+                    className="px-5 py-3 rounded-xl bg-transparent border border-zinc-300 dark:border-zinc-700 hover:border-[#D91E18] text-zinc-800 dark:text-zinc-100 hover:text-[#D91E18] dark:hover:text-[#D91E18] font-bold text-sm transition flex items-center gap-1.5 cursor-pointer"
                     title={`Send Coins Tip to ${creator.name}`}
                   >
-                    <Coins className="w-4 h-4 text-amber-100" />
-                    <span>Tip Creator</span>
+                    <Coins className="w-4 h-4 text-[#D91E18]" />
+                    <span>Tip</span>
                   </button>
                 </div>
               )}
@@ -981,77 +995,60 @@ export default function CreatorProfilePage({ params }: CreatorProfileProps) {
             </div>
           )}
 
-          {/* 2. CREATOR PREMIUM GLASSMORPHIC STATISTICS CARDS */}
-          <div className="mt-6 grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-            {/* Card 1: Total Reads */}
-            <div className="group p-4 rounded-2xl bg-white dark:bg-zinc-900/90 border border-zinc-200/80 dark:border-zinc-800/80 shadow-sm hover:border-rose-500/40 dark:hover:border-rose-500/40 transition-all duration-300 hover:-translate-y-0.5">
-              <div className="flex items-center justify-between pb-1.5">
-                <span className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider">
-                  Total Reads
-                </span>
-                <div className="w-8 h-8 rounded-xl bg-rose-500/10 dark:bg-rose-500/20 text-rose-600 dark:text-rose-400 flex items-center justify-center border border-rose-500/20 group-hover:scale-110 transition">
-                  <Eye className="w-4 h-4" />
-                </div>
-              </div>
-              <p className="text-2xl sm:text-3xl font-black text-zinc-900 dark:text-white tracking-tight">
-                {formatNumber(totalPublicReads)}
+          {/* 2. PROFILE STATISTICS — concept style: small label over a big
+              number, thin borders, a single red accent. Followers and
+              Following open the people list. */}
+          <div className="mt-8 grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+            {/* Published Works */}
+            <div className="p-5 rounded-2xl bg-white dark:bg-zinc-900/80 border border-zinc-200/80 dark:border-white/10">
+              <p className="text-[11px] font-bold text-zinc-400 uppercase tracking-widest">
+                Published Works
               </p>
-              <p className="text-[10px] text-zinc-400 font-medium pt-0.5">Lifetime audience reads</p>
+              <p className="mt-1.5 text-3xl sm:text-4xl font-black text-zinc-900 dark:text-white tracking-tight">
+                {totalWorks}
+              </p>
             </div>
 
-            {/* Card 2: Followers */}
+            {/* Followers */}
             <button
               onClick={() => {
                 setListModalType("followers");
                 setListSearchQuery("");
               }}
-              className="group text-left p-4 rounded-2xl bg-white dark:bg-zinc-900/90 border border-zinc-200/80 dark:border-zinc-800/80 shadow-sm hover:border-rose-500/40 dark:hover:border-rose-500/40 transition-all duration-300 hover:-translate-y-0.5 cursor-pointer"
+              className="p-5 text-left rounded-2xl bg-white dark:bg-zinc-900/80 border border-zinc-200/80 dark:border-white/10 hover:border-[#D91E18]/60 transition cursor-pointer"
             >
-              <div className="flex items-center justify-between pb-1.5">
-                <span className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider flex items-center gap-1">
-                  <span>Followers</span>
-                  <span className="text-[9px] text-rose-500 font-bold">↗</span>
-                </span>
-                <div className="w-8 h-8 rounded-xl bg-rose-500/10 dark:bg-rose-500/20 text-rose-600 dark:text-rose-400 flex items-center justify-center border border-rose-500/20 group-hover:scale-110 transition">
-                  <Users className="w-4 h-4" />
-                </div>
-              </div>
-              <p className="text-2xl sm:text-3xl font-black text-zinc-900 dark:text-white tracking-tight">
+              <p className="text-[11px] font-bold text-zinc-400 uppercase tracking-widest">
+                Followers
+              </p>
+              <p className="mt-1.5 text-3xl sm:text-4xl font-black text-zinc-900 dark:text-white tracking-tight">
                 {formatNumber(followersCount)}
               </p>
-              <p className="text-[10px] text-zinc-400 font-medium pt-0.5">Subscribed fans & readers</p>
             </button>
 
-            {/* Card 3: Published Works */}
-            <div className="group p-4 rounded-2xl bg-white dark:bg-zinc-900/90 border border-zinc-200/80 dark:border-zinc-800/80 shadow-sm hover:border-rose-500/40 dark:hover:border-rose-500/40 transition-all duration-300 hover:-translate-y-0.5">
-              <div className="flex items-center justify-between pb-1.5">
-                <span className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider">
-                  Published Works
-                </span>
-                <div className="w-8 h-8 rounded-xl bg-rose-500/10 dark:bg-rose-500/20 text-rose-600 dark:text-rose-400 flex items-center justify-center border border-rose-500/20 group-hover:scale-110 transition">
-                  <BookOpen className="w-4 h-4" />
-                </div>
-              </div>
-              <p className="text-2xl sm:text-3xl font-black text-zinc-900 dark:text-white tracking-tight">
-                {totalWorks}
+            {/* Following */}
+            <button
+              onClick={() => {
+                setListModalType("following");
+                setListSearchQuery("");
+              }}
+              className="p-5 text-left rounded-2xl bg-white dark:bg-zinc-900/80 border border-zinc-200/80 dark:border-white/10 hover:border-[#D91E18]/60 transition cursor-pointer"
+            >
+              <p className="text-[11px] font-bold text-zinc-400 uppercase tracking-widest">
+                Following
               </p>
-              <p className="text-[10px] text-zinc-400 font-medium pt-0.5">Original series released</p>
-            </div>
+              <p className="mt-1.5 text-3xl sm:text-4xl font-black text-zinc-900 dark:text-white tracking-tight">
+                {formatNumber(followingCount)}
+              </p>
+            </button>
 
-            {/* Card 4: Story Likes */}
-            <div className="group p-4 rounded-2xl bg-white dark:bg-zinc-900/90 border border-zinc-200/80 dark:border-zinc-800/80 shadow-sm hover:border-rose-500/40 dark:hover:border-rose-500/40 transition-all duration-300 hover:-translate-y-0.5">
-              <div className="flex items-center justify-between pb-1.5">
-                <span className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider">
-                  Story Likes
-                </span>
-                <div className="w-8 h-8 rounded-xl bg-rose-500/10 dark:bg-rose-500/20 text-rose-600 dark:text-rose-400 flex items-center justify-center border border-rose-500/20 group-hover:scale-110 transition">
-                  <Heart className="w-4 h-4 fill-current" />
-                </div>
-              </div>
-              <p className="text-2xl sm:text-3xl font-black text-[#D91E18] tracking-tight">
-                {formatNumber(totalPublicLikes)}
+            {/* Total Reads */}
+            <div className="p-5 rounded-2xl bg-white dark:bg-zinc-900/80 border border-zinc-200/80 dark:border-white/10">
+              <p className="text-[11px] font-bold text-zinc-400 uppercase tracking-widest">
+                Total Reads
               </p>
-              <p className="text-[10px] text-zinc-400 font-medium pt-0.5">Reader appreciations</p>
+              <p className="mt-1.5 text-3xl sm:text-4xl font-black text-zinc-900 dark:text-white tracking-tight">
+                {formatNumber(totalPublicReads)}
+              </p>
             </div>
           </div>
         </div>
@@ -1248,6 +1245,21 @@ export default function CreatorProfilePage({ params }: CreatorProfileProps) {
                 <p className="text-xs sm:text-sm text-zinc-700 dark:text-zinc-300 leading-relaxed whitespace-pre-line">
                   {creator.bio || "No biography written yet."}
                 </p>
+              </div>
+
+              <div className="flex flex-wrap gap-x-10 gap-y-4 pt-4 border-t border-zinc-100 dark:border-zinc-800">
+                <div>
+                  <p className="text-xl font-black text-zinc-900 dark:text-white tracking-tight">{totalWorks}</p>
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-zinc-400">Works</p>
+                </div>
+                <div>
+                  <p className="text-xl font-black text-zinc-900 dark:text-white tracking-tight">{formatNumber(totalPublicReads)}</p>
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-zinc-400">Total Reads</p>
+                </div>
+                <div>
+                  <p className="text-xl font-black text-zinc-900 dark:text-white tracking-tight">{formatNumber(totalPublicLikes)}</p>
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-zinc-400">Story Likes</p>
+                </div>
               </div>
 
               {safePrimaryGenres && safePrimaryGenres.length > 0 && (
