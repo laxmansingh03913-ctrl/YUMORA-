@@ -634,7 +634,10 @@ export default function ComicDetailPage({ params }: ComicPageProps) {
         ) : (
           <>
             {/* Floating Reader Toolbar (Only when episodes exist) */}
-            <div className="sticky top-16 z-30 flex flex-wrap items-center justify-between gap-3 p-3.5 rounded-2xl bg-zinc-900/95 border border-zinc-800 backdrop-blur-md text-xs text-zinc-300 shadow-2xl">
+            <div
+              className="sticky top-16 z-30 mx-auto w-full flex flex-wrap items-center justify-between gap-3 p-3.5 rounded-2xl bg-zinc-900/95 border border-zinc-800 backdrop-blur-md text-xs text-zinc-300 shadow-2xl"
+              style={{ maxWidth: `${readingMode === "VERTICAL" ? zoomLevel * 8.5 : zoomLevel * 7.5}px` }}
+            >
               <div className="flex items-center gap-2">
                 <span className="font-bold text-white text-xs sm:text-sm">
                   {activeEpisode ? `Ep. ${activeEpisode.episodeNumber}: ${activeEpisode.title}` : "No Episodes Published"}
