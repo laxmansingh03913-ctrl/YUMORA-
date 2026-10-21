@@ -395,7 +395,7 @@ export default function ComicDetailPage({ params }: ComicPageProps) {
                 alt={comic.title}
                 className="w-32 h-44 object-cover rounded-2xl shadow-xl border border-zinc-700 flex-shrink-0"
               />
-              <div className="space-y-3 flex-1">
+              <div className="space-y-3 flex-1 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
                   {(() => {
                     const formatInfo = getStoryFormat(comic);
@@ -460,7 +460,7 @@ export default function ComicDetailPage({ params }: ComicPageProps) {
                   </button>
                 </div>
 
-                <p className="text-xs text-zinc-400 leading-relaxed max-w-2xl">
+                <p className="text-xs text-zinc-400 leading-relaxed max-w-2xl break-words">
                   {comic.description}
                 </p>
 
@@ -472,7 +472,7 @@ export default function ComicDetailPage({ params }: ComicPageProps) {
                   <span>{formatNumber(comic.reads)} reads</span>
                   <span>{episodes.length} Episodes</span>
 
-                  <div className="flex items-center gap-2 ml-auto">
+                  <div className="flex flex-wrap items-center gap-2 ml-auto">
                     <button
                       onClick={() => {
                         const target = document.getElementById("community-feedback-section");
