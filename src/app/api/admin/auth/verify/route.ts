@@ -21,8 +21,9 @@ export async function POST(request: NextRequest) {
     const isMasterAdminEmail = isEmailServerAdmin(cleanEmail);
 
     // 2. Verify password against server-side ADMIN_PASSWORD or fallback to Supabase auth
-    const configuredAdminPassword = process.env.ADMIN_PASSWORD || "0355";
-    let isPasswordCorrect = password === configuredAdminPassword;
+    // No hardcoded fallback: if ADMIN_PASSWORD is not configured, only Supabase auth applies.
+    const configuredAdminPassword = process.env.ADMIN_PASSWORD || null;
+    let isPasswordCorrect = configuredAdminPassword !== null && password === configuredAdminPassword;
     let sessionUser: any = null;
     let accessToken: string | null = null;
 
