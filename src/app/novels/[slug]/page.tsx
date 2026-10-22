@@ -31,6 +31,7 @@ import { ReportModal } from "@/components/ui/ReportModal";
 import { NovelCard } from "@/components/ui/NovelCard";
 import { TipCreatorModal } from "@/components/ui/TipCreatorModal";
 import { CoinShopModal } from "@/components/ui/CoinShopModal";
+import { ShareButtons } from "@/components/ui/ShareButtons";
 import { Comment, Review, getStoryFormat } from "@/lib/types";
 
 interface PageProps {
@@ -493,6 +494,11 @@ export default function NovelDetailPage({ params }: PageProps) {
             </div>
           </div>
         </div>
+      </div>
+
+      {/* Share this story on social media */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <ShareButtons title={novel.title} />
       </div>
 
       {/* 2. MAIN BODY TABS: Chapters, Reviews, Discussion */}

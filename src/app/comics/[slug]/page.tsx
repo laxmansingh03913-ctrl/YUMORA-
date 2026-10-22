@@ -41,6 +41,7 @@ import { dbService } from "@/lib/supabase/db";
 import { formatNumber, formatDate } from "@/lib/utils";
 import { TipCreatorModal } from "@/components/ui/TipCreatorModal";
 import { CoinShopModal } from "@/components/ui/CoinShopModal";
+import { ShareButtons } from "@/components/ui/ShareButtons";
 import { MangaDubbingPlayer } from "@/components/reader/MangaDubbingPlayer";
 import DanmakuOverlay from "@/components/reader/DanmakuOverlay";
 import { Comment, Review, getStoryFormat } from "@/lib/types";
@@ -655,6 +656,10 @@ export default function ComicDetailPage({ params }: ComicPageProps) {
                   </button>
                 </>
               )}
+            </div>
+            {/* Share this comic on social media */}
+            <div className="mt-5">
+              <ShareButtons title={comic.title} />
             </div>
           </div>
         ) : (
