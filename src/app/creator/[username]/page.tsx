@@ -30,6 +30,8 @@ import {
   Calendar,
   Edit3,
   PenTool,
+  Play,
+  Star,
   Copy,
   ExternalLink,
   ShieldCheck,
@@ -414,6 +416,37 @@ export default function CreatorProfilePage({ params }: CreatorProfileProps) {
     return novelLikes + comicLikes;
   }, [creatorNovels, creatorComics]);
 
+  // SHOWCASE HEADER (Punishing-style, user-approved 2026-10-22): the
+  // creator's works with covers, most-read first. The hero art is the
+  // creator's custom banner when set, else their most-read work's cover.
+  // When no hero art exists the classic header below is used instead.
+  const showcaseWorks = useMemo(() => {
+    const novels = creatorNovels.map((n: any) => ({ ...n, _kind: "novel" }));
+    const comics = creatorComics.map((c: any) => ({ ...c, _kind: "comic" }));
+    return [...novels, ...comics]
+      .filter((w: any) => w && w.coverUrl)
+      .sort((a: any, b: any) => (b.reads || 0) - (a.reads || 0));
+  }, [creatorNovels, creatorComics]);
+
+  const heroArt = creator?.banner || showcaseWorks[0]?.coverUrl || null;
+  const showcaseMode = !!heroArt;
+  const galleryWorks = showcaseWorks.slice(0, 4);
+  const avgRating = showcaseWorks.length
+    ? showcaseWorks.reduce((acc: number, w: any) => acc + (w.rating || 5), 0) /
+      showcaseWorks.length
+    : null;
+  const showcaseRole =
+    creator?.role === "ADMIN"
+      ? "Official Team"
+      : creator?.isVerified
+        ? "Verified Storyteller"
+        : "Storyteller";
+  const showcaseBio = creator?.bio
+    ? creator.bio.length > 240
+      ? creator.bio.slice(0, 240).trimEnd() + "…"
+      : creator.bio
+    : null;
+
   // Followers & Following Lists — loaded from the backend (the follows
   // table is the source of truth); the local store is only a fallback
   // while the request is in flight.
@@ -705,7 +738,251 @@ export default function CreatorProfilePage({ params }: CreatorProfileProps) {
         </div>
       )}
 
-      {/* 1. CREATOR HERO BANNER & PROFILE HEADER */}
+      {/* 1A. SHOWCASE HEADER — big hero art left, minimal column right
+          (Punishing-style; user-approved 2026-10-22). Shown when the
+          creator has hero art; the classic header below is the fallback. */}
+      {showcaseMode && (
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <section className="relative overflow-hidden rounded-[28px] bg-[#F4F4F1] text-zinc-900 shadow-xl ring-1 ring-black/5 grid md:grid-cols-[1.05fr_1fr]">
+            {/* LEFT: hero art */}
+            <div className="relative h-80 sm:h-96 md:h-auto md:min-h-[560px]">
+              <img
+                src={heroArt as string}
+                alt={creator.name}
+                className="absolute inset-0 w-full h-full object-cover object-top"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/25 via-transparent to-transparent md:bg-gradient-to-r md:from-transparent md:via-transparent md:to-[#F4F4F1]/20" />
+
+              {/* Works counter, concept style */}
+              <div className="absolute left-4 top-1/2 -translate-y-1/2 hidden lg:flex flex-col items-center gap-1 select-none bg-white/70 backdrop-blur-sm rounded-full px-2 py-3.5 text-zinc-900 shadow">
+                <span className="text-xl font-black leading-none">01</span>
+                <span className="text-base font-black leading-none rotate-12">/</span>
+                <span className="text-xl font-black leading-none">
+                  {String(Math.max(totalWorks, 1)).padStart(2, "0")}
+                </span>
+              </div>
+
+              {isSelf && (
+                <button
+                  type="button"
+                  onClick={() => setIsBannerCustomizerOpen(true)}
+                  className="absolute top-4 left-4 z-10 px-3 py-2 rounded-full bg-black/70 hover:bg-black/90 text-white text-[11px] font-bold backdrop-blur flex items-center gap-1.5 cursor-pointer"
+                >
+                  <Palette className="w-3.5 h-3.5" />
+                  <span>Customize</span>
+                </button>
+              )}
+            </div>
+
+            {/* RIGHT: minimal info column */}
+            <div className="relative p-6 sm:p-9 lg:p-11 flex flex-col">
+              <div className="flex items-start justify-between gap-4">
+                <span className="text-zinc-400 text-lg leading-none tracking-[0.25em] select-none">
+                  •••
+                </span>
+                <div className="text-right">
+                  <p className="text-[11px] font-extrabold uppercase tracking-[0.18em] text-zinc-500">
+                    {showcaseRole}
+                  </p>
+                  {avgRating !== null && (
+                    <div className="mt-1.5 flex items-center justify-end gap-0.5">
+                      {[1, 2, 3, 4, 5].map((i) => (
+                        <Star
+                          key={i}
+                          className={`w-3.5 h-3.5 ${
+                            i <= Math.round(avgRating)
+                              ? "text-amber-500 fill-amber-500"
+                              : "text-zinc-300 fill-zinc-200"
+                          }`}
+                        />
+                      ))}
+                      <span className="ml-1.5 text-[11px] font-bold text-zinc-500">
+                        {avgRating.toFixed(1)}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <h1 className="mt-5 text-4xl sm:text-5xl lg:text-[3.4rem] font-black uppercase leading-[0.95] tracking-tight break-words">
+                {creator.name}
+              </h1>
+              <p className="mt-2.5 text-sm font-semibold text-zinc-500 flex flex-wrap items-center gap-x-2 gap-y-1">
+                <span>@{creator.username}</span>
+                {creator.country && (
+                  <span className="flex items-center gap-1">
+                    <MapPin className="w-3.5 h-3.5" />
+                    <span>{creator.country}</span>
+                  </span>
+                )}
+                {creator.isVerified && (
+                  <span className="flex items-center gap-1 text-cyan-700">
+                    <CheckCircle2 className="w-4 h-4" />
+                    <span>Verified</span>
+                  </span>
+                )}
+              </p>
+
+              {showcaseBio && (
+                <p className="mt-3.5 text-sm text-zinc-600 leading-relaxed whitespace-pre-line">
+                  {showcaseBio}
+                </p>
+              )}
+
+              {/* Actions */}
+              <div className="mt-6 flex flex-wrap items-center gap-3">
+                {isSelf ? (
+                  <>
+                    <button
+                      onClick={() => setIsEditModalOpen(true)}
+                      className="px-6 py-3 rounded-full bg-zinc-900 hover:bg-black text-white font-bold text-sm shadow-lg transition flex items-center gap-2 cursor-pointer"
+                    >
+                      <Edit3 className="w-4 h-4" />
+                      <span>Edit Profile</span>
+                    </button>
+                    <Link
+                      href="/creator"
+                      className="px-5 py-3 rounded-full bg-transparent border-2 border-zinc-900/60 hover:border-zinc-900 text-zinc-900 font-bold text-sm transition flex items-center gap-1.5 cursor-pointer"
+                    >
+                      <PenTool className="w-4 h-4" />
+                      <span>Studio</span>
+                    </Link>
+                  </>
+                ) : (
+                  <>
+                    <button
+                      onClick={handleFollowAction}
+                      disabled={isFollowLoading}
+                      className="px-6 py-3 rounded-full bg-zinc-900 hover:bg-black text-white font-bold text-sm shadow-lg transition flex items-center gap-2 cursor-pointer disabled:opacity-60"
+                    >
+                      {isFollowing ? (
+                        <>
+                          <Check className="w-4 h-4 text-emerald-400" />
+                          <span>Following</span>
+                        </>
+                      ) : (
+                        <>
+                          <Play className="w-4 h-4 fill-white" />
+                          <span>Follow</span>
+                        </>
+                      )}
+                    </button>
+                    <button
+                      onClick={() => setIsTipModalOpen(true)}
+                      className="px-5 py-3 rounded-full bg-transparent border-2 border-zinc-900/60 hover:border-zinc-900 text-zinc-900 font-bold text-sm transition flex items-center gap-1.5 cursor-pointer"
+                      title={`Send Coins Tip to ${creator.name}`}
+                    >
+                      <Coins className="w-4 h-4" />
+                      <span>Tip</span>
+                    </button>
+                  </>
+                )}
+                <button
+                  onClick={handleShareProfile}
+                  className="w-11 h-11 rounded-full border-2 border-zinc-900/20 hover:border-zinc-900 text-zinc-800 transition flex items-center justify-center cursor-pointer"
+                  title="Share Profile Link"
+                >
+                  <Share2 className="w-4 h-4" />
+                </button>
+              </div>
+
+              {/* MY WORKS gallery */}
+              {galleryWorks.length > 0 && (
+                <div className="mt-9">
+                  <div className="flex items-center justify-between gap-3">
+                    <p className="text-[11px] font-extrabold uppercase tracking-[0.22em] text-zinc-500 flex items-center gap-1">
+                      <span>My Works</span>
+                      <ChevronDown className="w-3.5 h-3.5" />
+                    </p>
+                    {totalWorks > 4 && (
+                      <button
+                        onClick={() => setActiveTab("all")}
+                        className="text-[11px] font-bold text-zinc-700 underline underline-offset-4 hover:text-zinc-900 cursor-pointer"
+                      >
+                        View all {totalWorks} works
+                      </button>
+                    )}
+                  </div>
+                  <div className="mt-3 grid grid-cols-2 gap-3">
+                    {galleryWorks.map((w: any) => (
+                      <Link
+                        key={`${w._kind}-${w.id}`}
+                        href={
+                          w._kind === "novel"
+                            ? `/novels/${w.slug || w.id}`
+                            : `/comics/${w.slug || w.id}`
+                        }
+                        className="group relative rounded-xl overflow-hidden aspect-[16/10] bg-zinc-200 ring-1 ring-black/5"
+                        title={w.title}
+                      >
+                        <img
+                          src={w.coverUrl}
+                          alt={w.title}
+                          className="w-full h-full object-cover transition duration-300 group-hover:scale-105"
+                        />
+                        <span className="absolute inset-x-0 bottom-0 px-2.5 pb-2 pt-6 bg-gradient-to-t from-black/75 to-transparent text-white flex items-end justify-between gap-2">
+                          <span className="text-[11px] font-bold truncate">
+                            {w.title}
+                          </span>
+                          <span className="shrink-0 w-5 h-5 rounded-full bg-black/60 flex items-center justify-center">
+                            <Play className="w-2.5 h-2.5 fill-white text-white" />
+                          </span>
+                        </span>
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Mini stats — Followers/Following open the people list */}
+              <div className="mt-auto pt-8">
+                <div className="pt-5 border-t border-zinc-900/10 flex flex-wrap items-center gap-x-6 gap-y-2 text-sm text-zinc-500">
+                  <button
+                    onClick={() => {
+                      setListModalType("followers");
+                      setListSearchQuery("");
+                    }}
+                    className="hover:text-zinc-900 transition cursor-pointer"
+                  >
+                    <span className="font-black text-zinc-900">
+                      {formatNumber(followersCount)}
+                    </span>{" "}
+                    Followers
+                  </button>
+                  <button
+                    onClick={() => {
+                      setListModalType("following");
+                      setListSearchQuery("");
+                    }}
+                    className="hover:text-zinc-900 transition cursor-pointer"
+                  >
+                    <span className="font-black text-zinc-900">
+                      {formatNumber(followingCount)}
+                    </span>{" "}
+                    Following
+                  </button>
+                  <span>
+                    <span className="font-black text-zinc-900">
+                      {formatNumber(totalWorks)}
+                    </span>{" "}
+                    Works
+                  </span>
+                  <span>
+                    <span className="font-black text-zinc-900">
+                      {formatNumber(totalPublicReads)}
+                    </span>{" "}
+                    Reads
+                  </span>
+                </div>
+              </div>
+            </div>
+          </section>
+        </div>
+      )}
+
+      {/* 1B. CREATOR HERO BANNER & PROFILE HEADER — classic fallback,
+          used when the creator has no hero art yet */}
+      {!showcaseMode && (
       <div className="relative">
         {/* Banner with Ambient Shimmer & Gradient Overlay */}
         <div className="h-56 sm:h-72 md:h-80 w-full bg-zinc-950 overflow-hidden relative group">
@@ -1062,6 +1339,7 @@ export default function CreatorProfilePage({ params }: CreatorProfileProps) {
           </div>
         </div>
       </div>
+      )}
 
       {/* 3. TABBED WORKS & ABOUT CATALOG */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
