@@ -575,6 +575,11 @@ export default function ComicDetailPage({ params }: ComicPageProps) {
         </div>
       )}
 
+      {/* Share this comic on social media */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-2">
+        <ShareButtons title={comic.title} />
+      </div>
+
       {/* Universal Reader Container */}
       <div className="max-w-5xl mx-auto px-4 sm:px-6 space-y-4">
         {/* If no episodes published yet: Display Webtoon-Style Cinematic Teaser Card */}
@@ -656,10 +661,6 @@ export default function ComicDetailPage({ params }: ComicPageProps) {
                   </button>
                 </>
               )}
-            </div>
-            {/* Share this comic on social media */}
-            <div className="mt-5">
-              <ShareButtons title={comic.title} />
             </div>
           </div>
         ) : (
