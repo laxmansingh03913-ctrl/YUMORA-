@@ -283,6 +283,11 @@ export default function CreatorProfilePage({ params }: CreatorProfileProps) {
   const [isTipModalOpen, setIsTipModalOpen] = useState(false);
   const [isCoinShopOpen, setIsCoinShopOpen] = useState(false);
   const [isBannerCustomizerOpen, setIsBannerCustomizerOpen] = useState(false);
+  // Avatar upload hooks — MUST stay above the profile early returns
+  // below; hooks declared after them crash cold loads with React #310.
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
+  const modalFileInputRef = React.useRef<HTMLInputElement>(null);
+  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
 
   // Followers & Following Modal
   const [listModalType, setListModalType] = useState<"followers" | "following" | null>(null);
@@ -618,10 +623,6 @@ export default function CreatorProfilePage({ params }: CreatorProfileProps) {
   };
 
   // Custom Avatar Upload for Self
-  const fileInputRef = React.useRef<HTMLInputElement>(null);
-  const modalFileInputRef = React.useRef<HTMLInputElement>(null);
-  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
-
   const handleAvatarFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !user) return;
