@@ -1122,7 +1122,7 @@ export default function ChapterReaderPage({ params }: ReaderPageProps) {
       {/* 8. FLOATING QUICK CONTROL DOCK */}
       <aside
         aria-label="Quick reading controls"
-        className={`fixed bottom-6 left-1/2 -translate-x-1/2 z-40 max-w-[calc(100vw-16px)] transition-all duration-300 ease-in-out ${
+        className={`fixed bottom-6 left-1/2 -translate-x-1/2 z-40 w-max max-w-[calc(100vw-16px)] transition-all duration-300 ease-in-out ${
           isToolbarVisible
             ? "translate-y-0 opacity-100 scale-100"
             : "translate-y-24 opacity-0 pointer-events-none scale-95"
