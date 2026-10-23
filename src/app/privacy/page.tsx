@@ -216,10 +216,7 @@ export default function PrivacyPolicyPage() {
           <li><strong>Performance & Analytics Storage:</strong> Used to understand general platform performance where active.</li>
         </ul>
         <p>
-          For detailed information on how we utilize cookies and how you can manage them, please review our{" "}
-          <Link href="/cookies" className="text-rose-500 hover:text-rose-400 font-semibold underline underline-offset-4">
-            Cookies Policy
-          </Link>.
+          The details in this section constitute our Cookies Policy; it explains how we utilize cookies and how you can manage them.
         </p>
       </LegalSection>
 
@@ -245,9 +242,9 @@ export default function PrivacyPolicyPage() {
           <li>Creators receiving earnings or payouts may be required to complete identity verification and submit payout details directly to authorized payout partners.</li>
         </ul>
         <p>
-          For terms governing refunds and digital content transactions, please see our{" "}
-          <Link href="/refund-policy" className="text-rose-500 hover:text-rose-400 font-semibold underline underline-offset-4">
-            Refund Policy
+          For terms governing refunds and digital content transactions, please see the refund terms in our{" "}
+          <Link href="/terms#coins-and-payments" className="text-rose-500 hover:text-rose-400 font-semibold underline underline-offset-4">
+            Terms of Service
           </Link>.
         </p>
       </LegalSection>

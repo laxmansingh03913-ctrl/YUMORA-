@@ -105,28 +105,28 @@ export function LegalLayout({
                 </Link>
                 <span>•</span>
                 <Link
-                  href="/community-guidelines"
+                  href="/terms#content-guidelines"
                   className="hover:text-rose-500 transition underline underline-offset-4"
                 >
                   Community Guidelines
                 </Link>
                 <span>•</span>
                 <Link
-                  href="/creator-terms"
+                  href="/guidelines/creator-policy"
                   className="hover:text-rose-500 transition underline underline-offset-4"
                 >
                   Creator Agreement
                 </Link>
                 <span>•</span>
                 <Link
-                  href="/cookies"
+                  href="/privacy#cookies-and-tracking"
                   className="hover:text-rose-500 transition underline underline-offset-4"
                 >
                   Cookies Policy
                 </Link>
                 <span>•</span>
                 <Link
-                  href="/refund-policy"
+                  href="/terms#coins-and-payments"
                   className="hover:text-rose-500 transition underline underline-offset-4"
                 >
                   Refund Policy
