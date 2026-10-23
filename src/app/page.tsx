@@ -324,10 +324,20 @@ export default function IndexPage() {
     dbService.getComics().then((data) => {
       if (data && data.length > 0) setComics(data);
     });
+    dbService.getContests().then((data) => {
+      if (data && data.length > 0) {
+        const live = data.find((c) => getContestStatus(c) === "LIVE");
+        const scheduled = data.find((c) => getContestStatus(c) === "SCHEDULED");
+        setActiveContest(live || scheduled || data[0]);
+      }
+    });
   }, []);
 
   const creators = dataStore.getUsers().filter((u) => u.role === "CREATOR" || u.role === "ADMIN");
-  const activeContest = dataStore.getActiveContest();
+  // Seed from the local store, then replace with the real contest state from
+  // the database (same pattern as /contests) — the local seed alone would
+  // otherwise keep showing a "live" contest that is actually closed.
+  const [activeContest, setActiveContest] = useState(() => dataStore.getActiveContest());
   const followingFeed = mounted && user ? dataStore.getFollowingFeed() : [];
 
   // Assemble Hero Slides from the real catalog only (top comic + top novels)

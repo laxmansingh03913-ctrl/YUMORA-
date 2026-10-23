@@ -1050,8 +1050,11 @@ class DataStore {
         startDate: new Date(now - 2 * 86400000).toISOString(),
         endDate: new Date(now + 23 * 86400000).toISOString(),
         timezone: "Asia/Kolkata",
-        status: "LIVE",
-        isPublished: true,
+        // Contests stay in Coming Soon mode (user decision 2026-10-21) until a
+        // funded contest is relaunched from the admin — the seed must not
+        // present this challenge as live/open in the meantime.
+        status: "DRAFT",
+        isPublished: false,
         rules: [
           "Minimum 2 published chapters at submission time",
           "Original work owned 100% by the publishing author",
