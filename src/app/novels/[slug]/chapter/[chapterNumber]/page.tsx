@@ -481,10 +481,10 @@ export default function ChapterReaderPage({ params }: ReaderPageProps) {
             : "-translate-y-full opacity-0 pointer-events-none"
         }`}
       >
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 min-w-0 flex-1">
           <Link
             href={`/novels/${novel.slug}`}
-            className="flex items-center gap-1.5 p-1.5 rounded-lg hover:bg-white/10 transition"
+            className="flex items-center gap-1.5 p-1.5 rounded-lg hover:bg-white/10 transition flex-shrink-0"
             title="Back to story overview"
           >
             <ArrowLeft className="w-4 h-4" />
@@ -493,12 +493,12 @@ export default function ChapterReaderPage({ params }: ReaderPageProps) {
             </span>
           </Link>
           <span className="text-zinc-500 hidden sm:inline">•</span>
-          <span className="text-zinc-300 font-medium truncate max-w-[200px]">
+          <span className="text-zinc-300 font-medium truncate max-w-[120px] sm:max-w-[200px] min-w-0">
             Ch. {chapter.chapterNumber}: {chapter.title}
           </span>
         </div>
 
-        <div className="flex items-center gap-1 sm:gap-2">
+        <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
           {/* AI Story Assistant Trigger */}
           <button
             onClick={() => setIsAiAssistantOpen(true)}
@@ -506,7 +506,7 @@ export default function ChapterReaderPage({ params }: ReaderPageProps) {
             title="AI Story Companion (Translate, Summarize, Character Codex, Chat)"
           >
             <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-            <span>AI Companion</span>
+            <span className="hidden sm:inline">AI Companion</span>
           </button>
 
           {/* AI Audiobook Narrator Trigger */}
@@ -520,7 +520,7 @@ export default function ChapterReaderPage({ params }: ReaderPageProps) {
             title="Listen to Chapter with AI Narrator"
           >
             <Headphones className="w-3.5 h-3.5" />
-            <span>{isAudiobookOpen ? "Listening" : "Listen"}</span>
+            <span className="hidden sm:inline">{isAudiobookOpen ? "Listening" : "Listen"}</span>
           </button>
 
           {/* Chapter Quick Selector */}
@@ -1122,13 +1122,13 @@ export default function ChapterReaderPage({ params }: ReaderPageProps) {
       {/* 8. FLOATING QUICK CONTROL DOCK */}
       <aside
         aria-label="Quick reading controls"
-        className={`fixed bottom-6 left-1/2 -translate-x-1/2 z-40 transition-all duration-300 ease-in-out ${
+        className={`fixed bottom-6 left-1/2 -translate-x-1/2 z-40 max-w-[calc(100vw-16px)] transition-all duration-300 ease-in-out ${
           isToolbarVisible
             ? "translate-y-0 opacity-100 scale-100"
             : "translate-y-24 opacity-0 pointer-events-none scale-95"
         }`}
       >
-        <div className="flex items-center gap-1.5 sm:gap-2 px-3 py-2 rounded-full bg-zinc-950/90 dark:bg-zinc-900/90 text-white backdrop-blur-xl border border-zinc-700/60 shadow-2xl shadow-black/50">
+        <div className="flex flex-wrap justify-center items-center gap-1 sm:gap-2 px-2 sm:px-3 py-2 rounded-[26px] sm:rounded-full bg-zinc-950/90 dark:bg-zinc-900/90 text-white backdrop-blur-xl border border-zinc-700/60 shadow-2xl shadow-black/50">
           {/* Font Size Steppers */}
           <div className="flex items-center gap-0.5 bg-zinc-800/80 rounded-full px-1 py-0.5 border border-zinc-700/50">
             <button

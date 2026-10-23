@@ -201,7 +201,7 @@ export default function DanmakuOverlay({
 
       {/* 2. FLOATING LIVE REACTION CONTROLLER BAR (BOTTOM RIGHT) */}
       <div
-        className={`fixed bottom-6 right-6 z-40 flex flex-col items-end gap-2 max-w-sm w-full pointer-events-auto transition-all duration-300 ease-in-out ${
+        className={`fixed bottom-4 right-3 sm:bottom-6 sm:right-6 z-40 flex flex-col items-end gap-2 w-full max-w-[calc(100vw-24px)] sm:max-w-sm pointer-events-auto transition-all duration-300 ease-in-out ${
           isVisible
             ? "translate-y-0 opacity-100"
             : "translate-y-24 opacity-0 pointer-events-none"

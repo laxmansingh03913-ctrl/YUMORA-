@@ -279,7 +279,7 @@ export function Navbar() {
                   className="w-full h-full object-cover"
                 />
               </div>
-              <div className="flex flex-col">
+              <div className="hidden min-[400px]:flex flex-col">
                 <span className="font-black text-lg sm:text-xl tracking-tight text-[#111111] dark:text-white">
                   YOMIKA
                 </span>
@@ -326,7 +326,7 @@ export function Navbar() {
                 title="Select Language"
               >
                 <Globe className="w-4 h-4" />
-                <span className="text-xs font-semibold uppercase">{currentLang}</span>
+                <span className="text-xs font-semibold uppercase hidden min-[400px]:inline">{currentLang}</span>
               </button>
 
               {isLangOpen && (
@@ -544,11 +544,11 @@ export function Navbar() {
 
                 <Link
                   href="/creator/upload"
-                  className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-[#D91E18] hover:bg-[#B71813] text-white font-bold text-xs shadow-xs transition transform hover:scale-[1.02] active:scale-[0.98] whitespace-nowrap"
+                  className="flex items-center gap-1.5 px-2.5 sm:px-3.5 py-1.5 rounded-lg bg-[#D91E18] hover:bg-[#B71813] text-white font-bold text-xs shadow-xs transition transform hover:scale-[1.02] active:scale-[0.98] whitespace-nowrap"
                   title="Create new story or episode"
                 >
                   <PenTool className="w-3.5 h-3.5" />
-                  <span>Create</span>
+                  <span className="hidden min-[400px]:inline">Create</span>
                 </Link>
 
                 <div className="relative" ref={userMenuRef}>
@@ -709,14 +709,14 @@ export function Navbar() {
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => requireAuth("/creator/upload")}
-                  className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-[#D91E18] hover:bg-[#B71813] text-white font-bold text-xs shadow-xs transition transform hover:scale-[1.02] active:scale-[0.98] whitespace-nowrap"
+                  className="flex items-center gap-1.5 px-2.5 sm:px-3.5 py-1.5 rounded-lg bg-[#D91E18] hover:bg-[#B71813] text-white font-bold text-xs shadow-xs transition transform hover:scale-[1.02] active:scale-[0.98] whitespace-nowrap"
                 >
                   <PenTool className="w-3.5 h-3.5" />
-                  <span>Create</span>
+                  <span className="hidden min-[400px]:inline">Create</span>
                 </button>
                 <button
                   onClick={() => openAuthModal("login")}
-                  className="px-3.5 py-1.5 rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-zinc-800 dark:text-zinc-200 hover:border-black dark:hover:border-white font-bold text-xs transition whitespace-nowrap"
+                  className="px-2.5 sm:px-3.5 py-1.5 rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-zinc-800 dark:text-zinc-200 hover:border-black dark:hover:border-white font-bold text-xs transition whitespace-nowrap"
                 >
                   Sign In
                 </button>
