@@ -690,7 +690,7 @@ export default function ComicDetailPage({ params }: ComicPageProps) {
                 </button>
               </div>
 
-              <div className="flex items-center gap-3">
+              <div className="flex flex-wrap justify-end items-center gap-2 sm:gap-3">
                 {/* Reading Mode Switcher: Vertical vs Manga RTL vs Comic LTR */}
                 <div className="flex items-center gap-1 bg-zinc-950 p-1 rounded-xl border border-zinc-800">
                   <button
@@ -933,10 +933,10 @@ export default function ComicDetailPage({ params }: ComicPageProps) {
 
           {/* Interactive Community Tabs */}
           <div id="community-feedback-section" className="pt-4 border-t border-zinc-100 dark:border-zinc-800 space-y-6">
-            <div className="flex items-center gap-2 border-b border-zinc-200 dark:border-zinc-800 pb-2">
+            <div className="flex flex-wrap items-center gap-2 border-b border-zinc-200 dark:border-zinc-800 pb-2">
               <button
                 onClick={() => setActiveTab("episodes")}
-                className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 ${
+                className={`px-3 sm:px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 ${
                   activeTab === "episodes"
                     ? "bg-indigo-600 text-white shadow-xs"
                     : "text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100"
@@ -948,7 +948,7 @@ export default function ComicDetailPage({ params }: ComicPageProps) {
 
               <button
                 onClick={() => setActiveTab("reviews")}
-                className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 ${
+                className={`px-3 sm:px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 ${
                   activeTab === "reviews"
                     ? "bg-indigo-600 text-white shadow-xs"
                     : "text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100"
@@ -960,7 +960,7 @@ export default function ComicDetailPage({ params }: ComicPageProps) {
 
               <button
                 onClick={() => setActiveTab("discussion")}
-                className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 ${
+                className={`px-3 sm:px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 ${
                   activeTab === "discussion"
                     ? "bg-indigo-600 text-white shadow-xs"
                     : "text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100"
