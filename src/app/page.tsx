@@ -24,6 +24,7 @@ import {
 import { dataStore } from "@/lib/data/store";
 import { useAuth } from "@/context/AuthContext";
 import { ContinueReadingWidget } from "@/components/home/ContinueReadingWidget";
+import { InstallAppBanner } from "@/components/pwa/InstallAppBanner";
 import { formatNumber, formatDate } from "@/lib/utils";
 import { formatContestDeadline, getContestStatus } from "@/lib/utils/contest";
 import { Novel, Comic, getStoryFormat } from "@/lib/types";
@@ -547,6 +548,13 @@ export default function IndexPage() {
         </div>
       </section>
       )}
+
+      {/* ─────────────────────────────────────────────────────────────
+          PWA — Install the Yomika app (shows only when installable)
+      ───────────────────────────────────────────────────────────── */}
+      <section className="relative w-full max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-10 pb-2">
+        <InstallAppBanner />
+      </section>
 
       {/* ─────────────────────────────────────────────────────────────
           2. RANKED CHARTS — REAL CATALOG ONLY
