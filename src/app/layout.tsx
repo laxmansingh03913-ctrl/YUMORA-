@@ -11,6 +11,7 @@ import { Footer } from "@/components/layout/Footer";
 import { MobileNav } from "@/components/layout/MobileNav";
 import { RealtimeSyncProvider } from "@/lib/supabase/realtime";
 import { ServiceWorkerRegister } from "@/components/pwa/ServiceWorkerRegister";
+import { VisitLogger } from "@/components/analytics/VisitLogger";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -137,6 +138,7 @@ export default function RootLayout({
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
         <ServiceWorkerRegister />
+        <VisitLogger />
         <ThemeProvider>
           <AuthProvider>
             <ReaderProvider>
