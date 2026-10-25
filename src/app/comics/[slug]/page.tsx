@@ -1194,6 +1194,7 @@ export default function ComicDetailPage({ params }: ComicPageProps) {
           activePanelIndex={activeDubbingPanelIdx}
           onPanelChange={handleDubbingPanelChange}
           onClose={() => setIsDubbingOpen(false)}
+          script={activeEpisode.dubbingScript}
         />
       )}
 

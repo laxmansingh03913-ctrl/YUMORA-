@@ -41,6 +41,9 @@ interface MangaDubbingPlayerProps {
   activePanelIndex: number;
   onPanelChange: (panelIndex: number) => void;
   onClose: () => void;
+  // Real per-episode dialogue script from the server (DB dubbing_script).
+  // When provided it replaces the old hardcoded fallback script.
+  script?: MangaDialogueLine[];
 }
 
 export function MangaDubbingPlayer({
@@ -51,6 +54,7 @@ export function MangaDubbingPlayer({
   activePanelIndex,
   onPanelChange,
   onClose,
+  script,
 }: MangaDubbingPlayerProps) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
@@ -68,7 +72,8 @@ export function MangaDubbingPlayer({
   const audioCtxRef = useRef<AudioContext | null>(null);
   const isPlayingRef = useRef(false);
 
-  const storageKey = `manga-dub-${comicTitle.toLowerCase().replace(/[^a-z0-9]/g, "-")}-ep-${episodeNumber}-v3`;
+  // v4: invalidates stale v3 saves that held the old generic fallback script.
+  const storageKey = `manga-dub-${comicTitle.toLowerCase().replace(/[^a-z0-9]/g, "-")}-ep-${episodeNumber}-v4`;
 
   // Smart Initial Script generator tailored to the specific comic!
   const getInitialScript = (): MangaDialogueLine[] => {
@@ -160,6 +165,8 @@ export function MangaDubbingPlayer({
         // ignore
       }
     }
+    // Server-provided episode script wins over the hardcoded fallback.
+    if (script && script.length > 0) return script;
     return getInitialScript();
   });
 
@@ -174,8 +181,9 @@ export function MangaDubbingPlayer({
   };
 
   // Sync and ensure comic-specific dialogues on mount
+  // (never overrides a real server-provided script)
   useEffect(() => {
-    if (comicTitle.toLowerCase().includes("rpg")) {
+    if (comicTitle.toLowerCase().includes("rpg") && (!script || script.length === 0)) {
       const initial = getInitialScript();
       setScriptLines(initial);
     }

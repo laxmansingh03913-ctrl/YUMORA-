@@ -183,6 +183,7 @@ model ComicEpisode {
   imageUrls     String[]        @default([]) @map("image_urls")
   status        content_status? @default(PUBLISHED)
   likes_count   Int?            @default(0)
+  dubbing_script Json?
   publishedAt   DateTime?       @default(now()) @map("published_at") @db.Timestamptz(6)
   createdAt     DateTime?       @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt     DateTime?       @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)

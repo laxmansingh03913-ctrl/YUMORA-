@@ -93,6 +93,7 @@ export async function GET(
             title: ep.title || `Episode ${ep.episodeNumber || 1}`,
             thumbnailUrl: ep.thumbnailUrl || undefined,
             imageUrls: Array.isArray(ep.imageUrls) ? ep.imageUrls : [],
+            dubbingScript: Array.isArray(ep.dubbing_script) ? ep.dubbing_script : undefined,
             status: (ep.status as any) || "PUBLISHED",
             likesCount: ep.likes_count || 0,
             publishedAt: ep.publishedAt ? new Date(ep.publishedAt).toISOString() : new Date().toISOString(),
