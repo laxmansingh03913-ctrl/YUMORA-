@@ -30,6 +30,9 @@ export interface MangaDialogueLine {
   role: "NARRATOR" | "HERO" | "HEROINE" | "VILLAIN" | "RIVAL" | "SYSTEM";
   avatar: string;
   dialogue: string;
+  // Pre-recorded voice audio for this line. When present, the player plays
+  // this file instead of the browser's built-in speech voice.
+  audioUrl?: string;
   sfx?: "SWORD_CLASH" | "ENERGY_SURGE" | "EXPLOSION" | "RAIN_AMBIENT" | "THUNDER" | "WIND" | "SYSTEM_CHIME";
 }
 
@@ -70,6 +73,7 @@ export function MangaDubbingPlayer({
 
   const synthRef = useRef<SpeechSynthesis | null>(null);
   const audioCtxRef = useRef<AudioContext | null>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
   const isPlayingRef = useRef(false);
 
   // v4: invalidates stale v3 saves that held the old generic fallback script.
@@ -237,6 +241,7 @@ export function MangaDubbingPlayer({
 
     return () => {
       if (synthRef.current) synthRef.current.cancel();
+      if (audioRef.current) audioRef.current.pause();
       if (audioCtxRef.current) audioCtxRef.current.close().catch(() => {});
     };
   }, []);
@@ -310,6 +315,51 @@ export function MangaDubbingPlayer({
   };
 
   const speakLine = (idx: number) => {
+    if (idx < 0 || idx >= scriptLines.length) {
+      setIsPlaying(false);
+      isPlayingRef.current = false;
+      return;
+    }
+
+    const item = scriptLines[idx];
+
+    // Auto-scroll comic reader to this panel!
+    onPanelChange(item.panelIndex);
+    playSoundEffect(item.sfx);
+
+    // Stop anything currently playing
+    if (synthRef.current) synthRef.current.cancel();
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current = null;
+    }
+
+    // Pre-recorded audio wins over the browser voice when available.
+    if (item.audioUrl) {
+      const audio = new Audio(item.audioUrl);
+      audioRef.current = audio;
+      audio.onended = () => {
+        if (isPlayingRef.current && idx + 1 < scriptLines.length) {
+          setTimeout(() => {
+            if (isPlayingRef.current) {
+              setCurrentLineIdx(idx + 1);
+              speakLine(idx + 1);
+            }
+          }, 300);
+        } else if (idx + 1 >= scriptLines.length) {
+          setIsPlaying(false);
+          isPlayingRef.current = false;
+        }
+      };
+      audio.onerror = () => speakViaSynth(idx);
+      audio.play().catch(() => speakViaSynth(idx));
+      return;
+    }
+
+    speakViaSynth(idx);
+  };
+
+  const speakViaSynth = (idx: number) => {
     if (!synthRef.current || idx < 0 || idx >= scriptLines.length) {
       if (idx >= scriptLines.length) {
         setIsPlaying(false);
@@ -320,10 +370,6 @@ export function MangaDubbingPlayer({
 
     synthRef.current.cancel();
     const item = scriptLines[idx];
-
-    // Auto-scroll comic reader to this panel!
-    onPanelChange(item.panelIndex);
-    playSoundEffect(item.sfx);
 
     const utterance = new SpeechSynthesisUtterance(item.dialogue);
 
@@ -375,7 +421,15 @@ export function MangaDubbingPlayer({
   };
 
   const handlePlay = () => {
-    if (!synthRef.current) return;
+    // Resume paused pre-recorded audio in place
+    if (isPaused && audioRef.current && scriptLines[currentLineIdx]?.audioUrl) {
+      audioRef.current.play().catch(() => {});
+      setIsPlaying(true);
+      setIsPaused(false);
+      isPlayingRef.current = true;
+      return;
+    }
+    if (!synthRef.current && !scriptLines[currentLineIdx]?.audioUrl) return;
     setIsPlaying(true);
     setIsPaused(false);
     isPlayingRef.current = true;
@@ -383,6 +437,7 @@ export function MangaDubbingPlayer({
   };
 
   const handlePause = () => {
+    if (audioRef.current) audioRef.current.pause();
     if (!synthRef.current) return;
     synthRef.current.pause();
     setIsPaused(true);
@@ -490,6 +545,7 @@ export function MangaDubbingPlayer({
                 <button
                   onClick={() => {
                     if (synthRef.current) synthRef.current.cancel();
+                    if (audioRef.current) audioRef.current.pause();
                     onClose();
                   }}
                   className="p-1.5 rounded-xl bg-zinc-800/80 hover:bg-zinc-700 text-zinc-400 hover:text-white transition cursor-pointer"

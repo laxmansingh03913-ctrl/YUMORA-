@@ -169,6 +169,7 @@ export interface ComicEpisode {
     role: "NARRATOR" | "HERO" | "HEROINE" | "VILLAIN" | "RIVAL" | "SYSTEM";
     avatar: string;
     dialogue: string;
+    audioUrl?: string;
     sfx?: "SWORD_CLASH" | "ENERGY_SURGE" | "EXPLOSION" | "RAIN_AMBIENT" | "THUNDER" | "WIND" | "SYSTEM_CHIME";
   }[];
   status: ContentStatus;
