@@ -1,0 +1,635 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="color-scheme" content="light dark" />
+    <meta name="description" content="Abhishek — freelance web developer from Bhilwara, India. Mobile-friendly websites for restaurants, salons, wedding venues & local businesses, delivered in 3–5 days. Serving India, UAE & Saudi Arabia." />
+    <link rel="icon" href="data:," />
+    <title>Abhishek — Web Developer | Websites That Bring You Customers</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,700;0,800;1,500&family=Karla:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <style>
+      :root {
+        --bg: #f4f8fd;
+        --bg-alt: #e7f0fa;
+        --surface: #ffffff;
+        --ink: #0e1b2e;
+        --ink-soft: #4e6179;
+        --line: #d7e3f1;
+        --accent: #0b6fe4;
+        --accent-deep: #0959b8;
+        --accent-ink: #ffffff;
+        --cyan: #0ea5c4;
+        --green: #1e7a3c;
+        --dark-band: #0a1424;
+        --dark-band-2: #101d33;
+        --dark-ink: #e9f1fb;
+        --dark-soft: #a9bed8;
+        --shadow: 0 18px 40px -18px rgba(11, 90, 170, 0.28);
+        --radius: 18px;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --bg: #0a1220;
+          --bg-alt: #0e192e;
+          --surface: #122036;
+          --ink: #e9f1fb;
+          --ink-soft: #a9bed8;
+          --line: #22344f;
+          --accent: #4da3ff;
+          --accent-deep: #2f86e8;
+          --cyan: #22d3ee;
+          --shadow: 0 18px 40px -18px rgba(0, 0, 0, 0.7);
+        }
+      }
+      * { box-sizing: border-box; }
+      html { scroll-behavior: smooth; }
+      body {
+        margin: 0;
+        font-family: "Karla", system-ui, sans-serif;
+        background: var(--bg);
+        color: var(--ink);
+        line-height: 1.6;
+        -webkit-font-smoothing: antialiased;
+      }
+      img { max-width: 100%; display: block; }
+      a { color: inherit; }
+      h1, h2, h3, .serif { font-family: "Playfair Display", Georgia, serif; }
+      .wrap { width: min(1180px, 100% - 40px); margin-inline: auto; }
+      section { padding: 84px 0; }
+      section[id] { scroll-margin-top: 76px; }
+      .section-head { max-width: 640px; margin-bottom: 42px; }
+      .section-head.center { margin-inline: auto; text-align: center; }
+      .section-head h2 { font-size: clamp(1.9rem, 4vw, 2.7rem); line-height: 1.12; margin: 0 0 12px; font-weight: 800; }
+      .section-head p { color: var(--ink-soft); margin: 0; font-size: 1.05rem; }
+      .rule { width: 56px; height: 3px; background: var(--accent); border-radius: 2px; margin-bottom: 18px; }
+      .section-head.center .rule { margin-inline: auto; }
+
+      /* ---------- Header ---------- */
+      header {
+        position: sticky; top: 0; z-index: 60;
+        background: color-mix(in srgb, var(--bg) 88%, transparent);
+        backdrop-filter: blur(12px);
+        border-bottom: 1px solid var(--line);
+      }
+      .nav { display: flex; align-items: center; gap: 28px; padding: 14px 0; }
+      .brand { text-decoration: none; line-height: 1; margin-right: auto; }
+      .brand .name { font-family: "Playfair Display", serif; font-weight: 800; font-size: 1.65rem; letter-spacing: 0.02em; }
+      .brand .name em { color: var(--accent); font-style: normal; }
+      .brand small { display: block; font-family: "Karla", sans-serif; font-size: 0.66rem; letter-spacing: 0.32em; text-transform: uppercase; color: var(--ink-soft); margin-top: 3px; font-weight: 700; }
+      .nav-links { display: flex; gap: 26px; align-items: center; }
+      .nav-links a { text-decoration: none; font-weight: 600; font-size: 0.97rem; color: var(--ink-soft); }
+      .nav-links a:hover { color: var(--accent); }
+      .btn {
+        display: inline-flex; align-items: center; gap: 9px;
+        background: var(--accent); color: var(--accent-ink);
+        padding: 12px 22px; border-radius: 999px; border: 0;
+        font: 700 0.98rem "Karla", sans-serif; text-decoration: none; cursor: pointer;
+        transition: background 0.2s ease, transform 0.2s ease;
+      }
+      .btn:hover { background: var(--accent-deep); }
+      .btn.ghost { background: transparent; color: var(--ink); border: 1.5px solid var(--line); }
+      .btn.ghost:hover { border-color: var(--accent); color: var(--accent); }
+      .btn.light { background: #eaf3fd; color: #0d2038; }
+      .btn.light:hover { background: #ffffff; }
+      .btn.whatsapp { background: #1faa55; color: #fff; }
+      .btn.whatsapp:hover { background: #178a44; }
+      .nav .btn { padding: 10px 18px; }
+      .burger { display: none; background: none; border: 0; cursor: pointer; padding: 8px; color: var(--ink); }
+      .burger svg { display: block; }
+
+      /* ---------- Hero ---------- */
+      .hero { position: relative; padding: 0; color: #fff; overflow: hidden; }
+      .hero img.bg { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+      .hero .scrim { position: absolute; inset: 0; background: linear-gradient(100deg, rgba(7, 16, 32, 0.92) 22%, rgba(7, 16, 32, 0.62) 55%, rgba(7, 16, 32, 0.30)); }
+      .hero-inner { position: relative; padding: 108px 0 96px; max-width: 680px; }
+      .hero .kicker { display: inline-flex; align-items: center; gap: 10px; font-weight: 800; font-size: 0.85rem; letter-spacing: 0.14em; text-transform: uppercase; color: #7fd4f5; margin-bottom: 18px; }
+      .hero .kicker::before { content: ""; width: 34px; height: 2px; background: #7fd4f5; border-radius: 2px; }
+      .hero h1 { font-size: clamp(2.7rem, 6.5vw, 4.4rem); line-height: 1.04; margin: 0 0 20px; font-weight: 800; }
+      .hero h1 em { color: #7fd4f5; font-style: normal; }
+      .hero p.lede { font-size: 1.16rem; color: #d7e6f7; margin: 0 0 34px; max-width: 560px; }
+      .hero-ctas { display: flex; flex-wrap: wrap; gap: 14px; margin-bottom: 40px; }
+      .hero-ctas .btn.ghost { color: #fff; border-color: rgba(255,255,255,0.45); }
+      .hero-ctas .btn.ghost:hover { border-color: #7fd4f5; color: #7fd4f5; }
+      .hero-facts { display: flex; flex-wrap: wrap; gap: 10px 26px; font-size: 0.95rem; font-weight: 600; color: #c4d9f2; }
+      .hero-facts span { display: inline-flex; align-items: center; gap: 8px; }
+      .hero-facts svg { color: #7fd4f5; flex: none; }
+
+      /* ---------- Stats strip ---------- */
+      .stats { background: var(--dark-band); color: var(--dark-ink); padding: 0; }
+      .stats .wrap { display: grid; grid-template-columns: repeat(4, 1fr); }
+      .stat { padding: 30px 18px; text-align: center; border-left: 1px solid rgba(233, 241, 251, 0.12); }
+      .stat:first-child { border-left: 0; }
+      .stat b { display: block; font-family: "Playfair Display", serif; font-size: 1.9rem; color: #7fd4f5; line-height: 1.1; }
+      .stat span { font-size: 0.88rem; color: var(--dark-soft); font-weight: 600; }
+
+      /* ---------- Work / portfolio ---------- */
+      .work-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 26px; }
+      .work-card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; box-shadow: var(--shadow); display: flex; flex-direction: column; transition: transform .35s ease, box-shadow .35s ease; }
+      .work-card:hover { transform: translateY(-7px); box-shadow: 0 26px 54px -20px rgba(11, 111, 228, 0.4); }
+      .work-card .thumb { position: relative; overflow: hidden; }
+      .work-card .thumb img { width: 100%; aspect-ratio: 16 / 9; object-fit: cover; transition: transform .5s ease; }
+      .work-card:hover .thumb img { transform: scale(1.05); }
+      .work-card .thumb .cat { position: absolute; top: 14px; left: 14px; background: rgba(7, 16, 32, 0.78); color: #fff; font-size: 0.72rem; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; padding: 6px 12px; border-radius: 999px; }
+      .work-card .body { padding: 26px; display: flex; flex-direction: column; gap: 10px; flex: 1; }
+      .work-card h3 { margin: 0; font-size: 1.5rem; font-weight: 800; }
+      .work-card p { margin: 0; color: var(--ink-soft); font-size: 0.98rem; flex: 1; }
+      .work-card .demo-link { font-weight: 800; color: var(--accent); text-decoration: none; display: inline-flex; align-items: center; gap: 8px; margin-top: 6px; }
+      .work-card .demo-link:hover { color: var(--accent-deep); }
+
+      /* ---------- Services ---------- */
+      .services { background: var(--bg-alt); }
+      .svc-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 26px; }
+      .svc-card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 30px 26px; box-shadow: var(--shadow); transition: transform .35s ease, box-shadow .35s ease; }
+      .svc-card:hover { transform: translateY(-7px); box-shadow: 0 26px 54px -20px rgba(11, 111, 228, 0.4); }
+      .svc-card .icon {
+        width: 52px; height: 52px; border-radius: 16px; margin-bottom: 18px;
+        background: color-mix(in srgb, var(--accent) 12%, transparent);
+        color: var(--accent); display: grid; place-items: center;
+      }
+      .svc-card h3 { margin: 0 0 10px; font-size: 1.25rem; font-weight: 700; }
+      .svc-card p { margin: 0; color: var(--ink-soft); font-size: 0.97rem; }
+
+      /* ---------- Pricing ---------- */
+      .price-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 26px; align-items: stretch; }
+      .price-card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 34px 30px; box-shadow: var(--shadow); display: flex; flex-direction: column; position: relative; transition: transform .35s ease, box-shadow .35s ease; }
+      .price-card:hover { transform: translateY(-7px); }
+      .price-card.featured { border: 2px solid var(--accent); }
+      .price-card .tag { position: absolute; top: -14px; left: 50%; transform: translateX(-50%); background: var(--accent); color: #fff; font-size: 0.72rem; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; padding: 6px 16px; border-radius: 999px; white-space: nowrap; }
+      .price-card h3 { margin: 0 0 6px; font-size: 1.4rem; }
+      .price-card .amount { font-family: "Playfair Display", serif; font-size: 2.6rem; font-weight: 800; color: var(--accent); line-height: 1; margin: 10px 0 4px; }
+      .price-card .per { color: var(--ink-soft); font-size: 0.9rem; font-weight: 600; margin-bottom: 18px; }
+      .price-card ul { list-style: none; margin: 0 0 26px; padding: 0; display: grid; gap: 10px; flex: 1; }
+      .price-card li { display: flex; gap: 10px; align-items: flex-start; font-size: 0.98rem; }
+      .price-card li svg { color: var(--accent); flex: none; margin-top: 4px; }
+      .price-note { text-align: center; margin-top: 30px; color: var(--ink-soft); font-weight: 700; font-size: 1.02rem; }
+      .maint-strip { margin-top: 26px; background: var(--dark-band); color: var(--dark-ink); border-radius: var(--radius); padding: 26px 30px; display: flex; flex-wrap: wrap; gap: 12px 28px; align-items: center; justify-content: space-between; }
+      .maint-strip b { font-family: "Playfair Display", serif; font-size: 1.5rem; color: #7fd4f5; }
+      .maint-strip span { color: var(--dark-soft); font-weight: 600; }
+
+      /* ---------- Process ---------- */
+      .process { background: var(--bg-alt); }
+      .steps { display: grid; grid-template-columns: repeat(4, 1fr); gap: 26px; counter-reset: step; }
+      .step { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 30px 26px; box-shadow: var(--shadow); position: relative; }
+      .step::before { counter-increment: step; content: counter(step); position: absolute; top: -22px; left: 26px; width: 44px; height: 44px; border-radius: 50%; background: var(--accent); color: #fff; font: 800 1.2rem "Playfair Display", serif; display: grid; place-items: center; }
+      .step h3 { margin: 14px 0 10px; font-size: 1.2rem; }
+      .step p { margin: 0; color: var(--ink-soft); font-size: 0.96rem; }
+
+      /* ---------- About ---------- */
+      .about-inner { max-width: 720px; }
+      .about-inner p { font-size: 1.12rem; color: var(--ink-soft); margin: 0 0 16px; }
+      .about-inner p strong { color: var(--ink); }
+
+      /* ---------- Contact CTA band ---------- */
+      .booking { background: var(--dark-band); color: var(--dark-ink); padding: 0; }
+      .booking .wrap { padding: 84px 0; text-align: center; max-width: 720px; }
+      .booking h2 { font-size: clamp(2rem, 4.5vw, 3rem); line-height: 1.12; margin: 0 0 14px; font-weight: 800; }
+      .booking h2 em { color: #7fd4f5; font-style: normal; }
+      .booking p { color: var(--dark-soft); font-size: 1.08rem; margin: 0 0 34px; }
+      .booking-ctas { display: flex; flex-wrap: wrap; gap: 14px; justify-content: center; margin-bottom: 26px; }
+      .booking-ctas .btn { padding: 16px 34px; font-size: 1.08rem; }
+      .booking .phone-line { font-weight: 700; font-size: 1.05rem; color: var(--dark-ink); }
+      .booking .phone-line a { color: #7fd4f5; text-decoration: none; }
+
+      /* ---------- Footer ---------- */
+      footer { background: var(--dark-band); color: var(--dark-soft); padding: 56px 0 110px; }
+      .foot-grid { display: grid; grid-template-columns: 1.4fr 1fr 1fr; gap: 40px; }
+      footer .brand .name { color: var(--dark-ink); }
+      footer .brand small { color: var(--dark-soft); }
+      footer h4 { color: var(--dark-ink); font-family: "Karla", sans-serif; font-size: 0.82rem; letter-spacing: 0.18em; text-transform: uppercase; margin: 0 0 16px; }
+      footer ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 9px; }
+      footer a { text-decoration: none; }
+      footer a:hover { color: #7fd4f5; }
+      .foot-bottom { border-top: 1px solid rgba(233, 241, 251, 0.14); margin-top: 44px; padding-top: 22px; font-size: 0.88rem; display: flex; flex-wrap: wrap; gap: 8px 22px; justify-content: space-between; }
+
+      /* ---------- Mobile action bar ---------- */
+      .mobile-bar {
+        display: none; position: fixed; left: 0; right: 0; bottom: 0; z-index: 70;
+        background: var(--dark-band); border-top: 1px solid rgba(233, 241, 251, 0.15);
+        padding: 10px 12px calc(10px + env(safe-area-inset-bottom));
+        grid-template-columns: 1fr 1fr 1fr; gap: 10px;
+      }
+      .mobile-bar a {
+        display: flex; align-items: center; justify-content: center; gap: 7px;
+        padding: 12px 6px; border-radius: 12px; text-decoration: none;
+        font-weight: 800; font-size: 0.92rem; color: var(--dark-ink);
+        background: var(--dark-band-2);
+      }
+      .mobile-bar a.wa { background: #1faa55; color: #fff; }
+      .mobile-bar a.book { background: var(--accent); color: #fff; }
+
+      /* ---------- Scroll reveal ---------- */
+      .reveal { opacity: 0; transform: translateY(28px); transition: opacity .7s ease, transform .7s cubic-bezier(.22,.61,.36,1); }
+      .reveal.in { opacity: 1; transform: none; }
+
+      @media (max-width: 900px) {
+        section { padding: 62px 0; }
+        .work-grid { grid-template-columns: 1fr; }
+        .svc-grid { grid-template-columns: 1fr 1fr; }
+        .price-grid { grid-template-columns: 1fr; max-width: 480px; margin-inline: auto; }
+        .steps { grid-template-columns: 1fr 1fr; }
+        .stats .wrap { grid-template-columns: 1fr 1fr; }
+        .stat:nth-child(3) { border-left: 0; }
+        .stat { border-top: 1px solid rgba(233, 241, 251, 0.12); }
+        .stat:nth-child(-n+2) { border-top: 0; }
+        .foot-grid { grid-template-columns: 1fr; gap: 30px; }
+        .hero-inner { padding: 76px 0 70px; }
+        .nav-links {
+          display: none; position: absolute; top: 100%; left: 0; right: 0;
+          background: var(--bg); border-bottom: 1px solid var(--line);
+          flex-direction: column; align-items: stretch; padding: 14px 20px 20px; gap: 4px;
+        }
+        .nav-links.open { display: flex; }
+        .nav-links a { padding: 10px 4px; }
+        .nav-links .btn { justify-content: center; margin-top: 8px; }
+        .burger { display: block; }
+        .nav .call-btn { display: none; }
+        .mobile-bar { display: grid; }
+        footer { padding-bottom: 120px; }
+        .booking .wrap { padding: 62px 0; }
+      }
+      @media (max-width: 560px) {
+        .svc-grid { grid-template-columns: 1fr; }
+        .steps { grid-template-columns: 1fr; }
+        .step { margin-top: 14px; }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        html { scroll-behavior: auto; }
+        .reveal { opacity: 1 !important; transform: none !important; transition: none; }
+        .work-card .thumb img { transition: none; }
+      }
+    </style>
+    <noscript><style>.reveal { opacity: 1 !important; transform: none !important; }</style></noscript>
+  </head>
+  <body>
+    <header>
+      <div class="wrap nav">
+        <a class="brand" href="#top">
+          <span class="name">Abhishek<em>.</em></span>
+          <small>Web Developer</small>
+        </a>
+        <nav class="nav-links" id="navLinks">
+          <a href="#work">Work</a>
+          <a href="#services">Services</a>
+          <a href="#pricing">Pricing</a>
+          <a href="#process">Process</a>
+          <a href="#contact">Contact</a>
+          <a class="btn whatsapp" href="https://wa.me/918000548640?text=Hello%20Abhishek!%20I%20want%20a%20website%20for%20my%20business.">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M17.5 14.4c-.3-.15-1.76-.87-2.03-.97-.27-.1-.47-.15-.67.15-.2.3-.77.97-.94 1.17-.17.2-.35.22-.65.07-.3-.15-1.26-.46-2.4-1.48-.88-.79-1.48-1.76-1.65-2.06-.17-.3-.02-.46.13-.61.13-.13.3-.35.45-.52.15-.17.2-.3.3-.5.1-.2.05-.37-.02-.52-.07-.15-.67-1.62-.92-2.22-.24-.58-.49-.5-.67-.51h-.57c-.2 0-.52.07-.8.37-.27.3-1.04 1.02-1.04 2.5 0 1.47 1.07 2.9 1.22 3.1.15.2 2.1 3.2 5.1 4.49.71.31 1.27.49 1.7.63.72.23 1.37.2 1.88.12.57-.09 1.76-.72 2.01-1.41.25-.7.25-1.29.17-1.41-.07-.13-.27-.2-.57-.35M12.05 21.79h-.01a9.87 9.87 0 0 1-5.03-1.38l-.36-.21-3.74.98 1-3.65-.24-.37a9.86 9.86 0 1 1 8.38 4.63M12.04.5A11.4 11.4 0 0 0 .6 11.9c0 2.01.53 3.97 1.53 5.7L.5 23.5l6.02-1.58a11.38 11.38 0 0 0 5.51 1.4h.01A11.4 11.4 0 0 0 12.04.5"/></svg>
+            Chat on WhatsApp
+          </a>
+        </nav>
+        <a class="btn call-btn" href="tel:+918000548640">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+          +91 80005 48640
+        </a>
+        <button class="burger" id="burger" aria-label="Open menu" aria-expanded="false">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+        </button>
+      </div>
+    </header>
+
+    <main id="top">
+      <!-- HERO -->
+      <section class="hero">
+        <img class="bg" src="https://images.unsplash.com/photo-1461749280684-dccba630e2f6?auto=format&fit=crop&w=1920&q=80" alt="Website code on a screen" fetchpriority="high" />
+        <div class="scrim"></div>
+        <div class="wrap">
+          <div class="hero-inner">
+            <div class="kicker">Freelance Web Developer</div>
+            <h1>I build websites that <em>bring you customers.</em></h1>
+            <p class="lede">Mobile-friendly websites for restaurants, salons, wedding venues &amp; local businesses — delivered in 3–5 days.</p>
+            <div class="hero-ctas">
+              <a class="btn" href="#work">See My Work</a>
+              <a class="btn whatsapp" href="https://wa.me/918000548640?text=Hello%20Abhishek!%20I%20want%20a%20website%20for%20my%20business.">
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M17.5 14.4c-.3-.15-1.76-.87-2.03-.97-.27-.1-.47-.15-.67.15-.2.3-.77.97-.94 1.17-.17.2-.35.22-.65.07-.3-.15-1.26-.46-2.4-1.48-.88-.79-1.48-1.76-1.65-2.06-.17-.3-.02-.46.13-.61.13-.13.3-.35.45-.52.15-.17.2-.3.3-.5.1-.2.05-.37-.02-.52-.07-.15-.67-1.62-.92-2.22-.24-.58-.49-.5-.67-.51h-.57c-.2 0-.52.07-.8.37-.27.3-1.04 1.02-1.04 2.5 0 1.47 1.07 2.9 1.22 3.1.15.2 2.1 3.2 5.1 4.49.71.31 1.27.49 1.7.63.72.23 1.37.2 1.88.12.57-.09 1.76-.72 2.01-1.41.25-.7.25-1.29.17-1.41-.07-.13-.27-.2-.57-.35M12.05 21.79h-.01a9.87 9.87 0 0 1-5.03-1.38l-.36-.21-3.74.98 1-3.65-.24-.37a9.86 9.86 0 1 1 8.38 4.63M12.04.5A11.4 11.4 0 0 0 .6 11.9c0 2.01.53 3.97 1.53 5.7L.5 23.5l6.02-1.58a11.38 11.38 0 0 0 5.51 1.4h.01A11.4 11.4 0 0 0 12.04.5"/></svg>
+                Chat on WhatsApp
+              </a>
+            </div>
+            <div class="hero-facts">
+              <span>
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                Bhilwara, India
+              </span>
+              <span>
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                Serving India, UAE &amp; Saudi Arabia
+              </span>
+              <span>
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                Delivered in 3–5 days
+              </span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- STATS -->
+      <section class="stats">
+        <div class="wrap">
+          <div class="stat"><b>4</b><span>Demo sites live</span></div>
+          <div class="stat"><b>3–5</b><span>Day delivery</span></div>
+          <div class="stat"><b>100%</b><span>Mobile-friendly</span></div>
+          <div class="stat"><b>50/50</b><span>Advance / on delivery</span></div>
+        </div>
+      </section>
+
+      <!-- WORK -->
+      <section id="work">
+        <div class="wrap">
+          <div class="section-head">
+            <div class="rule"></div>
+            <h2>My Work</h2>
+            <p>Live demo websites I've built — open any of them to see the quality your business can get.</p>
+          </div>
+          <div class="work-grid">
+            <article class="work-card">
+              <div class="thumb">
+                <img src="https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=800&q=80" alt="Restaurant interior" loading="lazy" />
+                <span class="cat">Restaurant</span>
+              </div>
+              <div class="body">
+                <h3>Zaika — Taste of Royal India</h3>
+                <p>North Indian restaurant demo: elegant menu, photo gallery, Google Maps and one-tap table booking on WhatsApp.</p>
+                <a class="demo-link" href="https://www.youmika.site/demo-restaurant.html" target="_blank" rel="noopener">View live demo
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/></svg>
+                </a>
+              </div>
+            </article>
+            <article class="work-card">
+              <div class="thumb">
+                <img src="https://images.unsplash.com/photo-1560066984-138dadb4c035?auto=format&fit=crop&w=800&q=80" alt="Salon interior" loading="lazy" />
+                <span class="cat">Salon</span>
+              </div>
+              <div class="body">
+                <h3>Velvet Scissors — Unisex Salon</h3>
+                <p>Premium salon demo: services with prices, work gallery, reviews and WhatsApp appointment booking.</p>
+                <a class="demo-link" href="https://www.youmika.site/demo-salon.html" target="_blank" rel="noopener">View live demo
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/></svg>
+                </a>
+              </div>
+            </article>
+            <article class="work-card">
+              <div class="thumb">
+                <img src="https://images.unsplash.com/photo-1581578731548-c64695cc6952?auto=format&fit=crop&w=800&q=80" alt="Professional cleaning service" loading="lazy" />
+                <span class="cat">Cleaning</span>
+              </div>
+              <div class="body">
+                <h3>SparkleClean — Home &amp; Villa Cleaning</h3>
+                <p>Cleaning company demo: USD-priced services, how-it-works steps, gallery and instant WhatsApp booking.</p>
+                <a class="demo-link" href="https://www.youmika.site/demo-cleaning.html" target="_blank" rel="noopener">View live demo
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/></svg>
+                </a>
+              </div>
+            </article>
+            <article class="work-card">
+              <div class="thumb">
+                <img src="https://images.unsplash.com/photo-1519167758481-83f550bb49b3?auto=format&fit=crop&w=800&q=80" alt="Decorated wedding venue" loading="lazy" />
+                <span class="cat">Wedding Venue</span>
+              </div>
+              <div class="body">
+                <h3>Rajwada Celebration Gardens</h3>
+                <p>Banquet &amp; marriage garden demo: venue spaces, packages, wedding gallery and WhatsApp date enquiry.</p>
+                <a class="demo-link" href="https://www.youmika.site/demo-banquet.html" target="_blank" rel="noopener">View live demo
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/></svg>
+                </a>
+              </div>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <!-- SERVICES -->
+      <section class="services" id="services">
+        <div class="wrap">
+          <div class="section-head center">
+            <div class="rule"></div>
+            <h2>Services</h2>
+            <p>Everything a small business needs to look professional online.</p>
+          </div>
+          <div class="svc-grid">
+            <div class="svc-card">
+              <div class="icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg></div>
+              <h3>Business Websites</h3>
+              <p>Complete multi-page websites for restaurants, salons, wedding venues, clinics and shops.</p>
+            </div>
+            <div class="svc-card">
+              <div class="icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg></div>
+              <h3>One-Page Sites</h3>
+              <p>A sharp single-page presence: services, gallery, contact and a WhatsApp button — perfect first site.</p>
+            </div>
+            <div class="svc-card">
+              <div class="icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M17.5 14.4c-.3-.15-1.76-.87-2.03-.97-.27-.1-.47-.15-.67.15-.2.3-.77.97-.94 1.17-.17.2-.35.22-.65.07-.3-.15-1.26-.46-2.4-1.48-.88-.79-1.48-1.76-1.65-2.06-.17-.3-.02-.46.13-.61.13-.13.3-.35.45-.52.15-.17.2-.3.3-.5.1-.2.05-.37-.02-.52-.07-.15-.67-1.62-.92-2.22-.24-.58-.49-.5-.67-.51h-.57c-.2 0-.52.07-.8.37-.27.3-1.04 1.02-1.04 2.5 0 1.47 1.07 2.9 1.22 3.1.15.2 2.1 3.2 5.1 4.49.71.31 1.27.49 1.7.63.72.23 1.37.2 1.88.12.57-.09 1.76-.72 2.01-1.41.25-.7.25-1.29.17-1.41-.07-.13-.27-.2-.57-.35M12.05 21.79h-.01a9.87 9.87 0 0 1-5.03-1.38l-.36-.21-3.74.98 1-3.65-.24-.37a9.86 9.86 0 1 1 8.38 4.63M12.04.5A11.4 11.4 0 0 0 .6 11.9c0 2.01.53 3.97 1.53 5.7L.5 23.5l6.02-1.58a11.38 11.38 0 0 0 5.51 1.4h.01A11.4 11.4 0 0 0 12.04.5"/></svg></div>
+              <h3>WhatsApp Booking</h3>
+              <p>One-tap call &amp; WhatsApp buttons, enquiry forms and Google Maps — turn visitors into customers.</p>
+            </div>
+            <div class="svc-card">
+              <div class="icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg></div>
+              <h3>Website Maintenance</h3>
+              <p>Updates, backups and small changes every month — your site stays fresh while you run your business.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- PRICING -->
+      <section id="pricing">
+        <div class="wrap">
+          <div class="section-head center">
+            <div class="rule"></div>
+            <h2>Simple, Honest Pricing</h2>
+            <p>No hidden costs. You know the full price before we start.</p>
+          </div>
+          <div class="price-grid">
+            <div class="price-card">
+              <h3>Basic</h3>
+              <div class="amount">₹5,000</div>
+              <div class="per">one-time</div>
+              <ul>
+                <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>One-page website</li>
+                <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Home, services &amp; contact sections</li>
+                <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>WhatsApp chat button</li>
+                <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Mobile-friendly design</li>
+                <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Delivered in 3–5 days</li>
+              </ul>
+              <a class="btn ghost" href="https://wa.me/918000548640?text=Hello%20Abhishek!%20I%20want%20the%20Basic%20%E2%82%B95%2C000%20website.">Choose Basic</a>
+            </div>
+            <div class="price-card featured">
+              <span class="tag">Most Popular</span>
+              <h3>Standard</h3>
+              <div class="amount">₹9,999</div>
+              <div class="per">one-time</div>
+              <ul>
+                <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>5–7 page website</li>
+                <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Photo gallery &amp; packages/pricing</li>
+                <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>WhatsApp booking integration</li>
+                <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Google Maps location</li>
+                <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Delivered in 3–5 days</li>
+              </ul>
+              <a class="btn" href="https://wa.me/918000548640?text=Hello%20Abhishek!%20I%20want%20the%20Standard%20%E2%82%B99%2C999%20website.">Choose Standard</a>
+            </div>
+            <div class="price-card">
+              <h3>Premium</h3>
+              <div class="amount">₹19,999</div>
+              <div class="per">one-time</div>
+              <ul>
+                <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Large website, more pages</li>
+                <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Custom sections &amp; features</li>
+                <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Advanced booking / enquiry forms</li>
+                <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Priority support</li>
+                <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Delivered in 3–5 days</li>
+              </ul>
+              <a class="btn ghost" href="https://wa.me/918000548640?text=Hello%20Abhishek!%20I%20want%20the%20Premium%20%E2%82%B919%2C999%20website.">Choose Premium</a>
+            </div>
+          </div>
+          <p class="price-note">50% advance to start · 50% on delivery — fair for both of us.</p>
+          <div class="maint-strip">
+            <div><b>₹1,000/month</b></div>
+            <span>Website maintenance — updates, backups, small changes &amp; support, so your site stays fresh.</span>
+            <a class="btn whatsapp" href="https://wa.me/918000548640?text=Hello%20Abhishek!%20I%20want%20website%20maintenance.">Ask about it</a>
+          </div>
+        </div>
+      </section>
+
+      <!-- PROCESS -->
+      <section class="process" id="process">
+        <div class="wrap">
+          <div class="section-head">
+            <div class="rule"></div>
+            <h2>How It Works</h2>
+            <p>From first message to a live website — simple and fast.</p>
+          </div>
+          <div class="steps">
+            <div class="step">
+              <h3>Say hello</h3>
+              <p>Message me on WhatsApp and tell me about your business — what you do and what you need.</p>
+            </div>
+            <div class="step">
+              <h3>See a free demo</h3>
+              <p>I build a sample homepage for your business so you can see the quality before committing.</p>
+            </div>
+            <div class="step">
+              <h3>I build your site</h3>
+              <p>Pay 50% advance and I build your full website in 3–5 days — you watch it take shape.</p>
+            </div>
+            <div class="step">
+              <h3>Go live</h3>
+              <p>You approve the site, pay the balance, and your website goes live for the world to find.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ABOUT -->
+      <section id="about">
+        <div class="wrap">
+          <div class="section-head">
+            <div class="rule"></div>
+            <h2>About Me</h2>
+          </div>
+          <div class="about-inner">
+            <p><strong>I'm Abhishek, a freelance web developer from Bhilwara, Rajasthan.</strong></p>
+            <p>I help small businesses get more customers with fast, affordable, mobile-friendly websites. No jargon, no hidden costs — just a website that works as hard as you do.</p>
+            <p>I work with clients across India, the UAE and Saudi Arabia, and every project gets my full attention from first message to launch day.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- CONTACT CTA -->
+      <section class="booking" id="contact">
+        <div class="wrap">
+          <h2>Let's build <em>your website.</em></h2>
+          <p>Tell me about your business on WhatsApp — I'll reply fast, and your free demo could be ready within days.</p>
+          <div class="booking-ctas">
+            <a class="btn whatsapp" href="https://wa.me/918000548640?text=Hello%20Abhishek!%20I%20want%20a%20website%20for%20my%20business.">
+              <svg width="19" height="19" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M17.5 14.4c-.3-.15-1.76-.87-2.03-.97-.27-.1-.47-.15-.67.15-.2.3-.77.97-.94 1.17-.17.2-.35.22-.65.07-.3-.15-1.26-.46-2.4-1.48-.88-.79-1.48-1.76-1.65-2.06-.17-.3-.02-.46.13-.61.13-.13.3-.35.45-.52.15-.17.2-.3.3-.5.1-.2.05-.37-.02-.52-.07-.15-.67-1.62-.92-2.22-.24-.58-.49-.5-.67-.51h-.57c-.2 0-.52.07-.8.37-.27.3-1.04 1.02-1.04 2.5 0 1.47 1.07 2.9 1.22 3.1.15.2 2.1 3.2 5.1 4.49.71.31 1.27.49 1.7.63.72.23 1.37.2 1.88.12.57-.09 1.76-.72 2.01-1.41.25-.7.25-1.29.17-1.41-.07-.13-.27-.2-.57-.35M12.05 21.79h-.01a9.87 9.87 0 0 1-5.03-1.38l-.36-.21-3.74.98 1-3.65-.24-.37a9.86 9.86 0 1 1 8.38 4.63M12.04.5A11.4 11.4 0 0 0 .6 11.9c0 2.01.53 3.97 1.53 5.7L.5 23.5l6.02-1.58a11.38 11.38 0 0 0 5.51 1.4h.01A11.4 11.4 0 0 0 12.04.5"/></svg>
+              Chat on WhatsApp
+            </a>
+            <a class="btn light" href="mailto:web@youmika.site">web@youmika.site</a>
+          </div>
+          <div class="phone-line">Prefer to talk? Call me at <a href="tel:+918000548640">+91 80005 48640</a></div>
+        </div>
+      </section>
+    </main>
+
+    <footer>
+      <div class="wrap">
+        <div class="foot-grid">
+          <div>
+            <a class="brand" href="#top">
+              <span class="name">Abhishek<em>.</em></span>
+              <small>Web Developer</small>
+            </a>
+            <p style="margin:16px 0 0; font-size:0.95rem; max-width:340px;">Mobile-friendly websites for small businesses — restaurants, salons, wedding venues &amp; more.</p>
+          </div>
+          <div>
+            <h4>Explore</h4>
+            <ul>
+              <li><a href="#work">My Work</a></li>
+              <li><a href="#services">Services</a></li>
+              <li><a href="#pricing">Pricing</a></li>
+              <li><a href="#process">Process</a></li>
+            </ul>
+          </div>
+          <div>
+            <h4>Contact</h4>
+            <ul>
+              <li><a href="https://wa.me/918000548640?text=Hello%20Abhishek!%20I%20want%20a%20website%20for%20my%20business.">WhatsApp me</a></li>
+              <li><a href="tel:+918000548640">+91 80005 48640</a></li>
+              <li><a href="mailto:web@youmika.site">web@youmika.site</a></li>
+            </ul>
+          </div>
+        </div>
+        <div class="foot-bottom">
+          <span>© <span id="year">2026</span> Abhishek — Web Developer, Bhilwara, India</span>
+          <span>Portfolio site</span>
+        </div>
+      </div>
+    </footer>
+
+    <div class="mobile-bar">
+      <a href="tel:+918000548640">Call</a>
+      <a class="wa" href="https://wa.me/918000548640?text=Hello%20Abhishek!%20I%20want%20a%20website%20for%20my%20business.">WhatsApp</a>
+      <a class="book" href="#work">See Work</a>
+    </div>
+
+    <script>
+      // Mobile nav
+      var burger = document.getElementById('burger');
+      var navLinks = document.getElementById('navLinks');
+      burger.addEventListener('click', function () {
+        var open = navLinks.classList.toggle('open');
+        burger.setAttribute('aria-expanded', open ? 'true' : 'false');
+      });
+      navLinks.addEventListener('click', function (e) {
+        if (e.target.tagName === 'A') navLinks.classList.remove('open');
+      });
+
+      // Scroll-reveal with stagger
+      (function () {
+        var els = document.querySelectorAll('.section-head, .work-card, .svc-card, .price-card, .step, .stat, .maint-strip, .about-inner > *, .booking .wrap > *');
+        if (!('IntersectionObserver' in window)) {
+          for (var i = 0; i < els.length; i++) els[i].classList.add('in');
+          return;
+        }
+        var io = new IntersectionObserver(function (entries) {
+          entries.forEach(function (en) {
+            if (en.isIntersecting) {
+              en.target.classList.add('in');
+              io.unobserve(en.target);
+            }
+          });
+        }, { threshold: 0.12, rootMargin: '0px 0px -40px 0px' });
+        els.forEach(function (el, i) {
+          el.style.transitionDelay = ((i % 4) * 80) + 'ms';
+          el.classList.add('reveal');
+          io.observe(el);
+        });
+      })();
+
+      document.getElementById('year').textContent = new Date().getFullYear();
+    </script>
+  </body>
+</html>
