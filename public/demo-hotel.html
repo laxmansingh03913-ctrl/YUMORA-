@@ -9,6 +9,8 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,700;0,800;1,500&family=Karla:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/pannellum@2.5.6/build/pannellum.css" />
+    <script src="https://cdn.jsdelivr.net/npm/pannellum@2.5.6/build/pannellum.js" defer></script>
     <style>
       :root {
         --bg: #0a0e1d;
@@ -247,42 +249,29 @@
       .rooms-grid .room-card:nth-child(2) .room-art .art { animation: kb-pan-r 24s ease-in-out infinite alternate; }
       .rooms-grid .room-card:nth-child(3) .room-art .art { animation: kb-zoom-in 22s ease-in-out infinite alternate; }
 
-      /* ---------- Panoramic look-around ---------- */
-      .pano-frame { position: relative; height: clamp(230px, 44vh, 430px); overflow: hidden; border-block: 1px solid var(--line); cursor: grab; touch-action: pan-y; margin-top: 12px; }
-      .pano-frame:active { cursor: grabbing; }
-      .pano-drag { position: absolute; top: 0; bottom: 0; left: -14%; width: 128%; transform: translateX(var(--drag-x, 0px)); will-change: transform; }
-      .pano-img { position: absolute; inset: 0; background: url("media/demo-hotel/hero.jpg") center/cover no-repeat; animation: pano-pan 32s ease-in-out infinite alternate; will-change: transform; }
-      @keyframes pano-pan { from { transform: translateX(-3.5%); } to { transform: translateX(3.5%); } }
-      .pano-frame::after { content: ""; position: absolute; inset: 0; pointer-events: none; background: linear-gradient(180deg, rgba(7,10,20,0.28), transparent 40%, transparent 60%, rgba(7,10,20,0.48)); }
-      .pano-hint { position: absolute; right: 18px; bottom: 16px; z-index: 2; display: inline-flex; align-items: center; gap: 8px; background: rgba(10,14,29,0.72); border: 1px solid var(--line); color: var(--gold-soft); font-size: 0.78rem; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; padding: 9px 15px; border-radius: 999px; backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); pointer-events: none; }
-      .pano-hint svg { width: 16px; height: 16px; }
-
-      /* ---------- Virtual tour walkthrough ---------- */
+      /* ---------- 360° Virtual Tour (Pannellum) ---------- */
       #tour { padding-bottom: 0; }
-      .vtour-track { height: 420vh; position: relative; margin-top: 54px; }
-      .vtour-sticky { position: sticky; top: 0; height: 100svh; overflow: hidden; background: #070b16; }
-      .vtour-scene { position: absolute; inset: 0; margin: 0; opacity: 0; visibility: hidden; transition: opacity 1s ease, visibility 0s linear 1s; }
-      .vtour-scene.active { opacity: 1; visibility: visible; transition: opacity 1s ease; z-index: 1; }
-      .vtour-img { position: absolute; inset: -6%; background-size: cover; background-position: center; transform: scale(1.18); transition: transform 3.2s cubic-bezier(0.2, 0.6, 0.25, 1); will-change: transform; }
-      .vtour-scene.active .vtour-img { transform: scale(1.03); }
-      .vtour-shade { position: absolute; inset: 0; background: linear-gradient(180deg, rgba(7,10,20,0.35) 0%, transparent 32%, transparent 52%, rgba(7,10,20,0.9) 100%); }
-      .vtour-cap { position: absolute; left: 0; right: 0; bottom: 11%; z-index: 2; text-align: center; padding: 0 26px; opacity: 0; transform: translateY(30px); transition: opacity 0.9s ease 0.4s, transform 0.9s ease 0.4s; }
-      .vtour-scene.active .vtour-cap { opacity: 1; transform: none; }
-      .vtour-cap .step { display: inline-block; font-size: 0.72rem; letter-spacing: 0.32em; text-transform: uppercase; color: var(--gold); font-weight: 800; margin-bottom: 14px; }
-      .vtour-cap h3 { font-size: clamp(2rem, 5.4vw, 3.4rem); margin: 0 0 12px; font-weight: 800; text-shadow: 0 6px 40px rgba(0,0,0,0.65); }
-      .vtour-cap h3 em { color: var(--gold); font-style: normal; }
-      .vtour-cap p { color: var(--ink-soft); margin: 0 auto; max-width: 560px; font-size: clamp(0.98rem, 2vw, 1.12rem); }
-      .vtour-progress { position: absolute; top: 0; left: 0; height: 3px; width: 0; z-index: 6; background: linear-gradient(90deg, var(--gold-deep), var(--gold-soft)); }
-      .vtour-ui { position: absolute; right: 24px; top: 50%; transform: translateY(-50%); z-index: 5; display: flex; flex-direction: column; gap: 16px; }
-      .vtour-dot { width: 12px; height: 12px; border-radius: 50%; border: 1px solid var(--gold); background: transparent; padding: 0; cursor: pointer; transition: all 0.3s ease; }
-      .vtour-dot.active { background: var(--gold); transform: scale(1.4); box-shadow: 0 0 14px rgba(212,175,90,0.8); }
-      .vtour-count { position: absolute; left: 26px; bottom: 26px; z-index: 5; font-size: 0.85rem; letter-spacing: 0.2em; text-transform: uppercase; color: var(--ink-soft); font-weight: 700; }
-      .vtour-count #vtourNum { color: var(--gold-soft); font-family: "Playfair Display", serif; font-size: 1.6rem; letter-spacing: 0; }
+      .tour360 { margin-top: 54px; }
+      .tour360-viewer { position: relative; height: clamp(430px, 78vh, 720px); background: #070b16; border-block: 1px solid var(--line); overflow: hidden; }
+      .tour360-viewer .pnlm-container { background: #070b16; }
+      .tour360-viewer .pnlm-ui { font-family: "Karla", system-ui, sans-serif; }
+      .tour360-fallback { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; text-align: center; padding: 40px; color: var(--ink-soft); font-size: 1rem; }
+      .tour360-cap { position: absolute; left: 0; right: 0; bottom: 0; z-index: 5; pointer-events: none; text-align: center; padding: 70px 26px 20px; background: linear-gradient(180deg, transparent, rgba(7,10,20,0.88)); }
+      .tour360-cap .step { display: inline-block; font-size: 0.72rem; letter-spacing: 0.32em; text-transform: uppercase; color: var(--gold); font-weight: 800; margin-bottom: 10px; }
+      .tour360-cap h3 { font-size: clamp(1.5rem, 3.4vw, 2.2rem); margin: 0 0 6px; font-weight: 800; text-shadow: 0 6px 40px rgba(0,0,0,0.65); }
+      .tour360-cap h3 em { color: var(--gold); font-style: normal; }
+      .tour360-cap p { color: var(--ink-soft); margin: 0 auto; max-width: 560px; font-size: clamp(0.9rem, 1.8vw, 1rem); }
+      .tour360-scenes { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; padding: 28px 20px 6px; }
+      .tour360-btn { display: inline-flex; align-items: center; gap: 9px; background: transparent; border: 1px solid var(--line); color: var(--ink-soft); font-family: "Karla", system-ui, sans-serif; font-size: 0.82rem; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; padding: 12px 20px; border-radius: 999px; cursor: pointer; transition: all 0.3s ease; }
+      .tour360-btn svg { width: 15px; height: 15px; }
+      .tour360-btn:hover { border-color: var(--gold); color: var(--gold-soft); }
+      .tour360-btn.active { background: linear-gradient(135deg, var(--gold-deep), var(--gold)); border-color: var(--gold); color: #0a0e1d; box-shadow: 0 8px 26px -8px rgba(212,175,90,0.6); }
+      .tour360-hint { text-align: center; color: var(--ink-soft); font-size: 0.8rem; letter-spacing: 0.14em; text-transform: uppercase; font-weight: 700; padding: 14px 20px 0; }
+      .tour360-hint svg { width: 15px; height: 15px; vertical-align: -2px; margin-right: 6px; color: var(--gold); }
       @media (max-width: 640px) {
-        .vtour-ui { right: 14px; gap: 12px; }
-        .vtour-dot { width: 10px; height: 10px; }
-        .vtour-count { left: 16px; bottom: 18px; }
-        .vtour-cap { bottom: 14%; }
+        .tour360-viewer { height: clamp(380px, 62vh, 520px); }
+        .tour360-btn { padding: 10px 15px; font-size: 0.74rem; }
+        .tour360-cap { padding: 56px 18px 16px; }
       }
 
       @media (max-width: 940px) {
@@ -447,65 +436,32 @@
       </div>
     </section>
 
-    <!-- VIRTUAL TOUR -->
+    <!-- 360° VIRTUAL TOUR -->
     <section id="tour">
       <div class="wrap">
         <div class="section-head center reveal">
           <span class="eyebrow">Step Inside</span>
-          <h2>A <em>Virtual Tour</em> of the Palace</h2>
+          <h2>A <em>360° Virtual Tour</em> of the Palace</h2>
           <div class="rule"></div>
-          <p>Keep scrolling — walk with us from the Grand Lobby to the rooftop pool, exactly as a guest would.</p>
+          <p>Stand in the middle of each room and look all around you — drag to explore, exactly as if you were there.</p>
         </div>
       </div>
-      <div class="pano-frame" id="panoFrame" aria-label="Panoramic view of the palace. Drag sideways to look around.">
-        <div class="pano-drag" id="panoDrag"><div class="pano-img"></div></div>
-        <div class="pano-hint">
+      <div class="tour360 reveal">
+        <div class="tour360-viewer" id="tour360Viewer" aria-label="360 degree virtual tour of the hotel. Drag to look around.">
+          <div class="tour360-fallback" id="tour360Fallback" hidden>
+            <p>The 360° tour needs an internet connection to load its viewer.<br />Please check your connection and refresh the page.</p>
+          </div>
+          <div class="tour360-cap" id="tour360Cap">
+            <span class="step" id="tour360Step">Stop 01 · Arrival</span>
+            <h3 id="tour360Title">Step into the <em>Grand Lobby</em></h3>
+            <p id="tour360Desc">Marble floors, a crystal chandelier and the scent of fresh marigolds welcome you home.</p>
+          </div>
+        </div>
+        <p class="tour360-hint">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M8 12H2m0 0 3-3M2 12l3 3M16 12h6m0 0-3-3m3 3-3 3"/></svg>
-          Drag to look around
-        </div>
-      </div>
-      <div class="vtour-track" id="vtourTrack">
-        <div class="vtour-sticky">
-          <div class="vtour-progress" id="vtourProgress"></div>
-          <figure class="vtour-scene active">
-            <div class="vtour-img" style="background-image:url('media/demo-hotel/lobby.jpg')"></div>
-            <div class="vtour-shade"></div>
-            <figcaption class="vtour-cap">
-              <span class="step">Stop 01 · Arrival</span>
-              <h3>Step into the <em>Grand Lobby</em></h3>
-              <p>Marble floors, a crystal chandelier and the scent of fresh marigolds welcome you home.</p>
-            </figcaption>
-          </figure>
-          <figure class="vtour-scene">
-            <div class="vtour-img" style="background-image:url('media/demo-hotel/room-royal.jpg')"></div>
-            <div class="vtour-shade"></div>
-            <figcaption class="vtour-cap">
-              <span class="step">Stop 02 · Stay</span>
-              <h3>Your <em>Royal Suite</em> awaits</h3>
-              <p>A four-poster bed, hand-painted frescoes and a balcony made for slow mornings.</p>
-            </figcaption>
-          </figure>
-          <figure class="vtour-scene">
-            <div class="vtour-img" style="background-image:url('media/demo-hotel/dining.jpg')"></div>
-            <div class="vtour-shade"></div>
-            <figcaption class="vtour-cap">
-              <span class="step">Stop 03 · Dine</span>
-              <h3>Dinner <em>fit for kings</em></h3>
-              <p>Candle-lit tables, a live sitar and a royal Rajasthani thali under the stars.</p>
-            </figcaption>
-          </figure>
-          <figure class="vtour-scene">
-            <div class="vtour-img" style="background-image:url('media/demo-hotel/pool.jpg')"></div>
-            <div class="vtour-shade"></div>
-            <figcaption class="vtour-cap">
-              <span class="step">Stop 04 · Unwind</span>
-              <h3>End the day <em>above the city</em></h3>
-              <p>The rooftop infinity pool glows gold as the sun sets over the old Pink City.</p>
-            </figcaption>
-          </figure>
-          <div class="vtour-ui" id="vtourDots" aria-label="Tour stops"></div>
-          <div class="vtour-count"><span id="vtourNum">01</span> / 04 · <span id="vtourName">Grand Lobby</span></div>
-        </div>
+          Drag to look around · Scroll to zoom
+        </p>
+        <div class="tour360-scenes" id="tour360Scenes" aria-label="Tour scenes"></div>
       </div>
     </section>
 
@@ -850,82 +806,79 @@
           }, { passive: true });
         }
 
-        /* ---------- Virtual tour: scroll = walkthrough ---------- */
+        /* ---------- 360° Virtual Tour (Pannellum) ---------- */
         (function () {
-          var track = document.getElementById("vtourTrack");
-          if (!track) return;
-          var scenes = Array.prototype.slice.call(track.querySelectorAll(".vtour-scene"));
-          var dotsWrap = document.getElementById("vtourDots");
-          var tNum = document.getElementById("vtourNum");
-          var tName = document.getElementById("vtourName");
-          var tProg = document.getElementById("vtourProgress");
-          var names = ["Grand Lobby", "Royal Suite", "Fine Dining", "Rooftop Pool"];
-          var cur = -1;
-          scenes.forEach(function (_, i) {
+          var wrap = document.getElementById("tour360Viewer");
+          if (!wrap) return;
+          if (typeof pannellum === "undefined") {
+            var fb = document.getElementById("tour360Fallback");
+            if (fb) fb.hidden = false;
+            return;
+          }
+          var SCENES = [
+            { id: "lobby", label: "Grand Lobby", img: "media/demo-hotel/360-lobby.jpg",
+              step: "Stop 01 · Arrival", title: 'Step into the <em>Grand Lobby</em>',
+              desc: "Marble floors, a crystal chandelier and the scent of fresh marigolds welcome you home." },
+            { id: "suite", label: "Royal Suite", img: "media/demo-hotel/360-suite.jpg",
+              step: "Stop 02 · Stay", title: 'Your <em>Royal Suite</em> awaits',
+              desc: "A four-poster bed, hand-painted frescoes and a balcony made for slow mornings." },
+            { id: "dining", label: "Fine Dining", img: "media/demo-hotel/360-dining.jpg",
+              step: "Stop 03 · Dine", title: 'Dinner <em>fit for kings</em>',
+              desc: "Candle-lit tables, a live sitar and a royal Rajasthani thali under the stars." },
+            { id: "pool", label: "Rooftop Pool", img: "media/demo-hotel/360-pool.jpg",
+              step: "Stop 04 · Unwind", title: 'End the day <em>above the city</em>',
+              desc: "The rooftop infinity pool glows gold as the sun sets over the old Pink City." }
+          ];
+          var scenesCfg = {};
+          SCENES.forEach(function (s) {
+            scenesCfg[s.id] = {
+              type: "equirectangular",
+              panorama: s.img,
+              autoLoad: true,
+              showZoomCtrl: false,
+              showFullscreenCtrl: true,
+              compass: false
+            };
+          });
+          var viewer = pannellum.viewer(wrap, {
+            default: { firstScene: "lobby", sceneFadeDuration: 900, autoRotate: prefersReduced ? 0 : -1.6 },
+            scenes: scenesCfg
+          });
+          var btnWrap = document.getElementById("tour360Scenes");
+          var stepEl = document.getElementById("tour360Step");
+          var titleEl = document.getElementById("tour360Title");
+          var descEl = document.getElementById("tour360Desc");
+          var cur = "lobby";
+          var btns = [];
+          // Pause auto-rotate while the guest is interacting; resume after 6s idle
+          var idleTimer = null;
+          function pauseSpin() {
+            viewer.stopAutoRotate();
+            if (idleTimer) clearTimeout(idleTimer);
+            if (!prefersReduced) idleTimer = setTimeout(function () { viewer.startAutoRotate(-1.6); }, 6000);
+          }
+          ["mousedown", "touchstart", "wheel"].forEach(function (ev) {
+            wrap.addEventListener(ev, pauseSpin, { passive: true });
+          });
+          SCENES.forEach(function (s) {
             var b = document.createElement("button");
-            b.className = "vtour-dot";
-            b.setAttribute("aria-label", "Jump to " + names[i]);
+            b.className = "tour360-btn" + (s.id === cur ? " active" : "");
+            b.setAttribute("type", "button");
+            b.setAttribute("aria-label", "View " + s.label);
+            b.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 3a15 15 0 0 1 0 18M12 3a15 15 0 0 0 0 18M3 12h18"/></svg>' + s.label;
             b.addEventListener("click", function () {
-              var top = window.scrollY + track.getBoundingClientRect().top;
-              var y = top + (i / scenes.length) * (track.offsetHeight - window.innerHeight) + 4;
-              window.scrollTo({ top: y, behavior: prefersReduced ? "auto" : "smooth" });
+              if (s.id === cur) return;
+              cur = s.id;
+              viewer.loadScene(s.id);
+              pauseSpin();
+              btns.forEach(function (x, j) { x.classList.toggle("active", SCENES[j].id === s.id); });
+              if (stepEl) stepEl.textContent = s.step;
+              if (titleEl) titleEl.innerHTML = s.title;
+              if (descEl) descEl.textContent = s.desc;
             });
-            dotsWrap.appendChild(b);
+            btnWrap.appendChild(b);
+            btns.push(b);
           });
-          var dots = Array.prototype.slice.call(dotsWrap.children);
-          function setScene(i) {
-            if (i === cur) return;
-            cur = i;
-            scenes.forEach(function (s, j) { s.classList.toggle("active", j === i); });
-            dots.forEach(function (d, j) { d.classList.toggle("active", j === i); });
-            if (tNum) tNum.textContent = ("0" + (i + 1)).slice(-2);
-            if (tName) tName.textContent = names[i];
-          }
-          var ticking = false;
-          function update() {
-            ticking = false;
-            var r = track.getBoundingClientRect();
-            var total = track.offsetHeight - window.innerHeight;
-            var p = total > 0 ? Math.min(Math.max(-r.top / total, 0), 1) : 0;
-            setScene(Math.min(scenes.length - 1, Math.floor(p * scenes.length)));
-            if (tProg) tProg.style.width = (p * 100).toFixed(2) + "%";
-          }
-          window.addEventListener("scroll", function () {
-            if (!ticking) { ticking = true; requestAnimationFrame(update); }
-          }, { passive: true });
-          window.addEventListener("resize", update);
-          update();
-        })();
-
-        /* ---------- Panoramic drag-to-look ---------- */
-        (function () {
-          var frame = document.getElementById("panoFrame");
-          var dragEl = document.getElementById("panoDrag");
-          if (!frame || !dragEl || prefersReduced) return;
-          var dragging = false, startX = 0, dx = 0, max = 130, raf = null;
-          frame.addEventListener("pointerdown", function (e) {
-            dragging = true; startX = e.clientX - dx;
-            try { frame.setPointerCapture(e.pointerId); } catch (err) {}
-          });
-          frame.addEventListener("pointermove", function (e) {
-            if (!dragging) return;
-            dx = Math.max(-max, Math.min(max, e.clientX - startX));
-            if (raf) cancelAnimationFrame(raf);
-            raf = requestAnimationFrame(function () { dragEl.style.setProperty("--drag-x", dx.toFixed(1) + "px"); });
-          });
-          function release() {
-            if (!dragging) return;
-            dragging = false;
-            var x0 = dx, t0 = performance.now();
-            (function ease(t) {
-              var p = Math.min((t - t0) / 450, 1);
-              var v = x0 * (1 - p * p);
-              dragEl.style.setProperty("--drag-x", v.toFixed(1) + "px");
-              if (p < 1) requestAnimationFrame(ease); else { dx = 0; }
-            })(t0);
-          }
-          frame.addEventListener("pointerup", release);
-          frame.addEventListener("pointercancel", release);
         })();
 
         /* ============================================================
