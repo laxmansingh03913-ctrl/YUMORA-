@@ -1,0 +1,661 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="color-scheme" content="light dark" />
+    <meta name="description" content="Rajwada Celebration Gardens — Bhilwara's premium banquet hall & marriage garden demo website: AC halls, royal lawn, wedding packages, booking on WhatsApp." />
+    <link rel="icon" href="data:," />
+    <title>Rajwada Celebration Gardens — Banquet &amp; Marriage Garden</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,700;0,800;1,500&family=Karla:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <style>
+      :root {
+        --bg: #faf5ec;
+        --bg-alt: #f3ead7;
+        --surface: #fffdf8;
+        --ink: #2b1a12;
+        --ink-soft: #6d5747;
+        --line: #e7d9c2;
+        --accent: #8c1f2f;
+        --accent-deep: #6e1524;
+        --accent-ink: #ffffff;
+        --gold: #b98a1e;
+        --green: #1e7a3c;
+        --dark-band: #221210;
+        --dark-band-2: #2e1a16;
+        --dark-ink: #f7ecda;
+        --dark-soft: #d3bda1;
+        --shadow: 0 18px 40px -18px rgba(120, 40, 30, 0.3);
+        --radius: 18px;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --bg: #191009;
+          --bg-alt: #201310;
+          --surface: #261710;
+          --ink: #f5ead9;
+          --ink-soft: #caa98a;
+          --line: #3d281c;
+          --accent: #e08a7f;
+          --accent-deep: #c96a5f;
+          --gold: #d9ab4a;
+          --shadow: 0 18px 40px -18px rgba(0, 0, 0, 0.7);
+        }
+      }
+      * { box-sizing: border-box; }
+      html { scroll-behavior: smooth; }
+      body {
+        margin: 0;
+        font-family: "Karla", system-ui, sans-serif;
+        background: var(--bg);
+        color: var(--ink);
+        line-height: 1.6;
+        -webkit-font-smoothing: antialiased;
+      }
+      img { max-width: 100%; display: block; }
+      a { color: inherit; }
+      h1, h2, h3, .serif { font-family: "Playfair Display", Georgia, serif; }
+      .wrap { width: min(1180px, 100% - 40px); margin-inline: auto; }
+      section { padding: 84px 0; }
+      .section-head { max-width: 640px; margin-bottom: 42px; }
+      .section-head.center { margin-inline: auto; text-align: center; }
+      .section-head h2 { font-size: clamp(1.9rem, 4vw, 2.7rem); line-height: 1.12; margin: 0 0 12px; font-weight: 800; }
+      .section-head p { color: var(--ink-soft); margin: 0; font-size: 1.05rem; }
+      .rule { width: 56px; height: 3px; background: var(--gold); border-radius: 2px; margin-bottom: 18px; }
+      .section-head.center .rule { margin-inline: auto; }
+
+      /* ---------- Header ---------- */
+      header {
+        position: sticky; top: 0; z-index: 60;
+        background: color-mix(in srgb, var(--bg) 88%, transparent);
+        backdrop-filter: blur(12px);
+        border-bottom: 1px solid var(--line);
+      }
+      .nav { display: flex; align-items: center; gap: 28px; padding: 14px 0; }
+      .brand { text-decoration: none; line-height: 1; margin-right: auto; }
+      .brand .name { font-family: "Playfair Display", serif; font-weight: 800; font-size: 1.5rem; letter-spacing: 0.02em; }
+      .brand .name em { color: var(--accent); font-style: normal; }
+      .brand small { display: block; font-family: "Karla", sans-serif; font-size: 0.62rem; letter-spacing: 0.28em; text-transform: uppercase; color: var(--ink-soft); margin-top: 3px; font-weight: 700; }
+      .nav-links { display: flex; gap: 26px; align-items: center; }
+      .nav-links a { text-decoration: none; font-weight: 600; font-size: 0.97rem; color: var(--ink-soft); }
+      .nav-links a:hover { color: var(--accent); }
+      .btn {
+        display: inline-flex; align-items: center; gap: 9px;
+        background: var(--accent); color: var(--accent-ink);
+        padding: 12px 22px; border-radius: 999px; border: 0;
+        font: 700 0.98rem "Karla", sans-serif; text-decoration: none; cursor: pointer;
+        transition: background 0.2s ease, transform 0.2s ease;
+      }
+      .btn:hover { background: var(--accent-deep); }
+      .btn.ghost { background: transparent; color: var(--ink); border: 1.5px solid var(--line); }
+      .btn.ghost:hover { border-color: var(--accent); color: var(--accent); }
+      .btn.light { background: #f5ead9; color: #2a1414; }
+      .btn.light:hover { background: #ffffff; }
+      .btn.whatsapp { background: #1faa55; color: #fff; }
+      .btn.whatsapp:hover { background: #178a44; }
+      .nav .btn { padding: 10px 18px; }
+      .burger { display: none; background: none; border: 0; cursor: pointer; padding: 8px; color: var(--ink); }
+      .burger svg { display: block; }
+
+      /* ---------- Hero ---------- */
+      .hero { position: relative; padding: 0; color: #fff; overflow: hidden; }
+      .hero img.bg { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+      .hero .scrim { position: absolute; inset: 0; background: linear-gradient(100deg, rgba(30, 12, 8, 0.9) 22%, rgba(30, 12, 8, 0.55) 55%, rgba(30, 12, 8, 0.25)); }
+      .hero-inner { position: relative; padding: 108px 0 96px; max-width: 660px; }
+      .hero .rating-line { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 0.95rem; margin-bottom: 20px; }
+      .stars { color: #f2b33d; letter-spacing: 2px; font-size: 1.05rem; }
+      .hero h1 { font-size: clamp(2.5rem, 6vw, 4.1rem); line-height: 1.06; margin: 0 0 20px; font-weight: 800; }
+      .hero h1 em { color: #f0c96a; }
+      .hero p.lede { font-size: 1.16rem; color: #f0e2cd; margin: 0 0 34px; max-width: 540px; }
+      .hero-ctas { display: flex; flex-wrap: wrap; gap: 14px; margin-bottom: 40px; }
+      .hero-ctas .btn.ghost { color: #fff; border-color: rgba(255,255,255,0.45); }
+      .hero-ctas .btn.ghost:hover { border-color: #f0c96a; color: #f0c96a; }
+      .hero-facts { display: flex; flex-wrap: wrap; gap: 10px 26px; font-size: 0.95rem; font-weight: 600; color: #ead9c0; }
+      .hero-facts span { display: inline-flex; align-items: center; gap: 8px; }
+      .hero-facts svg { color: #f0c96a; flex: none; }
+
+      /* ---------- Stats strip ---------- */
+      .stats { background: var(--dark-band); color: var(--dark-ink); padding: 0; }
+      .stats .wrap { display: grid; grid-template-columns: repeat(4, 1fr); }
+      .stat { padding: 30px 18px; text-align: center; border-left: 1px solid rgba(245, 234, 217, 0.12); }
+      .stat:first-child { border-left: 0; }
+      .stat b { display: block; font-family: "Playfair Display", serif; font-size: 1.9rem; color: #f0c96a; line-height: 1.1; }
+      .stat span { font-size: 0.88rem; color: var(--dark-soft); font-weight: 600; }
+
+      /* ---------- Venue spaces ---------- */
+      .space-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 26px; }
+      .space-card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; box-shadow: var(--shadow); display: flex; flex-direction: column; }
+      .space-card img { width: 100%; aspect-ratio: 16 / 10; object-fit: cover; }
+      .space-card .body { padding: 26px 24px 28px; display: flex; flex-direction: column; flex: 1; }
+      .space-card .cap { font-size: 0.72rem; font-weight: 800; letter-spacing: 0.16em; text-transform: uppercase; color: var(--gold); margin-bottom: 8px; }
+      .space-card h3 { margin: 0 0 10px; font-size: 1.45rem; font-weight: 700; }
+      .space-card p { margin: 0 0 18px; color: var(--ink-soft); font-size: 0.97rem; flex: 1; }
+      .space-card .meta { display: flex; gap: 16px; font-size: 0.9rem; font-weight: 700; color: var(--accent); }
+
+      /* ---------- Packages ---------- */
+      .packages { background: var(--bg-alt); }
+      .pkg-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 26px; align-items: stretch; }
+      .pkg-card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 34px 28px; box-shadow: var(--shadow); display: flex; flex-direction: column; position: relative; }
+      .pkg-card.featured { border: 2px solid var(--gold); }
+      .pkg-tag { position: absolute; top: -14px; left: 50%; transform: translateX(-50%); background: var(--gold); color: #fff; font-size: 0.72rem; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; padding: 5px 16px; border-radius: 999px; white-space: nowrap; }
+      .pkg-card .pname { font-family: "Playfair Display", serif; font-size: 1.5rem; font-weight: 800; margin: 0 0 4px; }
+      .pkg-card .psub { color: var(--ink-soft); font-size: 0.92rem; margin: 0 0 16px; }
+      .pkg-card .price { font-family: "Playfair Display", serif; font-size: 2.3rem; font-weight: 800; color: var(--accent); line-height: 1; }
+      .pkg-card .per { font-size: 0.85rem; color: var(--ink-soft); font-weight: 600; margin-bottom: 6px; }
+      .pkg-card ul { list-style: none; margin: 18px 0 28px; padding: 0; display: grid; gap: 11px; font-size: 0.96rem; }
+      .pkg-card li { display: flex; gap: 10px; align-items: flex-start; }
+      .pkg-card li svg { color: var(--gold); flex: none; margin-top: 4px; }
+      .pkg-card .btn { margin-top: auto; justify-content: center; }
+      .pkg-note { margin-top: 30px; text-align: center; color: var(--ink-soft); font-size: 0.95rem; }
+      .pkg-note a { color: var(--accent); font-weight: 700; }
+
+      /* ---------- Why us ---------- */
+      .why-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 26px; }
+      .why-card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 30px 26px; box-shadow: var(--shadow); }
+      .why-card .icon {
+        width: 52px; height: 52px; border-radius: 16px; margin-bottom: 18px;
+        background: color-mix(in srgb, var(--accent) 12%, transparent);
+        color: var(--accent); display: grid; place-items: center;
+      }
+      .why-card h3 { margin: 0 0 10px; font-size: 1.25rem; font-weight: 700; }
+      .why-card p { margin: 0; color: var(--ink-soft); font-size: 0.97rem; }
+
+      /* ---------- Gallery ---------- */
+      .gallery { background: var(--dark-band); color: var(--dark-ink); }
+      .gallery .section-head p { color: var(--dark-soft); }
+      .gallery-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
+      .gallery-grid figure { margin: 0; border-radius: 14px; overflow: hidden; position: relative; }
+      .gallery-grid img { width: 100%; height: 100%; object-fit: cover; aspect-ratio: 1; transition: transform 0.5s ease; }
+      .gallery-grid figure:hover img { transform: scale(1.05); }
+      .gallery-grid .tall { grid-row: span 2; }
+      .gallery-grid .tall img { aspect-ratio: auto; }
+      .gallery-grid .wide { grid-column: span 2; }
+      .gallery-grid .wide img { aspect-ratio: 2 / 1; }
+
+      /* ---------- Reviews ---------- */
+      .review-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 26px; }
+      .review { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 28px; box-shadow: var(--shadow); }
+      .review .stars { font-size: 0.95rem; }
+      .review p { margin: 14px 0 20px; font-size: 1.02rem; }
+      .review .who { display: flex; align-items: center; gap: 12px; }
+      .avatar { width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center; font-weight: 800; color: #fff; background: var(--accent); flex: none; }
+      .avatar.g { background: var(--gold); }
+      .avatar.d { background: #5b4632; }
+      .review .who b { display: block; line-height: 1.25; }
+      .review .who span { font-size: 0.85rem; color: var(--ink-soft); }
+
+      /* ---------- Booking CTA band ---------- */
+      .booking { background: var(--dark-band); color: var(--dark-ink); padding: 0; }
+      .booking .wrap { padding: 84px 0; text-align: center; max-width: 760px; }
+      .booking .urgency { display: inline-block; background: rgba(240, 201, 106, 0.14); border: 1px solid rgba(240, 201, 106, 0.5); color: #f0c96a; font-weight: 800; font-size: 0.9rem; letter-spacing: 0.04em; padding: 8px 18px; border-radius: 999px; margin-bottom: 22px; }
+      .booking h2 { font-size: clamp(2rem, 4.5vw, 3rem); line-height: 1.12; margin: 0 0 14px; font-weight: 800; }
+      .booking h2 em { color: #f0c96a; font-style: normal; }
+      .booking p { color: var(--dark-soft); font-size: 1.08rem; margin: 0 0 34px; }
+      .booking-ctas { display: flex; flex-wrap: wrap; gap: 14px; justify-content: center; margin-bottom: 26px; }
+      .booking-ctas .btn { padding: 16px 34px; font-size: 1.08rem; }
+      .booking .phone-line { font-weight: 700; font-size: 1.05rem; color: var(--dark-ink); }
+      .booking .phone-line a { color: #f0c96a; text-decoration: none; }
+
+      /* ---------- Visit ---------- */
+      .visit-grid { display: grid; grid-template-columns: 1.1fr 1fr; gap: 26px; }
+      .visit-card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 30px; box-shadow: var(--shadow); }
+      .visit-card h3 { margin: 0 0 18px; font-size: 1.4rem; }
+      .visit-card address { font-style: normal; font-size: 1.05rem; line-height: 1.7; }
+      .visit-card .row { display: flex; gap: 12px; margin-top: 16px; font-weight: 600; align-items: flex-start; }
+      .visit-card .row svg { color: var(--accent); flex: none; margin-top: 3px; }
+      .visit-card .row a { color: var(--accent); font-weight: 700; }
+      .hours { width: 100%; border-collapse: collapse; font-size: 0.99rem; }
+      .hours td { padding: 10px 0; border-bottom: 1px dashed var(--line); }
+      .hours tr:last-child td { border-bottom: 0; }
+      .hours td:last-child { text-align: right; font-weight: 700; }
+      .hours .today td { color: var(--accent); font-weight: 800; }
+
+      /* ---------- Footer ---------- */
+      footer { background: var(--dark-band); color: var(--dark-soft); padding: 56px 0 110px; }
+      .foot-grid { display: grid; grid-template-columns: 1.4fr 1fr 1fr; gap: 40px; }
+      footer .brand .name { color: var(--dark-ink); }
+      footer .brand small { color: var(--dark-soft); }
+      footer h4 { color: var(--dark-ink); font-family: "Karla", sans-serif; font-size: 0.82rem; letter-spacing: 0.18em; text-transform: uppercase; margin: 0 0 16px; }
+      footer ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 9px; }
+      footer a { text-decoration: none; }
+      footer a:hover { color: #f0c96a; }
+      .foot-bottom { border-top: 1px solid rgba(245, 234, 217, 0.14); margin-top: 44px; padding-top: 22px; font-size: 0.88rem; display: flex; flex-wrap: wrap; gap: 8px 22px; justify-content: space-between; }
+
+      /* ---------- Mobile action bar ---------- */
+      .mobile-bar {
+        display: none; position: fixed; left: 0; right: 0; bottom: 0; z-index: 70;
+        background: var(--dark-band); border-top: 1px solid rgba(245, 234, 217, 0.15);
+        padding: 10px 12px calc(10px + env(safe-area-inset-bottom));
+        grid-template-columns: 1fr 1fr 1fr; gap: 10px;
+      }
+      .mobile-bar a {
+        display: flex; align-items: center; justify-content: center; gap: 7px;
+        padding: 12px 6px; border-radius: 12px; text-decoration: none;
+        font-weight: 800; font-size: 0.92rem; color: var(--dark-ink);
+        background: var(--dark-band-2);
+      }
+      .mobile-bar a.wa { background: #1faa55; color: #fff; }
+      .mobile-bar a.book { background: var(--accent); color: #fff; }
+
+      @media (max-width: 900px) {
+        section { padding: 62px 0; }
+        .visit-grid { grid-template-columns: 1fr; gap: 36px; }
+        .review-grid { grid-template-columns: 1fr; }
+        .why-grid { grid-template-columns: 1fr 1fr; }
+        .space-grid { grid-template-columns: 1fr; }
+        .pkg-grid { grid-template-columns: 1fr; }
+        .pkg-card.featured { order: -1; }
+        .stats .wrap { grid-template-columns: 1fr 1fr; }
+        .stat:nth-child(3) { border-left: 0; }
+        .stat { border-top: 1px solid rgba(245, 234, 217, 0.12); }
+        .stat:nth-child(-n+2) { border-top: 0; }
+        .gallery-grid { grid-template-columns: 1fr 1fr; }
+        .gallery-grid .wide { grid-column: span 2; }
+        .foot-grid { grid-template-columns: 1fr; gap: 30px; }
+        .hero-inner { padding: 76px 0 70px; }
+        .nav-links {
+          display: none; position: absolute; top: 100%; left: 0; right: 0;
+          background: var(--bg); border-bottom: 1px solid var(--line);
+          flex-direction: column; align-items: stretch; padding: 14px 20px 20px; gap: 4px;
+        }
+        .nav-links.open { display: flex; }
+        .nav-links a { padding: 10px 4px; }
+        .nav-links .btn { justify-content: center; margin-top: 8px; }
+        .burger { display: block; }
+        .nav .call-btn { display: none; }
+        .mobile-bar { display: grid; }
+        footer { padding-bottom: 120px; }
+        .booking .wrap { padding: 62px 0; }
+      }
+      @media (max-width: 560px) {
+        .why-grid { grid-template-columns: 1fr; }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        html { scroll-behavior: auto; }
+        .gallery-grid img { transition: none; }
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <div class="wrap nav">
+        <a class="brand" href="#top">
+          <span class="name">Rajwada<em> Celebration Gardens</em></span>
+          <small>Banquet &amp; Marriage Garden</small>
+        </a>
+        <nav class="nav-links" id="navLinks">
+          <a href="#venue">Venue</a>
+          <a href="#packages">Packages</a>
+          <a href="#gallery">Gallery</a>
+          <a href="#reviews">Reviews</a>
+          <a href="#visit">Contact</a>
+          <a class="btn whatsapp" href="https://wa.me/919000000000?text=Hello%20Rajwada%20Celebration%20Gardens!%20I%20want%20to%20book%20a%20venue%20visit.">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M17.5 14.4c-.3-.15-1.76-.87-2.03-.97-.27-.1-.47-.15-.67.15-.2.3-.77.97-.94 1.17-.17.2-.35.22-.65.07-.3-.15-1.26-.46-2.4-1.48-.88-.79-1.48-1.76-1.65-2.06-.17-.3-.02-.46.13-.61.13-.13.3-.35.45-.52.15-.17.2-.3.3-.5.1-.2.05-.37-.02-.52-.07-.15-.67-1.62-.92-2.22-.24-.58-.49-.5-.67-.51h-.57c-.2 0-.52.07-.8.37-.27.3-1.04 1.02-1.04 2.5 0 1.47 1.07 2.9 1.22 3.1.15.2 2.1 3.2 5.1 4.49.71.31 1.27.49 1.7.63.72.23 1.37.2 1.88.12.57-.09 1.76-.72 2.01-1.41.25-.7.25-1.29.17-1.41-.07-.13-.27-.2-.57-.35M12.05 21.79h-.01a9.87 9.87 0 0 1-5.03-1.38l-.36-.21-3.74.98 1-3.65-.24-.37a9.86 9.86 0 1 1 8.38 4.63M12.04.5A11.4 11.4 0 0 0 .6 11.9c0 2.01.53 3.97 1.53 5.7L.5 23.5l6.02-1.58a11.38 11.38 0 0 0 5.51 1.4h.01A11.4 11.4 0 0 0 12.04.5"/></svg>
+            Book Visit
+          </a>
+        </nav>
+        <a class="btn call-btn" href="tel:+919000000000">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+          +91 90000 00000
+        </a>
+        <button class="burger" id="burger" aria-label="Open menu" aria-expanded="false">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+        </button>
+      </div>
+    </header>
+
+    <main id="top">
+      <!-- HERO -->
+      <section class="hero">
+        <img class="bg" src="https://images.unsplash.com/photo-1519167758481-83f550bb49b3?auto=format&fit=crop&w=1920&q=80" alt="Decorated wedding banquet hall" fetchpriority="high" />
+        <div class="scrim"></div>
+        <div class="wrap">
+          <div class="hero-inner">
+            <div class="rating-line">
+              <span class="stars">★★★★★</span>
+              <span>4.8 &nbsp;·&nbsp; 1,800+ Google reviews</span>
+            </div>
+            <h1>Where Bhilwara Celebrates Its <em>Biggest Days.</em></h1>
+            <p class="lede">Rajwada Celebration Gardens — AC banquet halls, a 3000-guest royal lawn and 52 rooms, all on one grand venue. Shaadi, sagai, reception — sab kuch, ek hi jagah.</p>
+            <div class="hero-ctas">
+              <a class="btn whatsapp" href="https://wa.me/919000000000?text=Hello%20Rajwada%20Celebration%20Gardens!%20I%20want%20to%20check%20available%20dates%20for%20my%20event.">
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M17.5 14.4c-.3-.15-1.76-.87-2.03-.97-.27-.1-.47-.15-.67.15-.2.3-.77.97-.94 1.17-.17.2-.35.22-.65.07-.3-.15-1.26-.46-2.4-1.48-.88-.79-1.48-1.76-1.65-2.06-.17-.3-.02-.46.13-.61.13-.13.3-.35.45-.52.15-.17.2-.3.3-.5.1-.2.05-.37-.02-.52-.07-.15-.67-1.62-.92-2.22-.24-.58-.49-.5-.67-.51h-.57c-.2 0-.52.07-.8.37-.27.3-1.04 1.02-1.04 2.5 0 1.47 1.07 2.9 1.22 3.1.15.2 2.1 3.2 5.1 4.49.71.31 1.27.49 1.7.63.72.23 1.37.2 1.88.12.57-.09 1.76-.72 2.01-1.41.25-.7.25-1.29.17-1.41-.07-.13-.27-.2-.57-.35M12.05 21.79h-.01a9.87 9.87 0 0 1-5.03-1.38l-.36-.21-3.74.98 1-3.65-.24-.37a9.86 9.86 0 1 1 8.38 4.63M12.04.5A11.4 11.4 0 0 0 .6 11.9c0 2.01.53 3.97 1.53 5.7L.5 23.5l6.02-1.58a11.38 11.38 0 0 0 5.51 1.4h.01A11.4 11.4 0 0 0 12.04.5"/></svg>
+                Check Dates on WhatsApp
+              </a>
+              <a class="btn ghost" href="#packages">View Packages</a>
+            </div>
+            <div class="hero-facts">
+              <span>
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                3000-guest royal lawn
+              </span>
+              <span>
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                AC banquet halls
+              </span>
+              <span>
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                52 AC rooms
+              </span>
+              <span>
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                In-house catering
+              </span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- STATS -->
+      <section class="stats">
+        <div class="wrap">
+          <div class="stat"><b>500+</b><span>Weddings hosted</span></div>
+          <div class="stat"><b>4.8★</b><span>Google rating</span></div>
+          <div class="stat"><b>3000</b><span>Guest capacity</span></div>
+          <div class="stat"><b>15 yrs</b><span>Of celebrations</span></div>
+        </div>
+      </section>
+
+      <!-- VENUE SPACES -->
+      <section id="venue">
+        <div class="wrap">
+          <div class="section-head">
+            <div class="rule"></div>
+            <h2>Three Spaces, One Grand Venue</h2>
+            <p>From an intimate sagai to a 3000-guest baraat — pick the space that fits your celebration.</p>
+          </div>
+          <div class="space-grid">
+            <div class="space-card">
+              <img src="https://images.unsplash.com/photo-1519225421980-715cb0215aed?auto=format&fit=crop&w=900&q=80" alt="Decorated banquet table setting" loading="lazy" />
+              <div class="body">
+                <div class="cap">Indoor</div>
+                <h3>Grand AC Banquet Hall</h3>
+                <p>Fully air-conditioned hall with chandelier ceiling, stage and bridal green room — perfect for sagai, haldi and receptions.</p>
+                <div class="meta"><span>150 guests</span><span>·</span><span>Fully AC</span></div>
+              </div>
+            </div>
+            <div class="space-card">
+              <img src="https://images.unsplash.com/photo-1469371670807-013ccf25f16a?auto=format&fit=crop&w=900&q=80" alt="Outdoor wedding ceremony setup on the lawn" loading="lazy" />
+              <div class="body">
+                <div class="cap">Outdoor</div>
+                <h3>Royal Lawn</h3>
+                <p>5-acre manicured lawn with fairy-light canopy, mandap platform and open-air dining — Bhilwara's biggest wedding lawn.</p>
+                <div class="meta"><span>3000 guests</span><span>·</span><span>Mandap platform</span></div>
+              </div>
+            </div>
+            <div class="space-card">
+              <img src="https://images.unsplash.com/photo-1532712938310-34cb3982ef74?auto=format&fit=crop&w=900&q=80" alt="Couple photoshoot in the open garden at sunset" loading="lazy" />
+              <div class="body">
+                <div class="cap">Open Air</div>
+                <h3>Sunset Garden</h3>
+                <p>Open garden with sunset views and lounge seating — ideal for sangeet, cocktail evenings and pre-wedding shoots.</p>
+                <div class="meta"><span>500 guests</span><span>·</span><span>Lounge seating</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- PACKAGES -->
+      <section class="packages" id="packages">
+        <div class="wrap">
+          <div class="section-head center">
+            <div class="rule"></div>
+            <h2>Wedding Packages</h2>
+            <p>Simple, all-inclusive pricing. No hidden charges — ever.</p>
+          </div>
+          <div class="pkg-grid">
+            <div class="pkg-card">
+              <div class="pname">Silver</div>
+              <p class="psub">For intimate celebrations</p>
+              <div class="price">₹51,000</div>
+              <div class="per">per event · 1 day</div>
+              <ul>
+                <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Grand AC Banquet Hall (full day)</li>
+                <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Floral stage decor</li>
+                <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Seating for 150 guests</li>
+                <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Bridal green room</li>
+                <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Sound &amp; basic lighting</li>
+                <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Parking + security</li>
+              </ul>
+              <a class="btn ghost" href="https://wa.me/919000000000?text=Hello%20Rajwada%20Celebration%20Gardens!%20I%20am%20interested%20in%20the%20Silver%20Package%20(%E2%82%B951%2C000).%20Please%20share%20details.">Enquire on WhatsApp</a>
+            </div>
+            <div class="pkg-card featured">
+              <div class="pkg-tag">Most Booked</div>
+              <div class="pname">Gold</div>
+              <p class="psub">The complete wedding</p>
+              <div class="price">₹1,10,000</div>
+              <div class="per">per event · 1 day</div>
+              <ul>
+                <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Everything in Silver</li>
+                <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Royal Lawn access (evening)</li>
+                <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Veg catering for 300 guests</li>
+                <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Traditional mandap decor</li>
+                <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>10 AC rooms for family</li>
+                <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>DJ + dhol welcome</li>
+              </ul>
+              <a class="btn whatsapp" href="https://wa.me/919000000000?text=Hello%20Rajwada%20Celebration%20Gardens!%20I%20am%20interested%20in%20the%20Gold%20Package%20(%E2%82%B91%2C10%2C000).%20Please%20share%20details.">Enquire on WhatsApp</a>
+            </div>
+            <div class="pkg-card">
+              <div class="pname">Platinum</div>
+              <p class="psub">The royal wedding</p>
+              <div class="price">₹2,50,000</div>
+              <div class="per">exclusive · 2 days</div>
+              <ul>
+                <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Exclusive full venue (2 days)</li>
+                <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Catering for 800 guests (multi-cuisine)</li>
+                <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Luxury mandap + entry + stage decor</li>
+                <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>All 52 AC rooms</li>
+                <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Private bridal suite</li>
+                <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Valet parking + event coordinator</li>
+              </ul>
+              <a class="btn ghost" href="https://wa.me/919000000000?text=Hello%20Rajwada%20Celebration%20Gardens!%20I%20am%20interested%20in%20the%20Platinum%20Package%20(%E2%82%B92%2C50%2C000).%20Please%20share%20details.">Enquire on WhatsApp</a>
+            </div>
+          </div>
+          <p class="pkg-note">Need something custom? <a href="https://wa.me/919000000000?text=Hello%20Rajwada%20Celebration%20Gardens!%20I%20want%20a%20custom%20quote%20for%20my%20event.">Message us on WhatsApp</a> — we build packages around your guest list and budget.</p>
+        </div>
+      </section>
+
+      <!-- WHY US -->
+      <section>
+        <div class="wrap">
+          <div class="section-head center">
+            <div class="rule"></div>
+            <h2>Why Rajwada?</h2>
+            <p>Everything in-house — so you celebrate, we handle the rest.</p>
+          </div>
+          <div class="why-grid">
+            <div class="why-card">
+              <div class="icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2"/><path d="M7 2v20"/><path d="M21 15V2a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3zm0 0v7"/></svg></div>
+              <h3>In-house catering</h3>
+              <p>Shahi Rajasthani, North Indian &amp; Continental — 300 se 3000 guests tak, apna kitchen, apne halwai.</p>
+            </div>
+            <div class="why-card">
+              <div class="icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l2.9 6.6 7.1.6-5.4 4.7 1.6 7-6.2-3.7-6.2 3.7 1.6-7L2 9.2l7.1-.6z"/></svg></div>
+              <h3>Decor &amp; mandap team</h3>
+              <p>Mandap, entry, stage — theme decor apni in-house team se. Koi bahar ka jhanjhat nahi.</p>
+            </div>
+            <div class="why-card">
+              <div class="icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 18v-6a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v6"/><path d="M3 18h18"/><path d="M3 18v2a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-2"/><path d="M7 10V7a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v3"/></svg></div>
+              <h3>Bridal suite + 52 rooms</h3>
+              <p>Dulha-dulhan ke liye private bridal suite, aur bahar se aaye mehmaano ke liye 52 AC rooms.</p>
+            </div>
+            <div class="why-card">
+              <div class="icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13" rx="1"/><path d="M16 8h4l3 3v5h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg></div>
+              <h3>Parking &amp; security</h3>
+              <p>500+ gaadiyon ki secure parking with valet, CCTV and on-ground security team.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- GALLERY -->
+      <section class="gallery" id="gallery">
+        <div class="wrap">
+          <div class="section-head">
+            <div class="rule"></div>
+            <h2>Celebrations at Rajwada</h2>
+            <p>Real weddings, real decor — a glimpse of what your big day could look like.</p>
+          </div>
+          <div class="gallery-grid">
+            <figure class="tall"><img src="https://images.unsplash.com/photo-1583939003579-730e3918a45a?auto=format&fit=crop&w=800&q=80" alt="Newlywed couple portrait" loading="lazy" /></figure>
+            <figure><img src="https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=800&q=80" alt="Bride and groom holding hands" loading="lazy" /></figure>
+            <figure><img src="https://images.unsplash.com/photo-1520854221256-17451cc331bf?auto=format&fit=crop&w=800&q=80" alt="Bride in her wedding dress" loading="lazy" /></figure>
+            <figure class="wide"><img src="https://images.unsplash.com/photo-1469371670807-013ccf25f16a?auto=format&fit=crop&w=1200&q=80" alt="Outdoor wedding ceremony setup" loading="lazy" /></figure>
+            <figure><img src="https://images.unsplash.com/photo-1519225421980-715cb0215aed?auto=format&fit=crop&w=800&q=80" alt="Decorated wedding table setting" loading="lazy" /></figure>
+            <figure><img src="https://images.unsplash.com/photo-1465495976277-4387d4b0b4c6?auto=format&fit=crop&w=800&q=80" alt="Couple's hands with wedding bouquet" loading="lazy" /></figure>
+          </div>
+        </div>
+      </section>
+
+      <!-- REVIEWS -->
+      <section id="reviews">
+        <div class="wrap">
+          <div class="section-head">
+            <div class="rule"></div>
+            <h2>Families Who Celebrated With Us</h2>
+            <p>4.8 stars across 1,800+ Google reviews — suniye unhi ki zubaani.</p>
+          </div>
+          <div class="review-grid">
+            <div class="review">
+              <div class="stars">★★★★★</div>
+              <p>"Beti ki shaadi yahin ki — 800 mehmaan, khana, sajawat sab perfect. Staff ne har cheez sambhal li, hum bas enjoy kar paye."</p>
+              <div class="who"><span class="avatar">R</span><div><b>Ramesh Sharma</b><span>Wedding · 800 guests</span></div></div>
+            </div>
+            <div class="review">
+              <div class="stars">★★★★★</div>
+              <p>"Lawn itna sundar saja tha ki mehmaan photo lena nahi bhool rahe the. AC hall me garmi ka koi tension nahi. Highly recommended!"</p>
+              <div class="who"><span class="avatar g">P</span><div><b>Priya Jain</b><span>Wedding · 1200 guests</span></div></div>
+            </div>
+            <div class="review">
+              <div class="stars">★★★★★</div>
+              <p>"Sagai se lekar vidaai tak, team ne sab plan kar diya. Parking aur rooms ki wajah se bahar se aaye rishtedaar bhi khush the."</p>
+              <div class="who"><span class="avatar d">A</span><div><b>Amit Agarwal</b><span>Engagement + Wedding</span></div></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- BOOKING CTA -->
+      <section class="booking" id="booking">
+        <div class="wrap">
+          <div class="urgency">Shaadi season Nov–Feb — dates filling fast</div>
+          <h2>Lock Your Date <em>Before Someone Else Does</em></h2>
+          <p>Peak-season weekends sell out months in advance. Check your date on WhatsApp in under a minute — no advance needed just to enquire.</p>
+          <div class="booking-ctas">
+            <a class="btn whatsapp" href="https://wa.me/919000000000?text=Hello%20Rajwada%20Celebration%20Gardens!%20I%20want%20to%20check%20available%20dates%20for%20my%20event.">
+              <svg width="19" height="19" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M17.5 14.4c-.3-.15-1.76-.87-2.03-.97-.27-.1-.47-.15-.67.15-.2.3-.77.97-.94 1.17-.17.2-.35.22-.65.07-.3-.15-1.26-.46-2.4-1.48-.88-.79-1.48-1.76-1.65-2.06-.17-.3-.02-.46.13-.61.13-.13.3-.35.45-.52.15-.17.2-.3.3-.5.1-.2.05-.37-.02-.52-.07-.15-.67-1.62-.92-2.22-.24-.58-.49-.5-.67-.51h-.57c-.2 0-.52.07-.8.37-.27.3-1.04 1.02-1.04 2.5 0 1.47 1.07 2.9 1.22 3.1.15.2 2.1 3.2 5.1 4.49.71.31 1.27.49 1.7.63.72.23 1.37.2 1.88.12.57-.09 1.76-.72 2.01-1.41.25-.7.25-1.29.17-1.41-.07-.13-.27-.2-.57-.35M12.05 21.79h-.01a9.87 9.87 0 0 1-5.03-1.38l-.36-.21-3.74.98 1-3.65-.24-.37a9.86 9.86 0 1 1 8.38 4.63M12.04.5A11.4 11.4 0 0 0 .6 11.9c0 2.01.53 3.97 1.53 5.7L.5 23.5l6.02-1.58a11.38 11.38 0 0 0 5.51 1.4h.01A11.4 11.4 0 0 0 12.04.5"/></svg>
+              Check Dates on WhatsApp
+            </a>
+            <a class="btn light" href="tel:+919000000000">Call +91 90000 00000</a>
+          </div>
+          <div class="phone-line">Prefer to talk? Call us at <a href="tel:+919000000000">+91 90000 00000</a></div>
+        </div>
+      </section>
+
+      <!-- VISIT -->
+      <section id="visit">
+        <div class="wrap">
+          <div class="section-head">
+            <div class="rule"></div>
+            <h2>Visit the Venue</h2>
+            <p>Photos me accha lagta hai — saamne se dekhoge to dil aa jayega. Site visit bilkul free hai.</p>
+          </div>
+          <div class="visit-grid">
+            <div class="visit-card">
+              <h3>Find us</h3>
+              <address>NH-48, Chittorgarh Road,<br />Bhilwara, Rajasthan 311001</address>
+              <div class="row">
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                <span><a href="https://www.google.com/maps/search/?api=1&amp;query=Chittorgarh+Road+Bhilwara+Rajasthan" target="_blank" rel="noopener">Open in Google Maps</a></span>
+              </div>
+              <div class="row">
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+                <span><a href="tel:+919000000000">+91 90000 00000</a></span>
+              </div>
+            </div>
+            <div class="visit-card">
+              <h3>Site-visit hours</h3>
+              <table class="hours">
+                <tr data-day="1"><td>Monday</td><td>10:00 AM – 8:00 PM</td></tr>
+                <tr data-day="2"><td>Tuesday</td><td>10:00 AM – 8:00 PM</td></tr>
+                <tr data-day="3"><td>Wednesday</td><td>10:00 AM – 8:00 PM</td></tr>
+                <tr data-day="4"><td>Thursday</td><td>10:00 AM – 8:00 PM</td></tr>
+                <tr data-day="5"><td>Friday</td><td>10:00 AM – 8:00 PM</td></tr>
+                <tr data-day="6"><td>Saturday</td><td>10:00 AM – 8:00 PM</td></tr>
+                <tr data-day="0"><td>Sunday</td><td>10:00 AM – 8:00 PM</td></tr>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer>
+      <div class="wrap">
+        <div class="foot-grid">
+          <div>
+            <a class="brand" href="#top">
+              <span class="name">Rajwada<em> Celebration Gardens</em></span>
+              <small>Banquet &amp; Marriage Garden</small>
+            </a>
+            <p style="margin:16px 0 0; font-size:0.95rem; max-width:340px;">Bhilwara's grand wedding venue — AC halls, royal lawn, 52 rooms and in-house catering.</p>
+          </div>
+          <div>
+            <h4>Explore</h4>
+            <ul>
+              <li><a href="#venue">Venue</a></li>
+              <li><a href="#packages">Packages</a></li>
+              <li><a href="#gallery">Gallery</a></li>
+              <li><a href="#reviews">Reviews</a></li>
+            </ul>
+          </div>
+          <div>
+            <h4>Book</h4>
+            <ul>
+              <li><a href="https://wa.me/919000000000?text=Hello%20Rajwada%20Celebration%20Gardens!%20I%20want%20to%20book%20a%20venue%20visit.">WhatsApp us</a></li>
+              <li><a href="tel:+919000000000">+91 90000 00000</a></li>
+              <li><a href="#booking">Check dates</a></li>
+            </ul>
+          </div>
+        </div>
+        <div class="foot-bottom">
+          <span>© <span id="year">2026</span> Rajwada Celebration Gardens. All rights reserved.</span>
+          <span>Demo website crafted by Abhishek — Web Developer</span>
+        </div>
+      </div>
+    </footer>
+
+    <div class="mobile-bar">
+      <a href="tel:+919000000000">Call</a>
+      <a class="wa" href="https://wa.me/919000000000?text=Hello%20Rajwada%20Celebration%20Gardens!%20I%20want%20to%20check%20available%20dates%20for%20my%20event.">WhatsApp</a>
+      <a class="book" href="#booking">Book Visit</a>
+    </div>
+
+    <script>
+      // Mobile nav
+      var burger = document.getElementById('burger');
+      var navLinks = document.getElementById('navLinks');
+      burger.addEventListener('click', function () {
+        var open = navLinks.classList.toggle('open');
+        burger.setAttribute('aria-expanded', open ? 'true' : 'false');
+      });
+      navLinks.addEventListener('click', function (e) {
+        if (e.target.tagName === 'A') navLinks.classList.remove('open');
+      });
+
+      // Highlight today's row in opening hours
+      var day = new Date().getDay();
+      var row = document.querySelector('.hours tr[data-day="' + day + '"]');
+      if (row) {
+        row.classList.add('today');
+        var firstCell = row.querySelector('td');
+        if (firstCell) firstCell.textContent += ' · Today';
+      }
+
+      document.getElementById('year').textContent = new Date().getFullYear();
+    </script>
+  </body>
+</html>
