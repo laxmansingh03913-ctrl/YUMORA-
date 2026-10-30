@@ -6,6 +6,7 @@
     <meta name="description" content="The Rajwada Palace Hotel — a luxury heritage hotel demo website: royal suites, fine dining, spa, gallery and WhatsApp booking." />
     <link rel="icon" href="data:," />
     <title>The Rajwada Palace Hotel — Luxury Heritage Stay</title>
+    <script>try{if(localStorage.getItem("rajwada-theme")==="light"){document.documentElement.setAttribute("data-theme","light");}}catch(e){}</script>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,700;0,800;1,500&family=Karla:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
@@ -298,9 +299,111 @@
         .reveal { opacity: 1; transform: none; transition: none; }
         * { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
       }
+
+      /* ================= BEAUTY UPGRADE ================= */
+      /* ---------- Light theme ---------- */
+      html[data-theme="light"] {
+        --bg: #faf5ea;
+        --bg-2: #f1e9d6;
+        --surface: #fffdf6;
+        --surface-2: #f5eedd;
+        --ink: #2c2317;
+        --ink-soft: #837355;
+        --line: rgba(150, 112, 52, 0.30);
+        --gold: #a87f35;
+        --gold-deep: #7d5f28;
+        --gold-soft: #6e5626;
+        --shadow: 0 24px 55px -24px rgba(125, 95, 40, 0.35);
+      }
+      html[data-theme="light"] header { background: rgba(250, 245, 234, 0.85); }
+      html[data-theme="light"] .hero::after {
+        background: radial-gradient(ellipse 80% 60% at 50% 110%, rgba(250,245,234,0.94), transparent 70%),
+                    linear-gradient(180deg, rgba(250,245,234,0.5) 0%, transparent 30%, transparent 62%, var(--bg) 100%);
+      }
+      html[data-theme="light"] .hero-inner h1 { text-shadow: 0 3px 22px rgba(125, 95, 40, 0.28); }
+      html[data-theme="light"] footer { background: #ece1c8; }
+      html[data-theme="light"] .room-tag { background: rgba(255, 253, 246, 0.85); }
+      html[data-theme="light"] .map-pin .lbl { background: rgba(255, 253, 246, 0.94); }
+      html[data-theme="light"] .cube-face { background: linear-gradient(150deg, rgba(255,253,246,0.97), rgba(241,233,214,0.97)); }
+      html[data-theme="light"] .grain { opacity: 0.035; }
+
+      /* ---------- Theme toggle button ---------- */
+      .theme-toggle {
+        width: 40px; height: 40px; flex: none; border-radius: 50%;
+        border: 1px solid var(--line); background: transparent; color: var(--gold);
+        cursor: pointer; display: inline-flex; align-items: center; justify-content: center;
+        transition: border-color 0.25s ease, transform 0.35s ease;
+      }
+      .theme-toggle:hover { border-color: var(--gold); transform: rotate(24deg); }
+      .theme-toggle svg { width: 18px; height: 18px; }
+
+      /* ---------- Royal preloader ---------- */
+      #preloader {
+        position: fixed; inset: 0; z-index: 200; background: #0a0e1d;
+        display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px;
+        transition: opacity 0.55s ease, visibility 0.55s ease;
+      }
+      #preloader.done { opacity: 0; visibility: hidden; }
+      .pre-mono {
+        width: 96px; height: 96px; border-radius: 50%;
+        border: 1px solid var(--line); display: flex; align-items: center; justify-content: center;
+        font-family: "Playfair Display", serif; font-size: 2.4rem; font-weight: 800; color: var(--gold);
+        animation: preGlow 1.6s ease-in-out infinite;
+      }
+      .pre-name { letter-spacing: 0.42em; text-transform: uppercase; font-size: 0.72rem; font-weight: 700; color: var(--ink-soft); padding-left: 0.42em; }
+      .pre-bar { width: 180px; height: 2px; background: rgba(212,175,90,0.18); border-radius: 2px; overflow: hidden; }
+      .pre-bar span { display: block; height: 100%; width: 40%; background: linear-gradient(90deg, var(--gold-deep), var(--gold-soft)); animation: preSlide 1.1s ease-in-out infinite; }
+      @keyframes preSlide { 0% { transform: translateX(-110%); } 100% { transform: translateX(460%); } }
+      @keyframes preGlow { 0%, 100% { box-shadow: 0 0 0 rgba(212,175,90,0); } 50% { box-shadow: 0 0 34px rgba(212,175,90,0.45); } }
+
+      /* ---------- Film grain ---------- */
+      .grain {
+        position: fixed; inset: 0; z-index: 95; pointer-events: none; opacity: 0.05;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)' opacity='0.6'/%3E%3C/svg%3E");
+      }
+
+      /* ---------- Glowing cursor ---------- */
+      #cursorGlow {
+        position: fixed; left: 0; top: 0; width: 120px; height: 120px; border-radius: 50%;
+        pointer-events: none; z-index: 96;
+        background: radial-gradient(circle, rgba(212,175,90,0.22), rgba(212,175,90,0.06) 45%, transparent 70%);
+        will-change: transform;
+      }
+      @media (pointer: coarse) { #cursorGlow { display: none; } }
+
+      /* ---------- Hero headline gold shimmer ---------- */
+      .hero-inner h1 em {
+        background: linear-gradient(110deg, var(--gold-deep) 20%, var(--gold-soft) 38%, #fff3d6 50%, var(--gold-soft) 62%, var(--gold-deep) 80%);
+        background-size: 220% auto;
+        -webkit-background-clip: text; background-clip: text;
+        color: transparent; -webkit-text-fill-color: transparent;
+        animation: goldShimmer 7s linear infinite;
+      }
+      @keyframes goldShimmer { to { background-position: 220% center; } }
+
+      /* ---------- Button shine sweep ---------- */
+      .btn { position: relative; overflow: hidden; }
+      .btn::after {
+        content: ""; position: absolute; top: 0; bottom: 0; width: 60px; left: -90px;
+        background: linear-gradient(105deg, transparent, rgba(255,255,255,0.5), transparent);
+        transform: skewX(-20deg); transition: left 0.65s ease; pointer-events: none;
+      }
+      .btn:hover::after { left: 135%; }
+
+      /* ---------- Ornamental gold dividers ---------- */
+      .orn-div { color: var(--gold); opacity: 0.6; text-align: center; padding: 4px 0; }
+      .orn-div svg { width: min(360px, 72%); height: 24px; display: block; margin-inline: auto; }
     </style>
   </head>
   <body>
+    <div id="preloader" aria-hidden="true">
+      <div class="pre-mono">RP</div>
+      <div class="pre-name">Rajwada Palace</div>
+      <div class="pre-bar"><span></span></div>
+    </div>
+    <noscript><style>#preloader{display:none;}</style></noscript>
+    <div class="grain" aria-hidden="true"></div>
+    <div id="cursorGlow" aria-hidden="true"></div>
     <header>
       <div class="wrap nav">
         <a class="brand" href="#top" aria-label="The Rajwada Palace Hotel">
@@ -319,6 +422,10 @@
             Book Now
           </a>
         </nav>
+        <button class="theme-toggle" id="themeToggle" aria-label="Toggle light and dark theme" aria-pressed="false">
+          <svg class="ic-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4.2"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M4.9 19.1l1.8-1.8M17.3 6.7l1.8-1.8"/></svg>
+          <svg class="ic-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="display:none"><path d="M20 13.5A8 8 0 0 1 10.5 4 8 8 0 1 0 20 13.5Z"/></svg>
+        </button>
         <button class="hamburger" id="hamburger" aria-label="Open menu" aria-expanded="false">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
         </button>
@@ -367,6 +474,17 @@
         <div class="stat reveal d3"><div class="num" data-count="90" data-suffix="+">0</div><div class="lbl">Years of Legacy</div></div>
       </div>
     </section>
+
+    <div class="orn-div" aria-hidden="true">
+      <svg viewBox="0 0 360 24" fill="none" aria-hidden="true">
+        <line x1="6" y1="12" x2="146" y2="12" stroke="currentColor" stroke-width="1" opacity="0.45"/>
+        <line x1="214" y1="12" x2="354" y2="12" stroke="currentColor" stroke-width="1" opacity="0.45"/>
+        <path d="M180 5 L187 12 L180 19 L173 12 Z" stroke="currentColor" stroke-width="1.3"/>
+        <circle cx="156" cy="12" r="2.2" fill="currentColor" opacity="0.8"/>
+        <circle cx="204" cy="12" r="2.2" fill="currentColor" opacity="0.8"/>
+        <circle cx="180" cy="12" r="1.4" fill="currentColor"/>
+      </svg>
+    </div>
 
     <!-- ROOMS -->
     <section id="rooms">
@@ -436,6 +554,17 @@
       </div>
     </section>
 
+    <div class="orn-div" aria-hidden="true">
+      <svg viewBox="0 0 360 24" fill="none" aria-hidden="true">
+        <line x1="6" y1="12" x2="146" y2="12" stroke="currentColor" stroke-width="1" opacity="0.45"/>
+        <line x1="214" y1="12" x2="354" y2="12" stroke="currentColor" stroke-width="1" opacity="0.45"/>
+        <path d="M180 5 L187 12 L180 19 L173 12 Z" stroke="currentColor" stroke-width="1.3"/>
+        <circle cx="156" cy="12" r="2.2" fill="currentColor" opacity="0.8"/>
+        <circle cx="204" cy="12" r="2.2" fill="currentColor" opacity="0.8"/>
+        <circle cx="180" cy="12" r="1.4" fill="currentColor"/>
+      </svg>
+    </div>
+
     <!-- 360° VIRTUAL TOUR -->
     <section id="tour">
       <div class="wrap">
@@ -491,6 +620,17 @@
         </div>
       </div>
     </section>
+
+    <div class="orn-div" aria-hidden="true">
+      <svg viewBox="0 0 360 24" fill="none" aria-hidden="true">
+        <line x1="6" y1="12" x2="146" y2="12" stroke="currentColor" stroke-width="1" opacity="0.45"/>
+        <line x1="214" y1="12" x2="354" y2="12" stroke="currentColor" stroke-width="1" opacity="0.45"/>
+        <path d="M180 5 L187 12 L180 19 L173 12 Z" stroke="currentColor" stroke-width="1.3"/>
+        <circle cx="156" cy="12" r="2.2" fill="currentColor" opacity="0.8"/>
+        <circle cx="204" cy="12" r="2.2" fill="currentColor" opacity="0.8"/>
+        <circle cx="180" cy="12" r="1.4" fill="currentColor"/>
+      </svg>
+    </div>
 
     <!-- PARALLAX BAND -->
     <div class="parallax-band">
@@ -576,6 +716,17 @@
         <div class="testi-dots" id="testiDots"></div>
       </div>
     </section>
+
+    <div class="orn-div" aria-hidden="true">
+      <svg viewBox="0 0 360 24" fill="none" aria-hidden="true">
+        <line x1="6" y1="12" x2="146" y2="12" stroke="currentColor" stroke-width="1" opacity="0.45"/>
+        <line x1="214" y1="12" x2="354" y2="12" stroke="currentColor" stroke-width="1" opacity="0.45"/>
+        <path d="M180 5 L187 12 L180 19 L173 12 Z" stroke="currentColor" stroke-width="1.3"/>
+        <circle cx="156" cy="12" r="2.2" fill="currentColor" opacity="0.8"/>
+        <circle cx="204" cy="12" r="2.2" fill="currentColor" opacity="0.8"/>
+        <circle cx="180" cy="12" r="1.4" fill="currentColor"/>
+      </svg>
+    </div>
 
     <!-- CONTACT -->
     <section id="contact">
@@ -969,6 +1120,91 @@
           // WebGL / CDN failure: hero keeps its dark gradient fallback.
           var c = document.getElementById("hero-canvas");
           if (c) c.style.display = "none";
+        }
+      })();
+    </script>
+
+    <script>
+      (function () {
+        "use strict";
+        var reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+        var fine = window.matchMedia("(pointer: fine)").matches;
+
+        /* ---------- Theme toggle ---------- */
+        var root = document.documentElement;
+        var tbtn = document.getElementById("themeToggle");
+        function getTheme() {
+          try { return localStorage.getItem("rajwada-theme") || "dark"; } catch (e) { return "dark"; }
+        }
+        function applyTheme(t) {
+          if (t === "light") { root.setAttribute("data-theme", "light"); }
+          else { root.removeAttribute("data-theme"); }
+          if (tbtn) {
+            tbtn.setAttribute("aria-pressed", t === "light" ? "true" : "false");
+            var sun = tbtn.querySelector(".ic-sun"), moon = tbtn.querySelector(".ic-moon");
+            if (sun && moon) {
+              sun.style.display = t === "light" ? "none" : "";
+              moon.style.display = t === "light" ? "" : "none";
+            }
+          }
+        }
+        applyTheme(getTheme());
+        if (tbtn) tbtn.addEventListener("click", function () {
+          var next = root.getAttribute("data-theme") === "light" ? "dark" : "light";
+          try { localStorage.setItem("rajwada-theme", next); } catch (e) {}
+          applyTheme(next);
+        });
+
+        /* ---------- Royal preloader ---------- */
+        var pre = document.getElementById("preloader");
+        if (pre) {
+          var seen = false;
+          try { seen = !!sessionStorage.getItem("rajwada-seen"); } catch (e) {}
+          function hidePre() {
+            if (pre.classList.contains("done")) return;
+            pre.classList.add("done");
+            try { sessionStorage.setItem("rajwada-seen", "1"); } catch (e) {}
+            setTimeout(function () { if (pre.parentNode) pre.parentNode.removeChild(pre); }, 700);
+          }
+          if (seen || reduced) { hidePre(); }
+          else {
+            var maxT = setTimeout(hidePre, 1200);
+            window.addEventListener("load", function () { setTimeout(hidePre, 350); });
+          }
+        }
+
+        /* ---------- Magnetic buttons (pointer-fine only) ---------- */
+        if (fine && !reduced) {
+          document.querySelectorAll(".btn").forEach(function (b) {
+            b.addEventListener("mousemove", function (e) {
+              var r = b.getBoundingClientRect();
+              var dx = e.clientX - (r.left + r.width / 2);
+              var dy = e.clientY - (r.top + r.height / 2);
+              b.style.transform = "translate(" + (dx * 0.06).toFixed(1) + "px," + (dy * 0.09).toFixed(1) + "px)";
+            });
+            b.addEventListener("mouseleave", function () {
+              b.style.transition = "transform 0.45s cubic-bezier(0.2,0.8,0.25,1.2)";
+              b.style.transform = "";
+              setTimeout(function () { b.style.transition = ""; }, 480);
+            });
+          });
+        }
+
+        /* ---------- Glowing cursor follower (pointer-fine only) ---------- */
+        var glow = document.getElementById("cursorGlow");
+        if (!glow || !fine || reduced) { if (glow) glow.style.display = "none"; }
+        else {
+          var mx = -200, my = -200, gx = -200, gy = -200, sc = 1, tsc = 1;
+          window.addEventListener("mousemove", function (e) {
+            mx = e.clientX; my = e.clientY;
+            var t = e.target && e.target.closest ? e.target.closest("a, button") : null;
+            tsc = t ? 2.1 : 1;
+          }, { passive: true });
+          (function loop() {
+            gx += (mx - gx) * 0.16; gy += (my - gy) * 0.16; sc += (tsc - sc) * 0.18;
+            glow.style.transform = "translate(" + gx.toFixed(1) + "px," + gy.toFixed(1) + "px) translate(-50%,-50%) scale(" + sc.toFixed(3) + ")";
+            requestAnimationFrame(loop);
+          })();
         }
       })();
     </script>
