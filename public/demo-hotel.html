@@ -1,0 +1,827 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="description" content="The Rajwada Palace Hotel — a luxury heritage hotel demo website: royal suites, fine dining, spa, gallery and WhatsApp booking." />
+    <link rel="icon" href="data:," />
+    <title>The Rajwada Palace Hotel — Luxury Heritage Stay</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,700;0,800;1,500&family=Karla:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <style>
+      :root {
+        --bg: #0a0e1d;
+        --bg-2: #0e1428;
+        --surface: #141b34;
+        --surface-2: #1a2340;
+        --ink: #f4ecda;
+        --ink-soft: #b9ad8f;
+        --line: rgba(212, 175, 90, 0.22);
+        --gold: #d4af5a;
+        --gold-deep: #a8823a;
+        --gold-soft: #f0d999;
+        --shadow: 0 24px 60px -20px rgba(0, 0, 0, 0.7);
+        --radius: 18px;
+      }
+      * { box-sizing: border-box; }
+      html { scroll-behavior: smooth; }
+      body {
+        margin: 0;
+        font-family: "Karla", system-ui, sans-serif;
+        background: var(--bg);
+        color: var(--ink);
+        line-height: 1.6;
+        -webkit-font-smoothing: antialiased;
+        overflow-x: hidden;
+      }
+      h1, h2, h3, .serif { font-family: "Playfair Display", Georgia, serif; }
+      .wrap { width: min(1180px, 100% - 40px); margin-inline: auto; }
+      section { padding: 88px 0; position: relative; }
+      .section-head { max-width: 660px; margin-bottom: 46px; }
+      .section-head.center { margin-inline: auto; text-align: center; }
+      .section-head h2 { font-size: clamp(1.9rem, 4vw, 2.8rem); line-height: 1.12; margin: 0 0 14px; font-weight: 800; }
+      .section-head h2 em { color: var(--gold); font-style: normal; }
+      .section-head p { color: var(--ink-soft); margin: 0; font-size: 1.06rem; }
+      .rule { width: 60px; height: 3px; background: linear-gradient(90deg, var(--gold-deep), var(--gold-soft)); border-radius: 2px; margin-bottom: 20px; }
+      .section-head.center .rule { margin-inline: auto; }
+      .eyebrow { display: inline-block; font-size: 0.72rem; letter-spacing: 0.3em; text-transform: uppercase; color: var(--gold); font-weight: 800; margin-bottom: 14px; }
+
+      /* ---------- Header ---------- */
+      header {
+        position: fixed; top: 0; left: 0; right: 0; z-index: 60;
+        background: rgba(10, 14, 29, 0.72);
+        backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+        border-bottom: 1px solid var(--line);
+      }
+      .nav { display: flex; align-items: center; gap: 26px; padding: 13px 0; }
+      .brand { text-decoration: none; line-height: 1; margin-right: auto; color: var(--ink); }
+      .brand .name { font-family: "Playfair Display", serif; font-weight: 800; font-size: 1.42rem; letter-spacing: 0.02em; }
+      .brand .name em { color: var(--gold); font-style: normal; }
+      .brand small { display: block; font-family: "Karla", sans-serif; font-size: 0.6rem; letter-spacing: 0.3em; text-transform: uppercase; color: var(--ink-soft); margin-top: 3px; font-weight: 700; }
+      .nav-links { display: flex; gap: 22px; align-items: center; }
+      .nav-links a { text-decoration: none; color: var(--ink-soft); font-weight: 600; font-size: 0.94rem; }
+      .nav-links a:hover { color: var(--gold-soft); }
+      .btn {
+        display: inline-flex; align-items: center; gap: 10px;
+        background: linear-gradient(135deg, var(--gold-deep), var(--gold));
+        color: #1a1206; font-weight: 800; font-size: 0.95rem;
+        padding: 12px 24px; border-radius: 999px; text-decoration: none; border: 0; cursor: pointer;
+        box-shadow: 0 10px 28px -8px rgba(212, 175, 90, 0.55);
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+      }
+      .btn:hover { transform: translateY(-2px); box-shadow: 0 16px 34px -8px rgba(212, 175, 90, 0.65); }
+      .btn.ghost { background: transparent; color: var(--gold-soft); border: 1px solid var(--line); box-shadow: none; }
+      .btn.ghost:hover { border-color: var(--gold); }
+      .btn svg { width: 18px; height: 18px; flex: none; }
+      .hamburger { display: none; background: none; border: 0; color: var(--ink); cursor: pointer; padding: 8px; }
+      .hamburger svg { width: 26px; height: 26px; }
+
+      /* ---------- Hero (3D canvas) ---------- */
+      .hero { min-height: 100svh; display: flex; align-items: center; padding: 130px 0 70px; overflow: hidden; }
+      #hero-canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+      .hero::after {
+        content: ""; position: absolute; inset: 0; pointer-events: none;
+        background: radial-gradient(ellipse 80% 60% at 50% 110%, rgba(10,14,29,0.9), transparent 70%),
+                    linear-gradient(180deg, rgba(10,14,29,0.55) 0%, transparent 30%, transparent 62%, var(--bg) 100%);
+      }
+      .hero-inner { position: relative; z-index: 2; text-align: center; max-width: 820px; margin-inline: auto; }
+      .hero-inner h1 { font-size: clamp(2.6rem, 7vw, 5rem); line-height: 1.06; margin: 0 0 18px; font-weight: 800; text-shadow: 0 6px 40px rgba(0,0,0,0.6); }
+      .hero-inner h1 em { color: var(--gold); font-style: normal; }
+      .hero-inner .tagline { font-size: clamp(1.05rem, 2.4vw, 1.35rem); color: var(--ink-soft); margin: 0 0 34px; }
+      .hero-cta { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
+      .hero-badges { display: flex; gap: 26px; justify-content: center; margin-top: 46px; flex-wrap: wrap; }
+      .hero-badge { display: flex; align-items: center; gap: 10px; color: var(--ink-soft); font-size: 0.92rem; font-weight: 600; }
+      .hero-badge svg { width: 20px; height: 20px; color: var(--gold); }
+      .scroll-hint { position: absolute; bottom: 26px; left: 50%; transform: translateX(-50%); z-index: 2; color: var(--ink-soft); font-size: 0.75rem; letter-spacing: 0.28em; text-transform: uppercase; animation: bob 2.4s ease-in-out infinite; }
+      @keyframes bob { 0%, 100% { transform: translate(-50%, 0); opacity: 0.7; } 50% { transform: translate(-50%, 10px); opacity: 1; } }
+
+      /* ---------- Stats ---------- */
+      .stats { background: linear-gradient(180deg, var(--bg) 0%, var(--bg-2) 100%); border-block: 1px solid var(--line); }
+      .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px; text-align: center; }
+      .stat { padding: 26px 10px; }
+      .stat .num { font-family: "Playfair Display", serif; font-size: clamp(2rem, 4.5vw, 3rem); font-weight: 800; color: var(--gold); }
+      .stat .lbl { color: var(--ink-soft); font-size: 0.92rem; letter-spacing: 0.08em; text-transform: uppercase; font-weight: 700; margin-top: 6px; }
+
+      /* ---------- Rooms (3D tilt cards) ---------- */
+      .rooms-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 26px; perspective: 1200px; }
+      .room-card {
+        background: linear-gradient(160deg, var(--surface), var(--surface-2));
+        border: 1px solid var(--line); border-radius: var(--radius);
+        overflow: hidden; box-shadow: var(--shadow);
+        transform-style: preserve-3d; will-change: transform;
+        transition: box-shadow 0.3s ease;
+      }
+      .room-card:hover { box-shadow: 0 30px 70px -18px rgba(212, 175, 90, 0.28); }
+      .room-art { height: 210px; position: relative; overflow: hidden; transform: translateZ(30px); }
+      .room-art .art { position: absolute; inset: -12%; transition: transform 0.6s ease; }
+      .room-card:hover .room-art .art { transform: scale(1.08); }
+      .room-tag { position: absolute; top: 14px; left: 14px; z-index: 2; background: rgba(10,14,29,0.75); backdrop-filter: blur(6px); border: 1px solid var(--line); color: var(--gold-soft); font-size: 0.72rem; font-weight: 800; letter-spacing: 0.18em; text-transform: uppercase; padding: 7px 13px; border-radius: 999px; }
+      .room-body { padding: 26px; transform: translateZ(20px); }
+      .room-body h3 { margin: 0 0 8px; font-size: 1.5rem; }
+      .room-body p { color: var(--ink-soft); font-size: 0.95rem; margin: 0 0 16px; }
+      .room-feats { list-style: none; margin: 0 0 20px; padding: 0; display: grid; gap: 8px; }
+      .room-feats li { display: flex; gap: 10px; align-items: center; font-size: 0.9rem; color: var(--ink-soft); }
+      .room-feats svg { width: 16px; height: 16px; color: var(--gold); flex: none; }
+      .room-price { display: flex; align-items: baseline; gap: 8px; margin-bottom: 18px; }
+      .room-price .amt { font-family: "Playfair Display", serif; font-size: 1.9rem; font-weight: 800; color: var(--gold-soft); }
+      .room-price .per { color: var(--ink-soft); font-size: 0.88rem; }
+      .room-card .btn { width: 100%; justify-content: center; }
+
+      /* ---------- 3D cube room selector ---------- */
+      .cube-section { background: var(--bg-2); border-block: 1px solid var(--line); overflow: hidden; }
+      .cube-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 50px; align-items: center; }
+      .cube-stage { perspective: 1100px; display: flex; justify-content: center; padding: 30px 0; }
+      .cube { width: 220px; height: 220px; position: relative; transform-style: preserve-3d; transition: transform 1s cubic-bezier(0.2, 0.8, 0.25, 1); }
+      .cube-face {
+        position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px;
+        background: linear-gradient(150deg, rgba(26,35,64,0.96), rgba(14,20,40,0.96));
+        border: 1px solid var(--gold); border-radius: 14px; backface-visibility: hidden;
+        text-align: center; padding: 18px;
+      }
+      .cube-face .fname { font-family: "Playfair Display", serif; font-size: 1.35rem; font-weight: 800; color: var(--gold-soft); }
+      .cube-face .fprice { font-size: 1rem; color: var(--ink-soft); font-weight: 700; }
+      .cube-face .fdesc { font-size: 0.8rem; color: var(--ink-soft); }
+      .cube-face:nth-child(1) { transform: translateZ(110px); }
+      .cube-face:nth-child(2) { transform: rotateY(90deg) translateZ(110px); }
+      .cube-face:nth-child(3) { transform: rotateY(180deg) translateZ(110px); }
+      .cube-face:nth-child(4) { transform: rotateY(-90deg) translateZ(110px); }
+      .cube-face:nth-child(5) { transform: rotateX(90deg) translateZ(110px); }
+      .cube-face:nth-child(6) { transform: rotateX(-90deg) translateZ(110px); }
+      .cube-btns { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 22px; }
+      .cube-btn { background: transparent; border: 1px solid var(--line); color: var(--ink-soft); font-weight: 700; font-size: 0.88rem; padding: 10px 18px; border-radius: 999px; cursor: pointer; transition: all 0.2s ease; }
+      .cube-btn.active, .cube-btn:hover { border-color: var(--gold); color: var(--gold-soft); }
+
+      /* ---------- Amenities ---------- */
+      .amen-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; }
+      .amen { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 28px 22px; text-align: center; transition: transform 0.25s ease, border-color 0.25s ease; }
+      .amen:hover { transform: translateY(-6px); border-color: var(--gold); }
+      .amen .icon { width: 52px; height: 52px; margin: 0 auto 14px; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: radial-gradient(circle at 35% 30%, rgba(212,175,90,0.28), rgba(212,175,90,0.06)); border: 1px solid var(--line); }
+      .amen .icon svg { width: 24px; height: 24px; color: var(--gold); }
+      .amen h3 { margin: 0 0 6px; font-size: 1.05rem; }
+      .amen p { margin: 0; color: var(--ink-soft); font-size: 0.88rem; }
+
+      /* ---------- Gallery ---------- */
+      .gal-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+      .gal-card { position: relative; height: 250px; border-radius: var(--radius); overflow: hidden; border: 1px solid var(--line); cursor: pointer; }
+      .gal-card .art { position: absolute; inset: 0; transition: transform 0.7s ease; }
+      .gal-card:hover .art { transform: scale(1.1); }
+      .gal-card .cap { position: absolute; left: 0; right: 0; bottom: 0; padding: 40px 20px 18px; background: linear-gradient(transparent, rgba(6,9,20,0.92)); font-family: "Playfair Display", serif; font-size: 1.15rem; font-weight: 700; }
+
+      /* ---------- Testimonials ---------- */
+      .testi { background: var(--bg-2); border-block: 1px solid var(--line); }
+      .testi-stage { max-width: 760px; margin-inline: auto; text-align: center; position: relative; min-height: 250px; }
+      .testi-slide { position: absolute; inset: 0; opacity: 0; transform: translateY(16px); transition: opacity 0.6s ease, transform 0.6s ease; pointer-events: none; padding: 0 10px; }
+      .testi-slide.active { opacity: 1; transform: none; pointer-events: auto; }
+      .testi-stars { color: var(--gold); letter-spacing: 4px; font-size: 1.1rem; margin-bottom: 16px; }
+      .testi-quote { font-family: "Playfair Display", serif; font-size: clamp(1.15rem, 2.6vw, 1.5rem); font-style: italic; line-height: 1.5; margin: 0 0 18px; }
+      .testi-who { color: var(--ink-soft); font-weight: 700; font-size: 0.95rem; }
+      .testi-who span { color: var(--gold); }
+      .testi-dots { display: flex; gap: 10px; justify-content: center; margin-top: 30px; }
+      .testi-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--line); border: 0; cursor: pointer; padding: 0; transition: all 0.25s ease; }
+      .testi-dot.active { background: var(--gold); transform: scale(1.35); }
+
+      /* ---------- Contact ---------- */
+      .contact-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; align-items: start; }
+      .contact-card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 34px; }
+      .contact-row { display: flex; gap: 16px; align-items: flex-start; margin-bottom: 22px; }
+      .contact-row:last-child { margin-bottom: 0; }
+      .contact-row .icon { width: 44px; height: 44px; flex: none; border-radius: 12px; display: flex; align-items: center; justify-content: center; background: rgba(212,175,90,0.12); border: 1px solid var(--line); }
+      .contact-row .icon svg { width: 20px; height: 20px; color: var(--gold); }
+      .contact-row h4 { margin: 0 0 4px; font-size: 1rem; }
+      .contact-row p { margin: 0; color: var(--ink-soft); font-size: 0.94rem; }
+      .map-art { border-radius: var(--radius); border: 1px solid var(--line); min-height: 340px; position: relative; overflow: hidden;
+        background:
+          radial-gradient(circle at 30% 40%, rgba(212,175,90,0.16), transparent 45%),
+          radial-gradient(circle at 70% 65%, rgba(90,120,220,0.14), transparent 50%),
+          repeating-linear-gradient(0deg, transparent 0 34px, rgba(212,175,90,0.06) 34px 35px),
+          repeating-linear-gradient(90deg, transparent 0 34px, rgba(212,175,90,0.06) 34px 35px),
+          var(--surface);
+      }
+      .map-pin { position: absolute; top: 42%; left: 52%; transform: translate(-50%, -100%); text-align: center; }
+      .map-pin svg { width: 44px; height: 44px; color: var(--gold); filter: drop-shadow(0 6px 12px rgba(0,0,0,0.5)); animation: bob 2.4s ease-in-out infinite; }
+      .map-pin .lbl { display: inline-block; margin-top: 6px; background: rgba(10,14,29,0.85); border: 1px solid var(--line); color: var(--gold-soft); font-size: 0.78rem; font-weight: 800; padding: 6px 12px; border-radius: 999px; }
+
+      /* ---------- Footer ---------- */
+      footer { border-top: 1px solid var(--line); padding: 46px 0 30px; background: #070b16; }
+      .foot-grid { display: grid; grid-template-columns: 1.4fr 1fr 1fr; gap: 34px; margin-bottom: 30px; }
+      .foot-grid h4 { margin: 0 0 14px; font-size: 1rem; color: var(--gold-soft); }
+      .foot-grid a { display: block; color: var(--ink-soft); text-decoration: none; font-size: 0.92rem; margin-bottom: 8px; }
+      .foot-grid a:hover { color: var(--gold-soft); }
+      .foot-brand p { color: var(--ink-soft); font-size: 0.92rem; max-width: 340px; }
+      .foot-bottom { border-top: 1px solid var(--line); padding-top: 20px; display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; color: var(--ink-soft); font-size: 0.82rem; }
+      .demo-note { margin-top: 14px; font-size: 0.78rem; color: #6f6582; }
+
+      /* ---------- Floating WhatsApp ---------- */
+      .wa-float { position: fixed; right: 20px; bottom: 20px; z-index: 70; width: 58px; height: 58px; border-radius: 50%; background: #22b358; display: flex; align-items: center; justify-content: center; box-shadow: 0 12px 30px -8px rgba(34,179,88,0.7); transition: transform 0.2s ease; }
+      .wa-float:hover { transform: scale(1.1); }
+      .wa-float svg { width: 30px; height: 30px; color: #fff; }
+
+      /* ---------- Reveal ---------- */
+      .reveal { opacity: 0; transform: translateY(34px); transition: opacity 0.8s ease, transform 0.8s ease; }
+      .reveal.visible { opacity: 1; transform: none; }
+      .reveal.d1 { transition-delay: 0.12s; } .reveal.d2 { transition-delay: 0.24s; } .reveal.d3 { transition-delay: 0.36s; }
+
+      /* ---------- Parallax band ---------- */
+      .parallax-band { min-height: 340px; display: flex; align-items: center; justify-content: center; text-align: center; overflow: hidden; border-block: 1px solid var(--line);
+        background:
+          radial-gradient(ellipse 70% 90% at 50% 120%, rgba(212,175,90,0.14), transparent 60%),
+          linear-gradient(180deg, var(--bg-2), var(--bg));
+      }
+      .parallax-inner { transition: transform 0.1s linear; }
+      .parallax-band h2 { font-size: clamp(1.8rem, 4.5vw, 3rem); margin: 0 0 12px; }
+      .parallax-band p { color: var(--ink-soft); margin: 0 0 26px; }
+
+      @media (max-width: 940px) {
+        .rooms-grid { grid-template-columns: 1fr; max-width: 520px; margin-inline: auto; }
+        .amen-grid { grid-template-columns: repeat(2, 1fr); }
+        .gal-grid { grid-template-columns: repeat(2, 1fr); }
+        .cube-layout { grid-template-columns: 1fr; gap: 20px; }
+        .contact-grid { grid-template-columns: 1fr; }
+        .stats-grid { grid-template-columns: repeat(2, 1fr); }
+        .foot-grid { grid-template-columns: 1fr 1fr; }
+      }
+      @media (max-width: 640px) {
+        section { padding: 64px 0; }
+        .nav-links { position: fixed; top: 62px; right: 0; left: 0; background: rgba(10,14,29,0.97); backdrop-filter: blur(14px); flex-direction: column; align-items: stretch; padding: 18px 24px 26px; gap: 4px; border-bottom: 1px solid var(--line); transform: translateY(-130%); transition: transform 0.3s ease; }
+        .nav-links.open { transform: none; }
+        .nav-links a { padding: 10px 4px; border-bottom: 1px solid rgba(212,175,90,0.1); }
+        .nav-links .btn { margin-top: 12px; justify-content: center; }
+        .hamburger { display: block; }
+        .gal-grid { grid-template-columns: 1fr; }
+        .foot-grid { grid-template-columns: 1fr; }
+        .hero-cta .btn { width: 100%; justify-content: center; }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .reveal { opacity: 1; transform: none; transition: none; }
+        * { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <div class="wrap nav">
+        <a class="brand" href="#top" aria-label="The Rajwada Palace Hotel">
+          <span class="name">Rajwada <em>Palace</em></span>
+          <small>Luxury Heritage Hotel</small>
+        </a>
+        <nav class="nav-links" id="navLinks" aria-label="Primary">
+          <a href="#rooms">Rooms</a>
+          <a href="#amenities">Amenities</a>
+          <a href="#gallery">Gallery</a>
+          <a href="#reviews">Reviews</a>
+          <a href="#contact">Contact</a>
+          <a class="btn" href="https://wa.me/919000000000?text=Hi%2C%20I%20want%20to%20book%20a%20room%20at%20Rajwada%20Palace%20Hotel" target="_blank" rel="noopener">
+            <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2Zm5.2 13.9c-.2.7-1.3 1.3-1.9 1.4-.5.1-1.1.2-3.6-.8-3-1.2-4.9-4.2-5.1-4.4-.1-.2-1.2-1.6-1.2-3.1s.8-2.2 1-2.5c.3-.3.6-.4.8-.4h.6c.2 0 .4 0 .6.5l.9 2.1c.1.2.1.4 0 .6l-.4.6-.5.5c-.2.2-.3.4-.1.7.2.3.9 1.5 2 2.4 1.4 1.2 2.5 1.6 2.9 1.8.3.2.5.1.7-.1l1-1.2c.2-.3.4-.2.7-.1l2 1c.3.1.5.2.6.4 0 .1 0 .7-.2 1.6Z"/></svg>
+            Book Now
+          </a>
+        </nav>
+        <button class="hamburger" id="hamburger" aria-label="Open menu" aria-expanded="false">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+        </button>
+      </div>
+    </header>
+
+    <!-- HERO with 3D canvas -->
+    <section class="hero" id="top" style="padding-top:130px;">
+      <canvas id="hero-canvas" aria-hidden="true"></canvas>
+      <div class="wrap hero-inner">
+        <span class="eyebrow">Est. 1932 &middot; A Royal Heritage</span>
+        <h1>The <em>Rajwada</em> Palace Hotel</h1>
+        <p class="tagline">Sleep like royalty in the heart of the Pink City — 120 heritage rooms, a rooftop infinity pool and dining fit for kings.</p>
+        <div class="hero-cta">
+          <a class="btn" href="https://wa.me/919000000000?text=Hi%2C%20I%20want%20to%20book%20a%20room%20at%20Rajwada%20Palace%20Hotel" target="_blank" rel="noopener">
+            <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2Zm5.2 13.9c-.2.7-1.3 1.3-1.9 1.4-.5.1-1.1.2-3.6-.8-3-1.2-4.9-4.2-5.1-4.4-.1-.2-1.2-1.6-1.2-3.1s.8-2.2 1-2.5c.3-.3.6-.4.8-.4h.6c.2 0 .4 0 .6.5l.9 2.1c.1.2.1.4 0 .6l-.4.6-.5.5c-.2.2-.3.4-.1.7.2.3.9 1.5 2 2.4 1.4 1.2 2.5 1.6 2.9 1.8.3.2.5.1.7-.1l1-1.2c.2-.3.4-.2.7-.1l2 1c.3.1.5.2.6.4 0 .1 0 .7-.2 1.6Z"/></svg>
+            Book on WhatsApp
+          </a>
+          <a class="btn ghost" href="#rooms">Explore Rooms</a>
+        </div>
+        <div class="hero-badges">
+          <span class="hero-badge">
+            <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="m12 2 2.9 6.3 6.9.8-5.1 4.7 1.4 6.8L12 17.2 5.9 20.6l1.4-6.8L2.2 9.1l6.9-.8L12 2Z"/></svg>
+            4.9 Rated Palace Stay
+          </span>
+          <span class="hero-badge">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 21s-7-5.3-7-11a7 7 0 0 1 14 0c0 5.7-7 11-7 11Z"/><circle cx="12" cy="10" r="2.6"/></svg>
+            5 min from City Palace
+          </span>
+          <span class="hero-badge">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></svg>
+            24/7 Royal Concierge
+          </span>
+        </div>
+      </div>
+      <div class="scroll-hint">Scroll</div>
+    </section>
+
+    <!-- STATS -->
+    <section class="stats" style="padding:54px 0;">
+      <div class="wrap stats-grid">
+        <div class="stat reveal"><div class="num" data-count="120" data-suffix="">0</div><div class="lbl">Heritage Rooms</div></div>
+        <div class="stat reveal d1"><div class="num" data-count="85000" data-suffix="+">0</div><div class="lbl">Happy Guests</div></div>
+        <div class="stat reveal d2"><div class="num" data-count="4.9" data-decimals="1" data-suffix="">0</div><div class="lbl">Guest Rating</div></div>
+        <div class="stat reveal d3"><div class="num" data-count="90" data-suffix="+">0</div><div class="lbl">Years of Legacy</div></div>
+      </div>
+    </section>
+
+    <!-- ROOMS -->
+    <section id="rooms">
+      <div class="wrap">
+        <div class="section-head center reveal">
+          <span class="eyebrow">Stay in Splendour</span>
+          <h2>Rooms &amp; <em>Suites</em></h2>
+          <div class="rule"></div>
+          <p>Hand-carved jharokhas, silk drapes and marble bathrooms — every room is a piece of Rajputana art. Move your cursor over a card.</p>
+        </div>
+        <div class="rooms-grid">
+          <article class="room-card tilt reveal">
+            <div class="room-art">
+              <span class="room-tag">Most Popular</span>
+              <div class="art" style="background:linear-gradient(135deg,#2b3a6e 0%,#4a5fa0 35%,#c99b4a 70%,#8a5f22 100%);"></div>
+              <svg style="position:absolute;inset:0;margin:auto;width:88px;height:88px;color:rgba(255,255,255,0.85);" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" aria-hidden="true"><path d="M3 18v-6a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v6"/><path d="M3 18h18M5 10V7a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v3"/><path d="M12 5v5"/></svg>
+            </div>
+            <div class="room-body">
+              <h3>Deluxe Heritage Room</h3>
+              <p>280 sq.ft of Rajputana charm with a carved balcony overlooking the old city.</p>
+              <ul class="room-feats">
+                <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="m4 12.5 5 5L20 6.5"/></svg>King bed + jharokha balcony</li>
+                <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="m4 12.5 5 5L20 6.5"/></svg>Rain-shower marble bathroom</li>
+                <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="m4 12.5 5 5L20 6.5"/></svg>Complimentary royal breakfast</li>
+              </ul>
+              <div class="room-price"><span class="amt">₹4,999</span><span class="per">/ night</span></div>
+              <a class="btn" href="https://wa.me/919000000000?text=Hi%2C%20I%20want%20to%20book%20the%20Deluxe%20Heritage%20Room" target="_blank" rel="noopener">Book Deluxe</a>
+            </div>
+          </article>
+          <article class="room-card tilt reveal d1">
+            <div class="room-art">
+              <span class="room-tag">Business Choice</span>
+              <div class="art" style="background:linear-gradient(135deg,#101b3d 0%,#27356b 40%,#d4af5a 75%,#7a5c1e 100%);"></div>
+              <svg style="position:absolute;inset:0;margin:auto;width:88px;height:88px;color:rgba(255,255,255,0.85);" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" aria-hidden="true"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M2 20h20M9 9h6M12 9v3"/></svg>
+            </div>
+            <div class="room-body">
+              <h3>Executive Courtyard Suite</h3>
+              <p>450 sq.ft suite with a private sit-out facing the frescoed inner courtyard.</p>
+              <ul class="room-feats">
+                <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="m4 12.5 5 5L20 6.5"/></svg>Separate living room + study</li>
+                <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="m4 12.5 5 5L20 6.5"/></svg>Courtyard sit-out with daybed</li>
+                <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="m4 12.5 5 5L20 6.5"/></svg>Evening high-tea included</li>
+              </ul>
+              <div class="room-price"><span class="amt">₹8,999</span><span class="per">/ night</span></div>
+              <a class="btn" href="https://wa.me/919000000000?text=Hi%2C%20I%20want%20to%20book%20the%20Executive%20Courtyard%20Suite" target="_blank" rel="noopener">Book Executive</a>
+            </div>
+          </article>
+          <article class="room-card tilt reveal d2">
+            <div class="room-art">
+              <span class="room-tag">Royal Experience</span>
+              <div class="art" style="background:linear-gradient(135deg,#3d2b12 0%,#8a5f22 35%,#d4af5a 60%,#2b3a6e 100%);"></div>
+              <svg style="position:absolute;inset:0;margin:auto;width:88px;height:88px;color:rgba(255,255,255,0.85);" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" aria-hidden="true"><path d="M3 21h18M4 21V10l8-6 8 6v11"/><path d="M9 21v-6h6v6M12 4v3"/></svg>
+            </div>
+            <div class="room-body">
+              <h3>The Royal Rajwada Suite</h3>
+              <p>900 sq.ft of pure maharaja luxury — private terrace, plunge pool and butler service.</p>
+              <ul class="room-feats">
+                <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="m4 12.5 5 5L20 6.5"/></svg>Private terrace + plunge pool</li>
+                <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="m4 12.5 5 5L20 6.5"/></svg>Dedicated butler, 24/7</li>
+                <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="m4 12.5 5 5L20 6.5"/></svg>Chauffeured vintage car tour</li>
+              </ul>
+              <div class="room-price"><span class="amt">₹14,999</span><span class="per">/ night</span></div>
+              <a class="btn" href="https://wa.me/919000000000?text=Hi%2C%20I%20want%20to%20book%20the%20Royal%20Rajwada%20Suite" target="_blank" rel="noopener">Book Royal Suite</a>
+            </div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- 3D CUBE SELECTOR -->
+    <section class="cube-section">
+      <div class="wrap cube-layout">
+        <div class="reveal">
+          <span class="eyebrow">Interactive</span>
+          <h2 style="font-size:clamp(1.8rem,3.6vw,2.4rem);margin:0 0 14px;">Spin the <em style="color:var(--gold);font-style:normal;">Cube</em> to Compare</h2>
+          <p style="color:var(--ink-soft);margin:0 0 8px;">A living 3D object on the page — tap a room type and watch the cube turn to it. This is the kind of interactive detail that makes guests remember a hotel website.</p>
+          <div class="cube-btns" id="cubeBtns">
+            <button class="cube-btn active" data-face="0">Deluxe</button>
+            <button class="cube-btn" data-face="1">Executive</button>
+            <button class="cube-btn" data-face="2">Royal Suite</button>
+            <button class="cube-btn" data-face="3">Dining</button>
+          </div>
+        </div>
+        <div class="cube-stage reveal d1">
+          <div class="cube" id="cube" aria-hidden="true">
+            <div class="cube-face"><span class="fname">Deluxe</span><span class="fprice">₹4,999 / night</span><span class="fdesc">Heritage room · jharokha balcony</span></div>
+            <div class="cube-face"><span class="fname">Executive</span><span class="fprice">₹8,999 / night</span><span class="fdesc">Courtyard suite · living room</span></div>
+            <div class="cube-face"><span class="fname">Royal Suite</span><span class="fprice">₹14,999 / night</span><span class="fdesc">Terrace · plunge pool · butler</span></div>
+            <div class="cube-face"><span class="fname">Dining</span><span class="fprice">3 restaurants</span><span class="fdesc">Rooftop · royal thali · bar</span></div>
+            <div class="cube-face"><span class="fname">Spa</span><span class="fprice">Open 7 AM – 10 PM</span><span class="fdesc">Ayurvedic rituals</span></div>
+            <div class="cube-face"><span class="fname">Pool</span><span class="fprice">Infinity edge</span><span class="fdesc">Sunset over the old city</span></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- PARALLAX BAND -->
+    <div class="parallax-band">
+      <div class="wrap parallax-inner" id="parallaxInner">
+        <h2 class="serif">Ninety Years of <span style="color:var(--gold);">Royal Hospitality</span></h2>
+        <p>Once the winter palace of the Rajwada family — now your home in the Pink City.</p>
+        <a class="btn ghost" href="#contact">Plan Your Stay</a>
+      </div>
+    </div>
+
+    <!-- AMENITIES -->
+    <section id="amenities">
+      <div class="wrap">
+        <div class="section-head center reveal">
+          <span class="eyebrow">Palace Comforts</span>
+          <h2>World-Class <em>Amenities</em></h2>
+          <div class="rule"></div>
+          <p>Everything a modern traveller needs, wrapped in old-world charm.</p>
+        </div>
+        <div class="amen-grid">
+          <div class="amen reveal"><div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M5 12.5a10 10 0 0 1 14 0M8.5 16a5 5 0 0 1 7 0M12 19.5h.01"/></svg></div><h3>High-Speed Wi-Fi</h3><p>Fibre internet in every corner of the palace.</p></div>
+          <div class="amen reveal d1"><div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M2 17c2 0 2-1.5 4-1.5S8 17 10 17s2-1.5 4-1.5 2 1.5 4 1.5 2-1.5 4-1.5M7 13V6a2 2 0 0 1 4 0M15 13V6a2 2 0 0 1 4 0"/></svg></div><h3>Infinity Pool</h3><p>Rooftop pool with sunset views over the old city.</p></div>
+          <div class="amen reveal d2"><div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 3c-2 3-6 4.5-6 9a6 6 0 0 0 12 0c0-4.5-4-6-6-9Z"/><path d="M9 21h6"/></svg></div><h3>Royal Spa</h3><p>Ayurvedic rituals and aromatherapy suites.</p></div>
+          <div class="amen reveal d3"><div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 11h16a1 1 0 0 1 1 1v7H3v-7a1 1 0 0 1 1-1ZM12 11V7m0 0a2 2 0 1 0-2-2"/></svg></div><h3>Fine Dining</h3><p>3 restaurants — rooftop, royal thali hall &amp; bar.</p></div>
+          <div class="amen reveal"><div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 7v10M18 7v10M3 7h18M4 17h16M9 7V4h6v3"/></svg></div><h3>Fitness Centre</h3><p>Modern gym + sunrise yoga on the terrace.</p></div>
+          <div class="amen reveal d1"><div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="M9 12h6M12 9v6"/></svg></div><h3>Valet Parking</h3><p>Secure valet parking for 200+ cars.</p></div>
+          <div class="amen reveal d2"><div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 8h13v9H3zM16 11h3l2 3v3h-5"/><circle cx="7" cy="18.5" r="1.6"/><circle cx="18" cy="18.5" r="1.6"/></svg></div><h3>Airport Transfer</h3><p>Chauffeured pick-up in a vintage classic.</p></div>
+          <div class="amen reveal d3"><div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 3v18M5 8c4-2 10-2 14 0M5 16c4 2 10 2 14 0"/></svg></div><h3>Event Lawns</h3><p>Weddings &amp; celebrations for 2,000 guests.</p></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- GALLERY -->
+    <section id="gallery" style="padding-top:0;">
+      <div class="wrap">
+        <div class="section-head center reveal">
+          <span class="eyebrow">A Visual Tour</span>
+          <h2>The Palace <em>Gallery</em></h2>
+          <div class="rule"></div>
+          <p>Hover any frame for a closer look.</p>
+        </div>
+        <div class="gal-grid">
+          <div class="gal-card reveal"><div class="art" style="background:linear-gradient(140deg,#1a2340 20%,#4a5fa0 55%,#d4af5a 100%);"></div><div class="cap">The Grand Durbar Hall</div></div>
+          <div class="gal-card reveal d1"><div class="art" style="background:linear-gradient(140deg,#3d2b12 10%,#a8823a 50%,#f0d999 90%);"></div><div class="cap">Sheesh Mahal Suites</div></div>
+          <div class="gal-card reveal d2"><div class="art" style="background:linear-gradient(140deg,#0e1428 20%,#27356b 60%,#7fb3d5 100%);"></div><div class="cap">Rooftop Infinity Pool</div></div>
+          <div class="gal-card reveal"><div class="art" style="background:linear-gradient(140deg,#2b1a3d 15%,#6e3b8a 55%,#d48ab0 100%);"></div><div class="cap">The Rose Courtyard</div></div>
+          <div class="gal-card reveal d1"><div class="art" style="background:linear-gradient(140deg,#123324 15%,#1e7a3c 55%,#bfe3b4 100%);"></div><div class="cap">Mango Orchard Lawns</div></div>
+          <div class="gal-card reveal d2"><div class="art" style="background:linear-gradient(140deg,#3d1220 15%,#8a2b45 55%,#e08a7f 100%);"></div><div class="cap">Candle-lit Fine Dining</div></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TESTIMONIALS -->
+    <section class="testi" id="reviews">
+      <div class="wrap">
+        <div class="section-head center reveal">
+          <span class="eyebrow">Guest Stories</span>
+          <h2>Loved by <em>Travellers</em></h2>
+          <div class="rule"></div>
+        </div>
+        <div class="testi-stage reveal" id="testiStage">
+          <div class="testi-slide active">
+            <div class="testi-stars">★★★★★</div>
+            <p class="testi-quote">"We arrived as tourists and left feeling like royalty. The courtyard suite at sunrise is something I will never forget."</p>
+            <p class="testi-who">Priya Sharma <span>· New Delhi</span></p>
+          </div>
+          <div class="testi-slide">
+            <div class="testi-stars">★★★★★</div>
+            <p class="testi-quote">"Impeccable service. The butler arranged a private dinner on our terrace — the best anniversary we have ever had."</p>
+            <p class="testi-who">Rahul &amp; Ananya Mehta <span>· Mumbai</span></p>
+          </div>
+          <div class="testi-slide">
+            <div class="testi-stars">★★★★★</div>
+            <p class="testi-quote">"The rooftop pool at sunset, the thali at dinner, the spa in the morning — every hour here felt like a celebration."</p>
+            <p class="testi-who">James Whitfield <span>· London</span></p>
+          </div>
+          <div class="testi-slide">
+            <div class="testi-stars">★★★★★</div>
+            <p class="testi-quote">"Booked the Royal Suite for my parents' 40th anniversary. The staff treated them like the king and queen they are."</p>
+            <p class="testi-who">Kavita Reddy <span>· Bengaluru</span></p>
+          </div>
+        </div>
+        <div class="testi-dots" id="testiDots"></div>
+      </div>
+    </section>
+
+    <!-- CONTACT -->
+    <section id="contact">
+      <div class="wrap">
+        <div class="section-head reveal">
+          <span class="eyebrow">Find Us</span>
+          <h2>Visit the <em>Palace</em></h2>
+          <div class="rule"></div>
+          <p>One message on WhatsApp and our concierge will arrange everything — rooms, dining, transfers.</p>
+        </div>
+        <div class="contact-grid">
+          <div class="contact-card reveal">
+            <div class="contact-row">
+              <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 21s-7-5.3-7-11a7 7 0 0 1 14 0c0 5.7-7 11-7 11Z"/><circle cx="12" cy="10" r="2.6"/></svg></div>
+              <div><h4>Address</h4><p>Rajwada Palace Road, Near City Palace,<br />Jaipur, Rajasthan 302002</p></div>
+            </div>
+            <div class="contact-row">
+              <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2Z"/></svg></div>
+              <div><h4>Reservations</h4><p>+91 90000 00000 (demo number)<br />Open 24 hours, every day</p></div>
+            </div>
+            <div class="contact-row">
+              <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></svg></div>
+              <div><h4>Check-in / Check-out</h4><p>Check-in 2 PM · Check-out 12 noon<br />Early check-in on request</p></div>
+            </div>
+            <div style="margin-top:26px;">
+              <a class="btn" href="https://wa.me/919000000000?text=Hi%2C%20I%20want%20to%20plan%20my%20stay%20at%20Rajwada%20Palace%20Hotel" target="_blank" rel="noopener" style="width:100%;justify-content:center;">
+                <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2Zm5.2 13.9c-.2.7-1.3 1.3-1.9 1.4-.5.1-1.1.2-3.6-.8-3-1.2-4.9-4.2-5.1-4.4-.1-.2-1.2-1.6-1.2-3.1s.8-2.2 1-2.5c.3-.3.6-.4.8-.4h.6c.2 0 .4 0 .6.5l.9 2.1c.1.2.1.4 0 .6l-.4.6-.5.5c-.2.2-.3.4-.1.7.2.3.9 1.5 2 2.4 1.4 1.2 2.5 1.6 2.9 1.8.3.2.5.1.7-.1l1-1.2c.2-.3.4-.2.7-.1l2 1c.3.1.5.2.6.4 0 .1 0 .7-.2 1.6Z"/></svg>
+                Chat with Concierge
+              </a>
+            </div>
+          </div>
+          <div class="map-art reveal d1" aria-label="Stylised map showing the hotel location">
+            <div class="map-pin">
+              <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2a7 7 0 0 0-7 7c0 5.2 7 13 7 13s7-7.8 7-13a7 7 0 0 0-7-7Zm0 9.5A2.5 2.5 0 1 1 12 6.5a2.5 2.5 0 0 1 0 5Z"/></svg>
+              <br /><span class="lbl">Rajwada Palace Hotel</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <footer>
+      <div class="wrap">
+        <div class="foot-grid">
+          <div class="foot-brand">
+            <a class="brand" href="#top" style="margin-bottom:14px;display:inline-block;">
+              <span class="name">Rajwada <em>Palace</em></span>
+              <small>Luxury Heritage Hotel</small>
+            </a>
+            <p>A fictional demo website built to showcase premium hotel web design — 3D visuals, smooth animations and WhatsApp booking.</p>
+          </div>
+          <div>
+            <h4>Explore</h4>
+            <a href="#rooms">Rooms &amp; Suites</a>
+            <a href="#amenities">Amenities</a>
+            <a href="#gallery">Gallery</a>
+            <a href="#reviews">Guest Reviews</a>
+          </div>
+          <div>
+            <h4>Contact</h4>
+            <a href="https://wa.me/919000000000" target="_blank" rel="noopener">WhatsApp Concierge</a>
+            <a href="#contact">Location &amp; Hours</a>
+            <a href="#top">Back to Top</a>
+          </div>
+        </div>
+        <div class="foot-bottom">
+          <span>© 2026 The Rajwada Palace Hotel (demo). All rights reserved.</span>
+          <span>Crafted with royal precision.</span>
+        </div>
+        <p class="demo-note">Demo website — phone numbers shown (+91 90000 00000) are sample placeholders, not real.</p>
+      </div>
+    </footer>
+
+    <a class="wa-float" href="https://wa.me/919000000000?text=Hi%2C%20I%20want%20to%20book%20a%20room%20at%20Rajwada%20Palace%20Hotel" target="_blank" rel="noopener" aria-label="Chat on WhatsApp">
+      <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2Zm5.2 13.9c-.2.7-1.3 1.3-1.9 1.4-.5.1-1.1.2-3.6-.8-3-1.2-4.9-4.2-5.1-4.4-.1-.2-1.2-1.6-1.2-3.1s.8-2.2 1-2.5c.3-.3.6-.4.8-.4h.6c.2 0 .4 0 .6.5l.9 2.1c.1.2.1.4 0 .6l-.4.6-.5.5c-.2.2-.3.4-.1.7.2.3.9 1.5 2 2.4 1.4 1.2 2.5 1.6 2.9 1.8.3.2.5.1.7-.1l1-1.2c.2-.3.4-.2.7-.1l2 1c.3.1.5.2.6.4 0 .1 0 .7-.2 1.6Z"/></svg>
+    </a>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script>
+      (function () {
+        "use strict";
+        var prefersReduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+        /* ---------- Mobile nav ---------- */
+        var ham = document.getElementById("hamburger");
+        var links = document.getElementById("navLinks");
+        ham.addEventListener("click", function () {
+          var open = links.classList.toggle("open");
+          ham.setAttribute("aria-expanded", open ? "true" : "false");
+        });
+        links.querySelectorAll("a").forEach(function (a) {
+          a.addEventListener("click", function () { links.classList.remove("open"); });
+        });
+
+        /* ---------- Scroll reveal ---------- */
+        var revealEls = document.querySelectorAll(".reveal");
+        if ("IntersectionObserver" in window && !prefersReduced) {
+          var ro = new IntersectionObserver(function (entries) {
+            entries.forEach(function (e) {
+              if (e.isIntersecting) { e.target.classList.add("visible"); ro.unobserve(e.target); }
+            });
+          }, { threshold: 0.12 });
+          revealEls.forEach(function (el) { ro.observe(el); });
+        } else {
+          revealEls.forEach(function (el) { el.classList.add("visible"); });
+        }
+
+        /* ---------- Animated counters ---------- */
+        var counters = document.querySelectorAll(".num[data-count]");
+        function animateCounter(el) {
+          var target = parseFloat(el.getAttribute("data-count"));
+          var decimals = parseInt(el.getAttribute("data-decimals") || "0", 10);
+          var suffix = el.getAttribute("data-suffix") || "";
+          var dur = 1600, start = null;
+          function fmt(v) {
+            if (decimals > 0) return v.toFixed(decimals);
+            return Math.round(v).toLocaleString("en-IN");
+          }
+          function step(ts) {
+            if (!start) start = ts;
+            var p = Math.min((ts - start) / dur, 1);
+            var eased = 1 - Math.pow(1 - p, 3);
+            el.textContent = fmt(target * eased) + suffix;
+            if (p < 1) requestAnimationFrame(step);
+          }
+          if (prefersReduced) { el.textContent = fmt(target) + suffix; return; }
+          requestAnimationFrame(step);
+        }
+        if ("IntersectionObserver" in window) {
+          var co = new IntersectionObserver(function (entries) {
+            entries.forEach(function (e) {
+              if (e.isIntersecting) { animateCounter(e.target); co.unobserve(e.target); }
+            });
+          }, { threshold: 0.4 });
+          counters.forEach(function (el) { co.observe(el); });
+        } else {
+          counters.forEach(animateCounter);
+        }
+
+        /* ---------- 3D tilt on room cards ---------- */
+        var tiltCards = document.querySelectorAll(".tilt");
+        var fine = window.matchMedia("(pointer: fine)").matches;
+        if (fine && !prefersReduced) {
+          tiltCards.forEach(function (card) {
+            var raf = null;
+            card.addEventListener("mousemove", function (ev) {
+              var r = card.getBoundingClientRect();
+              var px = (ev.clientX - r.left) / r.width - 0.5;
+              var py = (ev.clientY - r.top) / r.height - 0.5;
+              if (raf) cancelAnimationFrame(raf);
+              raf = requestAnimationFrame(function () {
+                card.style.transform = "rotateY(" + (px * 10).toFixed(2) + "deg) rotateX(" + (-py * 10).toFixed(2) + "deg) translateZ(6px)";
+              });
+            });
+            card.addEventListener("mouseleave", function () {
+              if (raf) cancelAnimationFrame(raf);
+              card.style.transition = "transform 0.6s cubic-bezier(0.2,0.8,0.25,1)";
+              card.style.transform = "rotateY(0deg) rotateX(0deg)";
+              setTimeout(function () { card.style.transition = ""; }, 600);
+            });
+          });
+        }
+
+        /* ---------- 3D CSS cube ---------- */
+        var cube = document.getElementById("cube");
+        var cubeBtns = document.querySelectorAll("#cubeBtns .cube-btn");
+        var faceRot = ["rotateY(0deg)", "rotateY(-90deg)", "rotateY(-180deg)", "rotateY(90deg)"];
+        var idleTimer = null;
+        function showFace(i) {
+          cube.style.transform = faceRot[i % 4];
+          cubeBtns.forEach(function (b, j) { b.classList.toggle("active", j === i); });
+        }
+        cubeBtns.forEach(function (b) {
+          b.addEventListener("click", function () {
+            showFace(parseInt(b.getAttribute("data-face"), 10));
+            restartIdle();
+          });
+        });
+        function restartIdle() {
+          if (idleTimer) clearInterval(idleTimer);
+          if (prefersReduced) return;
+          var i = 0;
+          idleTimer = setInterval(function () { i = (i + 1) % 4; showFace(i); }, 4000);
+        }
+        restartIdle();
+
+        /* ---------- Testimonials slider ---------- */
+        var slides = document.querySelectorAll(".testi-slide");
+        var dotsWrap = document.getElementById("testiDots");
+        var cur = 0, slideTimer = null;
+        slides.forEach(function (_, i) {
+          var d = document.createElement("button");
+          d.className = "testi-dot" + (i === 0 ? " active" : "");
+          d.setAttribute("aria-label", "Show review " + (i + 1));
+          d.addEventListener("click", function () { goSlide(i); restartSlides(); });
+          dotsWrap.appendChild(d);
+        });
+        var dots = dotsWrap.querySelectorAll(".testi-dot");
+        function goSlide(i) {
+          cur = i;
+          slides.forEach(function (s, j) { s.classList.toggle("active", j === i); });
+          dots.forEach(function (d, j) { d.classList.toggle("active", j === i); });
+        }
+        function restartSlides() {
+          if (slideTimer) clearInterval(slideTimer);
+          if (prefersReduced) return;
+          slideTimer = setInterval(function () { goSlide((cur + 1) % slides.length); }, 5000);
+        }
+        restartSlides();
+
+        /* ---------- Parallax band ---------- */
+        var pInner = document.getElementById("parallaxInner");
+        var band = pInner ? pInner.closest(".parallax-band") : null;
+        if (band && !prefersReduced) {
+          var ticking = false;
+          window.addEventListener("scroll", function () {
+            if (ticking) return;
+            ticking = true;
+            requestAnimationFrame(function () {
+              var r = band.getBoundingClientRect();
+              var vh = window.innerHeight;
+              if (r.bottom > 0 && r.top < vh) {
+                var prog = (vh - r.top) / (vh + r.height); // 0..1 through view
+                pInner.style.transform = "translateY(" + ((prog - 0.5) * 60).toFixed(1) + "px)";
+              }
+              ticking = false;
+            });
+          }, { passive: true });
+        }
+
+        /* ============================================================
+           THREE.JS HERO — floating golden geometry + particle field
+           ============================================================ */
+        try {
+          if (typeof THREE === "undefined") throw new Error("three.js unavailable");
+          var canvas = document.getElementById("hero-canvas");
+          var renderer = new THREE.WebGLRenderer({ canvas: canvas, alpha: true, antialias: true });
+          renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+          var scene = new THREE.Scene();
+          var camera = new THREE.PerspectiveCamera(55, 1, 0.1, 100);
+          camera.position.set(0, 0, 14);
+
+          var goldMat = new THREE.MeshStandardMaterial({ color: 0xd4af5a, metalness: 0.85, roughness: 0.28, wireframe: true });
+          var softMat = new THREE.MeshStandardMaterial({ color: 0x8fa3d9, metalness: 0.4, roughness: 0.5, wireframe: true, transparent: true, opacity: 0.5 });
+
+          var shapes = [];
+          function addShape(geo, mat, x, y, z, s) {
+            var m = new THREE.Mesh(geo, mat);
+            m.position.set(x, y, z); m.scale.setScalar(s);
+            m.userData = { rx: (Math.random() - 0.5) * 0.004, ry: (Math.random() - 0.5) * 0.006, fy: Math.random() * Math.PI * 2, amp: 0.25 + Math.random() * 0.35, y0: y };
+            scene.add(m); shapes.push(m);
+            return m;
+          }
+          addShape(new THREE.IcosahedronGeometry(1.4, 0), goldMat, -5.2, 1.4, -2, 1.1);
+          addShape(new THREE.OctahedronGeometry(1.1, 0), softMat, 5.4, -1.2, -3, 1.3);
+          addShape(new THREE.TorusGeometry(1.1, 0.32, 10, 28), goldMat, 4.6, 2.4, -4, 0.9);
+          addShape(new THREE.TetrahedronGeometry(1.2, 0), softMat, -4.4, -2.2, -3.5, 1.0);
+          addShape(new THREE.DodecahedronGeometry(0.9, 0), goldMat, 0.4, -2.8, -5, 1.2);
+          addShape(new THREE.TorusKnotGeometry(0.8, 0.24, 64, 10), goldMat, -1.8, 3.0, -6, 0.8);
+
+          // Particle starfield (golden dust)
+          var pCount = 320;
+          var pGeo = new THREE.BufferGeometry();
+          var pos = new Float32Array(pCount * 3);
+          for (var i = 0; i < pCount; i++) {
+            pos[i * 3] = (Math.random() - 0.5) * 26;
+            pos[i * 3 + 1] = (Math.random() - 0.5) * 16;
+            pos[i * 3 + 2] = -2 - Math.random() * 10;
+          }
+          pGeo.setAttribute("position", new THREE.BufferAttribute(pos, 3));
+          var pMat = new THREE.PointsMaterial({ color: 0xe8c97a, size: 0.06, transparent: true, opacity: 0.75 });
+          var particles = new THREE.Points(pGeo, pMat);
+          scene.add(particles);
+
+          scene.add(new THREE.AmbientLight(0xffffff, 0.55));
+          var key = new THREE.DirectionalLight(0xffe6b0, 1.1); key.position.set(6, 8, 6); scene.add(key);
+          var rim = new THREE.DirectionalLight(0x6f86d6, 0.6); rim.position.set(-6, -4, -4); scene.add(rim);
+
+          var mouseX = 0, mouseY = 0;
+          window.addEventListener("mousemove", function (e) {
+            mouseX = (e.clientX / window.innerWidth - 0.5) * 2;
+            mouseY = (e.clientY / window.innerHeight - 0.5) * 2;
+          }, { passive: true });
+
+          function resize() {
+            var w = canvas.clientWidth || canvas.parentElement.clientWidth;
+            var h = canvas.clientHeight || canvas.parentElement.clientHeight;
+            renderer.setSize(w, h, false);
+            camera.aspect = w / h;
+            camera.updateProjectionMatrix();
+          }
+          window.addEventListener("resize", resize);
+          resize();
+
+          var clock = new THREE.Clock();
+          var heroVisible = true;
+          if ("IntersectionObserver" in window) {
+            new IntersectionObserver(function (en) { heroVisible = en[0].isIntersecting; }).observe(canvas.parentElement);
+          }
+          (function animate() {
+            requestAnimationFrame(animate);
+            if (!heroVisible) return;
+            var t = clock.getElapsedTime();
+            shapes.forEach(function (m) {
+              m.rotation.x += m.userData.rx;
+              m.rotation.y += m.userData.ry;
+              m.position.y = m.userData.y0 + Math.sin(t * 0.7 + m.userData.fy) * m.userData.amp;
+            });
+            particles.rotation.y = t * 0.02;
+            camera.position.x += (mouseX * 1.6 - camera.position.x) * 0.04;
+            camera.position.y += (-mouseY * 1.1 - camera.position.y) * 0.04;
+            camera.lookAt(0, 0, 0);
+            renderer.render(scene, camera);
+          })();
+        } catch (err) {
+          // WebGL / CDN failure: hero keeps its dark gradient fallback.
+          var c = document.getElementById("hero-canvas");
+          if (c) c.style.display = "none";
+        }
+      })();
+    </script>
+  </body>
+</html>
