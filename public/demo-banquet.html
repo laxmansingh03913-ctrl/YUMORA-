@@ -941,5 +941,50 @@
         secs.forEach(function (s) { io.observe(s); });
       })();
     </script>
-  </body>
+  <script>
+/* Currency toggle: USD $ <-> INR (added 2026-11-01; USD stays default) */
+(function () {
+  var RATE = 90;
+  var els = document.querySelectorAll('.amt, .price');
+  var items = [];
+  for (var i = 0; i < els.length; i++) {
+    var el = els[i];
+    var m = el.textContent.match(/\$\s*([\d,]+(?:\.\d+)?)/);
+    if (!m) continue;
+    var usd = parseFloat(m[1].replace(/,/g, ''));
+    var inr = Math.round(usd * RATE / 50) * 50;
+    var inrStr = '₹' + inr.toLocaleString('en-IN');
+    items.push({
+      el: el,
+      usdHTML: el.innerHTML,
+      inrHTML: el.innerHTML.replace(/\$\s*[\d,]+(?:\.\d+)?/, inrStr)
+    });
+  }
+  if (!items.length) return;
+  var mode = 'usd';
+  var btn = document.createElement('button');
+  btn.type = 'button';
+  btn.id = 'currency-toggle';
+  btn.setAttribute('aria-label', 'Switch currency between USD and INR');
+  btn.style.cssText = 'position:fixed;right:14px;bottom:14px;z-index:2147483647;' +
+    'background:rgba(12,12,16,.88);color:#f5d67b;border:1px solid rgba(245,214,123,.55);' +
+    'border-radius:999px;padding:8px 14px;font:600 13px/1.4 system-ui,-apple-system,sans-serif;' +
+    'cursor:pointer;box-shadow:0 4px 18px rgba(0,0,0,.35);';
+  function paint() {
+    btn.innerHTML = mode === 'usd'
+      ? '<span style="opacity:1;text-decoration:underline">$ USD</span><span style="opacity:.45;margin:0 6px">|</span><span style="opacity:.55">₹ INR</span>'
+      : '<span style="opacity:.55">$ USD</span><span style="opacity:.45;margin:0 6px">|</span><span style="opacity:1;text-decoration:underline">₹ INR</span>';
+  }
+  btn.addEventListener('click', function () {
+    mode = (mode === 'usd') ? 'inr' : 'usd';
+    for (var j = 0; j < items.length; j++) {
+      items[j].el.innerHTML = (mode === 'usd') ? items[j].usdHTML : items[j].inrHTML;
+    }
+    paint();
+  });
+  paint();
+  document.body.appendChild(btn);
+})();
+</script>
+</body>
 </html>
