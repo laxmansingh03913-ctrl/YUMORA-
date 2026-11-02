@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Mimi's Sweets Bakery | Cypress, Texas</title>
+<meta name="description" content="Mimi's Sweets Bakery — homemade custom cakes, cupcakes and cake pops in Cypress, Texas. Made to order!" />
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: Georgia, 'Times New Roman', serif; background: #fff9f4; color: #4a2c1a; line-height: 1.6; }
+  h1, h2, h3 { font-family: 'Trebuchet MS', Verdana, sans-serif; }
+  .wrap { max-width: 900px; margin: 0 auto; padding: 0 20px; }
+  header.hero { position: relative; text-align: center; color: #fff; }
+  header.hero img { width: 100%; height: 420px; object-fit: cover; display: block; }
+  .hero-text { position: absolute; inset: 0; display: flex; flex-direction: column; justify-content: center; align-items: center; background: rgba(60,25,10,.45); padding: 20px; }
+  .hero-text h1 { font-size: 2.6rem; margin-bottom: 8px; text-shadow: 0 2px 8px rgba(0,0,0,.5); }
+  .hero-text p { font-size: 1.2rem; margin-bottom: 20px; }
+  .btn { display: inline-block; background: #d46a8a; color: #fff; padding: 14px 34px; border-radius: 999px; text-decoration: none; font-family: 'Trebuchet MS', sans-serif; font-weight: bold; font-size: 1.05rem; box-shadow: 0 6px 18px rgba(212,106,138,.4); }
+  .btn:hover { background: #bd5777; }
+  section { padding: 56px 0; }
+  section h2 { text-align: center; font-size: 1.9rem; margin-bottom: 8px; color: #7a3b22; }
+  .sub { text-align: center; color: #9a6b4f; margin-bottom: 32px; }
+  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 24px; }
+  .card { background: #fff; border-radius: 16px; overflow: hidden; box-shadow: 0 10px 28px rgba(150,90,50,.12); }
+  .card img { width: 100%; height: 200px; object-fit: cover; display: block; }
+  .card-body { padding: 20px; }
+  .card-body h3 { margin-bottom: 6px; color: #7a3b22; }
+  .price { font-family: 'Trebuchet MS', sans-serif; font-weight: bold; color: #d46a8a; font-size: 1.15rem; margin-top: 8px; }
+  .about { background: #fff; border-radius: 16px; padding: 32px; box-shadow: 0 10px 28px rgba(150,90,50,.10); text-align: center; }
+  .badges { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin-top: 18px; }
+  .badge { background: #fbe9ef; color: #a04a68; padding: 8px 16px; border-radius: 999px; font-family: 'Trebuchet MS', sans-serif; font-size: .9rem; }
+  .cta { text-align: center; background: linear-gradient(135deg, #7a3b22, #b25a3a); color: #fff; border-radius: 20px; padding: 48px 24px; }
+  .cta h2 { color: #fff; }
+  .cta p { margin: 12px 0 24px; color: #f7ddd0; }
+  .cta .btn { background: #fff; color: #7a3b22; box-shadow: none; }
+  footer { text-align: center; padding: 28px 20px; color: #9a6b4f; font-size: .9rem; }
+  .demo-note { text-align:center; font-size:.8rem; color:#b89a82; padding: 10px; }
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <img src="demo-img/mimis/media-generation-mimis-hero-0-3d455b6d-a255-49f1-9bdb-3e8185bfbedc.webp" alt="Homemade bakery treats" />
+  <div class="hero-text">
+    <h1>Mimi's Sweets Bakery</h1>
+    <p>Baked with a dainty twist — Cypress, Texas</p>
+    <a class="btn" href="https://ig.me/m/mimissweetsbakery">Order on Instagram</a>
+  </div>
+</header>
+
+<div class="wrap">
+  <section>
+    <h2>Our Treats</h2>
+    <p class="sub">Made to order, delivered to you</p>
+    <div class="cards">
+      <div class="card">
+        <img src="demo-img/mimis/media-generation-mimis-cupcakes-0-4d91851d-2e23-44f9-9da2-820d613be50d.webp" alt="Cupcakes" />
+        <div class="card-body">
+          <h3>Signature Cupcake Box</h3>
+          <p>One dozen frosted cupcakes with sprinkles — pick your flavors!</p>
+          <p class="price">$24 / dozen</p>
+        </div>
+      </div>
+      <div class="card">
+        <img src="demo-img/mimis/media-generation-mimis-cake-0-55df618c-f90f-46a0-9ed0-4ad50e488a53.webp" alt="Celebration cake" />
+        <div class="card-body">
+          <h3>Custom Celebration Cake</h3>
+          <p>Birthdays, weddings &amp; more — designed just for your day.</p>
+          <p class="price">from $65</p>
+        </div>
+      </div>
+      <div class="card">
+        <img src="demo-img/mimis/media-generation-mimis-pops-0-0cb00517-9d99-4fed-b4d2-e62d7e55347d.webp" alt="Cake pops" />
+        <div class="card-body">
+          <h3>Cake Pops &amp; More</h3>
+          <p>Bite-size sweetness for parties, dessert tables &amp; gifts.</p>
+          <p class="price">$30 / dozen</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="about">
+      <h2>About Mimi's</h2>
+      <p>A home bakery in Cypress, Texas, baking custom sweets with love. Every order is made fresh, just for you — from cupcake bars to full dessert tables.</p>
+      <div class="badges">
+        <span class="badge">Food Handler Certified</span>
+        <span class="badge">Made to Order</span>
+        <span class="badge">Cypress · Hockley · Waller</span>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="cta">
+      <h2>Craving Something Sweet?</h2>
+      <p>Message us on Instagram to place your order — we bake it fresh for you!</p>
+      <a class="btn" href="https://ig.me/m/mimissweetsbakery">DM to Order</a>
+    </div>
+  </section>
+</div>
+
+<footer>
+  Mimi's Sweets Bakery · Cypress, Texas<br/>
+  <span class="demo-note">Demo website crafted by Sites by Abhishek</span>
+</footer>
+
+</body>
+</html>
