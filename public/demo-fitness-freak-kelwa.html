@@ -3,204 +3,210 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>फिटनेस फ्रीक जिम — केलवा | मजबूत बनो, फिट रहो</title>
-<meta name="description" content="फिटनेस फ्रीक जिम, केलवा — आधुनिक उपकरण, सर्टिफाइड ट्रेनर, पर्सनल ट्रेनिंग।">
+<title>फिटनेस फ्रीक जिम — केलवा | हर दिन और मज़बूत</title>
+<meta name="description" content="फिटनेस फ्रीक जिम, केलवा — पर्सनल ट्रेनिंग, न्यूट्रिशन प्लान, एक्सपर्ट कोच।">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Jost:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&family=Jost:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
-:root{--org:#ff5a1f;--org-dk:#d63f0a;--red:#e63900;--blk:#121212;--blk2:#1c1c1c;--cream:#faf8f5;--ink:#222;--mut:#8a8a8a}
+:root{--teal:#14b8a6;--teal-dk:#0f766e;--ink:#101c1a;--dark:#0e1b19;--cream:#faf8f3;--mint:#e6f7f4;--mut:#6b7f7c}
 body{font-family:'Jost',system-ui,sans-serif;color:var(--ink);background:var(--cream);line-height:1.6}
-h1,h2,h3,.serif{font-family:'Playfair Display',Georgia,serif}
+h1,h2,h3,.disp{font-family:'Archivo',sans-serif}
 .demo-badge{position:fixed;top:10px;right:10px;background:#d32f2f;color:#fff;font-size:11px;font-weight:700;padding:5px 12px;border-radius:20px;z-index:1000;letter-spacing:.5px}
-.util{background:#0b0b0b;color:var(--org);font-size:12.5px;padding:8px 0;letter-spacing:.4px}
-.util .wrap{max-width:1200px;margin:auto;padding:0 20px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:6px}
-.util a{color:var(--org);text-decoration:none;margin-left:18px}
-.nav{background:linear-gradient(180deg,#1a1a1a,#111);position:sticky;top:0;z-index:200;box-shadow:0 2px 14px rgba(0,0,0,.4);border-bottom:2px solid var(--org)}
-.nav .wrap{max-width:1200px;margin:auto;padding:0 20px;display:flex;align-items:center;justify-content:space-between;height:70px}
-.logo{display:flex;align-items:center;gap:11px;color:#fff;text-decoration:none}
-.logo .mark{width:42px;height:42px;border-radius:12px;background:linear-gradient(135deg,var(--org),var(--red));display:flex;align-items:center;justify-content:center;font-size:22px}
-.logo b{font-size:21px;letter-spacing:.5px}.logo b span{color:var(--org)}
-.logo small{display:block;font-family:'Jost';font-size:9px;letter-spacing:4px;font-weight:400;color:var(--org)}
+.nav{position:sticky;top:0;z-index:200;background:rgba(250,248,243,.92);backdrop-filter:blur(10px);border-bottom:1px solid #eee9dd}
+.nav .wrap{max-width:1200px;margin:auto;padding:0 20px;height:66px;display:flex;align-items:center;justify-content:space-between}
+.logo{display:flex;align-items:center;gap:9px;text-decoration:none;color:var(--ink);font-family:'Archivo';font-weight:800;font-size:19px;letter-spacing:2px}
+.logo .v{width:32px;height:32px;border-radius:8px;background:linear-gradient(135deg,var(--teal),var(--teal-dk));color:#fff;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:800}
 .links{display:flex;gap:28px;list-style:none}
-.links a{color:#eee;text-decoration:none;font-size:13px;letter-spacing:1.6px;font-weight:500;opacity:.9;padding:6px 0;position:relative}
-.links a:hover,.links a.on{opacity:1;color:var(--org)}
-.links a.on::after{content:"";position:absolute;left:0;right:0;bottom:0;height:2px;background:var(--org);border-radius:2px}
-.icons{display:flex;gap:16px;align-items:center}
-.icons a{color:var(--org);text-decoration:none;font-size:19px}
-.hero{position:relative;min-height:580px;display:flex;align-items:center;overflow:hidden;background:#0b0b0b}
-.hero-bg{position:absolute;inset:0;background:url('demo-img/gym/hero.jpg') center/cover no-repeat;opacity:.85}
-.hero::after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,rgba(0,0,0,.82) 20%,rgba(0,0,0,.25) 60%,transparent)}
-.hero .wrap{position:relative;max-width:1200px;margin:auto;padding:70px 20px;width:100%;z-index:2}
-.eyebrow{color:var(--org);font-size:12px;letter-spacing:5px;margin-bottom:14px;font-weight:600}
-.hero h1{color:#fff;font-size:clamp(38px,6vw,62px);line-height:1.12;font-weight:700;max-width:520px;margin-bottom:18px}
-.hero h1 span{color:var(--org)}
-.hero p{color:#ddd;font-size:17px;max-width:440px;margin-bottom:30px;font-weight:300}
-.hero-btns{display:flex;gap:16px;flex-wrap:wrap}
-.btn{display:inline-flex;align-items:center;gap:10px;background:linear-gradient(135deg,var(--org),var(--red));color:#fff;padding:14px 36px;border-radius:40px;text-decoration:none;font-weight:700;font-size:14px;letter-spacing:1.5px;border:none;cursor:pointer;transition:.25s}
-.btn:hover{transform:translateY(-2px);box-shadow:0 10px 26px rgba(255,90,31,.4)}
-.btn-ghost{background:transparent;color:#fff;border:1.5px solid rgba(255,255,255,.6)}
-.btn-ghost:hover{background:rgba(255,255,255,.08);box-shadow:none}
-.trust{max-width:1100px;margin:-46px auto 0;padding:0 20px;position:relative;z-index:3}
-.trust-card{background:#fff;border-radius:18px;box-shadow:0 14px 40px rgba(0,0,0,.18);display:grid;grid-template-columns:repeat(4,1fr);padding:26px 10px;border-top:3px solid var(--org)}
-.t-item{display:flex;gap:14px;align-items:center;justify-content:center;padding:6px 10px}
-.t-item + .t-item{border-left:1px solid #f0e2d6}
-.t-ico{width:46px;height:46px;border-radius:50%;background:#fff1e8;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0}
-.t-item b{display:block;font-size:14.5px}.t-item span{font-size:12px;color:var(--mut)}
-section{max-width:1200px;margin:auto;padding:70px 20px 10px}
-.sec-head{text-align:center;margin-bottom:38px}
-.sec-head .kicker{font-size:12px;letter-spacing:5px;color:var(--org-dk);margin-bottom:8px;font-weight:600}
-.sec-head h2{font-size:clamp(26px,4vw,36px);font-weight:700}
-.progs{display:grid;grid-template-columns:repeat(4,1fr);gap:20px}
-.prog{border-radius:18px;overflow:hidden;position:relative;height:320px;box-shadow:0 8px 26px rgba(0,0,0,.16);text-decoration:none;display:block}
-.prog img{width:100%;height:100%;object-fit:cover;transition:.4s}
-.prog:hover img{transform:scale(1.06)}
-.prog .pl{position:absolute;bottom:0;left:0;right:0;padding:44px 20px 20px;background:linear-gradient(180deg,transparent,rgba(0,0,0,.85));color:#fff}
-.prog .pl b{font-size:19px;display:block}
-.prog .pl span{font-size:13px;color:#ffb894}
-.plans{display:grid;grid-template-columns:repeat(3,1fr);gap:22px;max-width:960px;margin:auto}
-.plan{background:#fff;border-radius:20px;padding:38px 30px;text-align:center;box-shadow:0 8px 26px rgba(0,0,0,.09);border:2px solid transparent;transition:.3s;position:relative}
-.plan.hot{border-color:var(--org);transform:scale(1.04);box-shadow:0 16px 40px rgba(255,90,31,.2)}
-.plan .tag{position:absolute;top:-14px;left:50%;transform:translateX(-50%);background:linear-gradient(135deg,var(--org),var(--red));color:#fff;font-size:11px;font-weight:700;letter-spacing:1.5px;padding:5px 18px;border-radius:20px}
-.plan h3{font-size:20px;margin-bottom:6px}
-.plan .pr{font-size:42px;font-weight:700;color:var(--org-dk);margin:10px 0 4px}
-.plan .pr small{font-size:15px;color:var(--mut);font-weight:400}
-.plan ul{list-style:none;margin:18px 0 24px;text-align:left}
-.plan ul li{padding:7px 0;font-size:14.5px;color:#444;border-bottom:1px dashed #eee}
-.plan ul li::before{content:"✓ ";color:var(--org);font-weight:700}
-.bmi{max-width:700px;margin:50px auto 0;background:var(--blk2);border-radius:20px;padding:40px 34px;color:#fff;text-align:center}
-.bmi h2{margin-bottom:6px}.bmi h2 span{color:var(--org)}
-.bmi p{color:#bbb;font-size:14px;margin-bottom:22px}
-.bmi .row{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;margin-bottom:20px}
-.bmi label{font-size:13px;color:#ffb894;display:block;margin-bottom:6px;letter-spacing:1px}
-.bmi input{width:150px;padding:12px;border-radius:12px;border:1.5px solid #444;background:#111;color:#fff;font-size:16px;text-align:center;font-family:'Jost'}
-.bmi-res{font-size:20px;font-weight:600;min-height:30px}
-.bmi-res b{color:var(--org)}
-.trainer{display:grid;grid-template-columns:1fr 1fr;gap:34px;align-items:center;background:#fff;border-radius:20px;overflow:hidden;box-shadow:0 8px 26px rgba(0,0,0,.09);max-width:1000px;margin:50px auto 0}
-.trainer img{width:100%;height:100%;object-fit:cover;min-height:340px}
-.trainer .tx{padding:44px 40px}
-.trainer .tx .k{font-size:11px;letter-spacing:4px;color:var(--org-dk);font-weight:600;margin-bottom:10px}
-.trainer .tx h2{font-size:30px;margin-bottom:12px}
-.trainer .tx p{color:#555;margin-bottom:18px}
-.cta-band{background:linear-gradient(120deg,#e63900,#ff5a1f);border-radius:22px;color:#fff;text-align:center;padding:54px 30px;margin-top:60px}
-.cta-band h2{font-size:clamp(26px,4vw,36px);margin-bottom:12px}
-.cta-band p{max-width:600px;margin:0 auto 26px;font-size:17px;opacity:.95}
-.btn-white{background:#fff;color:#d63f0a}
-.contact-grid{display:grid;grid-template-columns:1fr 1fr;gap:26px;margin-top:40px}
-.contact-card{background:#fff;border-radius:16px;padding:30px;box-shadow:0 4px 18px rgba(0,0,0,.07)}
-.contact-card h3{color:var(--org-dk);margin-bottom:14px;font-size:20px}
-.contact-card p{margin-bottom:10px;color:#444}.contact-card a{color:var(--org-dk);font-weight:600}
-input.ta,textarea.ta{width:100%;padding:12px 14px;margin-bottom:12px;border:1.5px solid #ddd;border-radius:10px;font-size:15px;font-family:inherit}
-footer{background:#0b0b0b;color:#bdbdbd;margin-top:60px;border-top:2px solid var(--org)}
+.links a{color:var(--ink);text-decoration:none;font-size:14px;font-weight:500}
+.links a:hover{color:var(--teal-dk)}
+.nav .cta{display:flex;gap:12px;align-items:center}
+.btn{display:inline-flex;align-items:center;gap:10px;background:var(--teal);color:#fff;padding:12px 28px;border-radius:30px;text-decoration:none;font-weight:600;font-size:14px;border:none;cursor:pointer;transition:.25s}
+.btn:hover{background:var(--teal-dk);transform:translateY(-2px);box-shadow:0 10px 22px rgba(20,184,166,.35)}
+.btn-dark{background:var(--ink);color:#fff}
+.btn-dark:hover{background:#000;box-shadow:0 10px 22px rgba(0,0,0,.25)}
+.btn .arr{width:26px;height:26px;border-radius:50%;background:var(--teal);display:inline-flex;align-items:center;justify-content:center;font-size:14px}
+.btn-dark .arr{background:var(--teal)}
+.hero{max-width:1200px;margin:auto;padding:50px 20px 30px;display:grid;grid-template-columns:1fr 1fr;gap:30px;align-items:center;position:relative}
+.hero::before{content:"";position:absolute;right:-120px;top:-40px;width:520px;height:520px;background:radial-gradient(circle,rgba(20,184,166,.16),transparent 70%);z-index:0}
+.hero-txt{position:relative;z-index:1}
+.hero-txt h1{font-size:clamp(44px,7vw,84px);line-height:1.02;font-weight:800;letter-spacing:-1px;margin-bottom:18px}
+.hero-txt h1 span{color:var(--teal)}
+.hero-txt p{color:var(--mut);font-size:17px;max-width:380px;margin-bottom:28px}
+.members{display:flex;align-items:center;gap:12px;margin-top:26px}
+.avas{display:flex}
+.avas span{width:38px;height:38px;border-radius:50%;border:3px solid var(--cream);margin-left:-12px;background:linear-gradient(135deg,var(--teal),var(--teal-dk));color:#fff;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:600}
+.avas span:first-child{margin-left:0}
+.avas span:nth-child(2){background:linear-gradient(135deg,#f59e0b,#d97706)}
+.avas span:nth-child(3){background:linear-gradient(135deg,#8b5cf6,#6d28d9)}
+.avas span:nth-child(4){background:linear-gradient(135deg,#ec4899,#be185d)}
+.members small{font-size:13px;color:var(--mut);line-height:1.4}
+.members small b{color:var(--ink)}
+.hero-vis{position:relative;z-index:1}
+.hero-img{border-radius:40% 60% 55% 45%/45% 45% 55% 55%;overflow:hidden;box-shadow:0 30px 60px rgba(15,118,110,.22);aspect-ratio:4/4.6}
+.hero-img img{width:100%;height:100%;object-fit:cover}
+.pcard{position:absolute;right:6%;bottom:8%;background:#fff;border-radius:20px;box-shadow:0 20px 50px rgba(0,0,0,.14);padding:20px 22px;width:230px}
+.pcard h4{font-size:13px;font-weight:600;margin-bottom:12px;font-family:'Jost'}
+.ringwrap{display:flex;justify-content:center;margin-bottom:14px;position:relative}
+.ringwrap .pct{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center}
+.ringwrap .pct b{font-size:22px;font-family:'Archivo'}
+.ringwrap .pct small{display:block;font-size:10px;color:var(--mut)}
+.prow{display:flex;align-items:center;gap:10px;font-size:12.5px;padding:7px 0;border-top:1px solid #f1ece1}
+.prow .ic{width:28px;height:28px;border-radius:8px;background:var(--mint);display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0}
+.prow b{margin-left:auto;font-weight:600}
+.prow .ok{color:var(--teal);font-weight:700}
+.approach{max-width:1200px;margin:40px auto 0;padding:0 20px}
+.ap-card{background:var(--dark);border-radius:26px;padding:40px 44px;color:#fff}
+.ap-card .k{font-size:11px;letter-spacing:4px;color:var(--teal);margin-bottom:22px;font-weight:600}
+.ap-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:26px}
+.ap-item .ic{font-size:26px;color:var(--teal);margin-bottom:12px}
+.ap-item b{display:block;font-size:16px;margin-bottom:8px}
+.ap-item p{font-size:13.5px;color:#9db8b4;font-weight:300}
+.ap-item + .ap-item{border-left:1px solid rgba(255,255,255,.1);padding-left:26px}
+section{max-width:1200px;margin:auto;padding:64px 20px 10px}
+.sec-k{font-size:12px;letter-spacing:4px;color:var(--ink);font-weight:700;margin-bottom:26px;border-bottom:3px solid var(--teal);display:inline-block;padding-bottom:6px}
+.paths{display:grid;grid-template-columns:repeat(4,1fr) 1.35fr;gap:18px}
+.path{background:#fff;border-radius:20px;overflow:hidden;box-shadow:0 8px 24px rgba(0,0,0,.07);text-decoration:none;color:var(--ink);transition:.3s;display:flex;flex-direction:column}
+.path:hover{transform:translateY(-6px);box-shadow:0 16px 36px rgba(15,118,110,.18)}
+.path .ph{height:170px;overflow:hidden}
+.path .ph img{width:100%;height:100%;object-fit:cover;transition:.4s}
+.path:hover .ph img{transform:scale(1.07)}
+.path .pb{padding:18px}
+.path .pb b{font-size:15.5px;display:block;margin-bottom:4px}
+.path .pb p{font-size:13px;color:var(--mut);font-weight:300}
+.path .pb span{font-size:12px;color:var(--teal-dk);font-weight:600}
+.vcard{border-radius:20px;overflow:hidden;position:relative;min-height:340px;background:url('demo-img/gym/trainer.jpg') center/cover;display:flex;align-items:flex-end;text-decoration:none}
+.vcard::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,transparent 30%,rgba(0,0,0,.78))}
+.vcard .vt{position:relative;z-index:1;padding:26px;color:#fff}
+.vcard .vt b{font-family:'Archivo';font-size:21px;line-height:1.25;display:block;margin-bottom:8px}
+.vcard .vt p{font-size:13px;color:#cfe3e0;font-weight:300}
+.vplay{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:62px;height:62px;border-radius:50%;background:rgba(255,255,255,.92);display:flex;align-items:center;justify-content:center;font-size:20px;color:var(--ink);z-index:1;box-shadow:0 10px 30px rgba(0,0,0,.3)}
+.stats{max-width:1200px;margin:50px auto 0;padding:0 20px}
+.stats-card{background:linear-gradient(120deg,#d9f3ef,#eefaf7);border-radius:24px;padding:36px 40px;display:grid;grid-template-columns:1.1fr repeat(4,1fr);gap:20px;align-items:center}
+.stats-card .sl b{font-family:'Archivo';font-size:19px;line-height:1.3;display:block}
+.stats-card .sl span{color:var(--teal-dk);font-size:22px}
+.stat{text-align:center}
+.stat .ic{font-size:22px;color:var(--teal-dk);margin-bottom:6px}
+.stat b{font-family:'Archivo';font-size:26px;display:block}
+.stat span{font-size:12.5px;color:var(--mut)}
+.stat + .stat{border-left:1px solid #c9e8e2}
+.cta-sec{max-width:1200px;margin:50px auto 0;padding:0 20px}
+.cta-card{background:var(--dark);border-radius:26px;overflow:hidden;display:grid;grid-template-columns:1fr 1fr;align-items:center;position:relative}
+.cta-card .ci{background:url('demo-img/gym/cardio.jpg') center/cover;min-height:300px}
+.cta-card .ct{padding:50px 46px;color:#fff}
+.cta-card .ct .k{font-size:11px;letter-spacing:4px;color:var(--teal);font-weight:600;margin-bottom:14px}
+.cta-card .ct h2{font-size:clamp(24px,3.4vw,34px);margin-bottom:12px;line-height:1.25}
+.cta-card .ct p{color:#9db8b4;font-size:14.5px;margin-bottom:26px;font-weight:300;max-width:360px}
+.contact-sec{max-width:1200px;margin:auto;padding:64px 20px 10px}
+.c-grid{display:grid;grid-template-columns:1fr 1fr;gap:26px;margin-top:26px}
+.c-card{background:#fff;border-radius:18px;padding:32px;box-shadow:0 8px 24px rgba(0,0,0,.07)}
+.c-card h3{margin-bottom:14px;font-size:19px}
+.c-card p{margin-bottom:10px;color:#444;font-size:15px}.c-card a{color:var(--teal-dk);font-weight:600}
+.c-card input,.c-card textarea{width:100%;padding:12px 14px;margin-bottom:12px;border:1.5px solid #e3ddd0;border-radius:12px;font-size:15px;font-family:inherit;background:var(--cream)}
+footer{background:var(--dark);color:#9db8b4;margin-top:60px}
 footer .wrap{max-width:1200px;margin:auto;padding:46px 20px 24px;display:grid;grid-template-columns:1.4fr 1fr 1fr 1fr;gap:30px}
-footer h4{color:var(--org);font-size:14px;letter-spacing:2px;margin-bottom:16px;font-family:'Jost';font-weight:600}
-footer a{color:#bdbdbd;text-decoration:none;font-size:14px;display:block;margin-bottom:9px}
-footer p{font-size:13.5px;max-width:280px}
-.copy{border-top:1px solid #2a2a2a;text-align:center;padding:18px;font-size:12.5px;color:#777}
-.copy a{color:var(--org)}
-.wa-float{position:fixed;bottom:20px;right:20px;background:#25d366;color:#fff;width:58px;height:58px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:30px;text-decoration:none;z-index:1000;box-shadow:0 8px 20px rgba(0,0,0,.3)}
-.toast{position:fixed;bottom:26px;left:50%;transform:translateX(-50%) translateY(80px);background:#141414;border:1px solid var(--org);color:var(--org);padding:13px 28px;border-radius:40px;font-size:14px;z-index:1001;transition:.35s;opacity:0}
+footer h4{color:#fff;font-size:13px;letter-spacing:2px;margin-bottom:16px;font-family:'Jost';font-weight:600}
+footer a{color:#9db8b4;text-decoration:none;font-size:14px;display:block;margin-bottom:9px;font-weight:300}
+footer p{font-size:13.5px;max-width:280px;font-weight:300}
+.copy{border-top:1px solid rgba(255,255,255,.1);text-align:center;padding:18px;font-size:12.5px;color:#6b8a86}
+.copy a{color:var(--teal)}
+.wa-float{position:fixed;bottom:20px;right:20px;background:#25d366;color:#fff;width:58px;height:58px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:30px;text-decoration:none;z-index:1000;box-shadow:0 8px 20px rgba(0,0,0,.25)}
+.toast{position:fixed;bottom:26px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--ink);color:#fff;padding:13px 28px;border-radius:40px;font-size:14px;z-index:1001;transition:.35s;opacity:0}
 .toast.show{transform:translateX(-50%) translateY(0);opacity:1}
-@media(max-width:900px){.links{display:none}.progs{grid-template-columns:repeat(2,1fr)}.plans{grid-template-columns:1fr;max-width:420px}.plan.hot{transform:none}.trust-card{grid-template-columns:repeat(2,1fr);gap:18px}.t-item + .t-item{border-left:none}.trainer{grid-template-columns:1fr}.contact-grid{grid-template-columns:1fr}footer .wrap{grid-template-columns:1fr 1fr}}
+@media(max-width:960px){.links{display:none}.hero{grid-template-columns:1fr}.ap-grid{grid-template-columns:repeat(2,1fr);gap:22px}.ap-item + .ap-item{border-left:none;padding-left:0}.paths{grid-template-columns:repeat(2,1fr)}.vcard{grid-column:span 2;min-height:280px}.stats-card{grid-template-columns:repeat(2,1fr);gap:24px}.stat + .stat{border-left:none}.cta-card{grid-template-columns:1fr}.c-grid{grid-template-columns:1fr}footer .wrap{grid-template-columns:1fr 1fr}}
 </style>
 </head>
 <body>
 <div class="demo-badge">DEMO PREVIEW</div>
 
-<div class="util"><div class="wrap">
-<span>📞 <a href="tel:+919000000000">090000 00000</a> &nbsp;•&nbsp; ⏰ सुबह 5 – रात 10</span>
-<span>📍 बस स्टैंड, सांवरिया कॉम्प्लेक्स, केलवा</span>
-</div></div>
-
 <nav class="nav"><div class="wrap">
-<a class="logo" href="#"><span class="mark">💪</span><span><b>फिटनेस <span>फ्रीक</span></b><small>GYM • KELWA</small></span></a>
-<ul class="links">
-<li><a href="#" class="on">मुख्य पृष्ठ</a></li><li><a href="#programs">प्रोग्राम</a></li><li><a href="#plans">मेम्बरशिप</a></li><li><a href="#bmi">BMI</a></li><li><a href="#contact">संपर्क</a></li>
-</ul>
-<div class="icons"><a href="tel:+919000000000" title="कॉल करें">📞</a></div>
+<a class="logo" href="#"><span class="v">V</span>फिटनेस फ्रीक</a>
+<ul class="links"><li><a href="#paths">प्रोग्राम</a></li><li><a href="#paths">न्यूट्रिशन</a></li><li><a href="#approach">कोचिंग</a></li><li><a href="#stats">सक्सेस</a></li><li><a href="#contact">प्राइसिंग</a></li></ul>
+<div class="cta"><a class="btn" href="https://wa.me/919000000000?text=नमस्ते!%20मुझे%20फ्री%20ट्रायल%20चाहिए।" target="_blank">फ्री ट्रायल शुरू करें</a></div>
 </div></nav>
 
-<div class="hero"><div class="hero-bg"></div><div class="wrap">
-<div class="eyebrow">NO PAIN • NO GAIN</div>
-<h1>मजबूत बनो,<br><span>फिट रहो।</span></h1>
-<p>केलवा का सबसे धांसू जिम — आधुनिक मशीनें, सर्टिफाइड ट्रेनर, और आपका फिटनेस लक्ष्य।</p>
-<div class="hero-btns">
-<a class="btn" href="#plans">मेम्बरशिप लें &nbsp;→</a>
-<a class="btn btn-ghost" href="https://wa.me/919000000000?text=नमस्ते!%20मुझे%20जिम%20की%20फ्री%20ट्रायल%20क्लास%20चाहिए।" target="_blank">फ्री ट्रायल क्लास</a>
+<div class="hero">
+<div class="hero-txt">
+<h1>हर दिन<br><span>और मज़बूत।</span></h1>
+<p>पर्सनल ट्रेनिंग, स्मार्ट न्यूट्रिशन — असली नतीजे, जो टिकें।</p>
+<a class="btn btn-dark" href="#paths">अपना सफर शुरू करें <span class="arr">→</span></a>
+<div class="members"><div class="avas"><span>💪</span><span>🏃</span><span>🧘</span><span>🥗</span></div>
+<small><b>500+ मेंबर्स</b><br>अपनी ज़िंदगी बदल रहे हैं</small></div>
+</div>
+<div class="hero-vis">
+<div class="hero-img"><img src="demo-img/gym/hero-light.jpg" alt="फिटनेस ट्रेनिंग"></div>
+<div class="pcard"><h4>आज की प्रगति</h4>
+<div class="ringwrap">
+<svg width="110" height="110" viewBox="0 0 110 110">
+<circle cx="55" cy="55" r="46" fill="none" stroke="#eef4f2" stroke-width="10"/>
+<circle id="ring" cx="55" cy="55" r="46" fill="none" stroke="#14b8a6" stroke-width="10" stroke-linecap="round" stroke-dasharray="289" stroke-dashoffset="289" transform="rotate(-90 55 55)"/>
+</svg>
+<div class="pct"><b id="pctN">0%</b><small>पूरा हुआ</small></div>
+</div>
+<div class="prow"><span class="ic">🏋️</span>वर्कआउट<small style="color:var(--mut)">45 मिनट</small><b class="ok">✓</b></div>
+<div class="prow"><span class="ic">🥗</span>न्यूट्रिशन<small style="color:var(--mut)">1600 kcal</small><b class="ok">✓</b></div>
+<div class="prow"><span class="ic">💧</span>पानी<small style="color:var(--mut)">2.3 L</small><b class="ok">✓</b></div>
+<div class="prow"><span class="ic">👣</span>कदम<small style="color:var(--mut)">8,342</small><b class="ok">✓</b></div>
+</div>
+</div>
+</div>
+
+<div class="approach" id="approach"><div class="ap-card">
+<div class="k">हमारा तरीका</div>
+<div class="ap-grid">
+<div class="ap-item"><div class="ic">👤</div><b>आपके लिए पर्सनल</b><p>आपकी बॉडी, लक्ष्य और लाइफस्टाइल के हिसाब से कस्टम प्लान।</p></div>
+<div class="ap-item"><div class="ic">🏋️</div><b>एक्सपर्ट कोच</b><p>सर्टिफाइड ट्रेनर से सीखें जो हर कदम पर साथ दें।</p></div>
+<div class="ap-item"><div class="ic">📈</div><b>ट्रैक और सुधारें</b><p>स्मार्ट ट्रैकिंग से प्रगति देखें और मोटिवेटेड रहें।</p></div>
+<div class="ap-item"><div class="ic">💚</div><b>पूर्ण वेलनेस</b><p>फिटनेस, न्यूट्रिशन और मानसिक संतुलन — बेहतर आप के लिए।</p></div>
 </div>
 </div></div>
 
-<div class="trust"><div class="trust-card">
-<div class="t-item"><span class="t-ico">🏋️</span><div><b>आधुनिक उपकरण</b><span>सभी मशीनें उपलब्ध</span></div></div>
-<div class="t-item"><span class="t-ico">🎓</span><div><b>सर्टिफाइड ट्रेनर</b><span>अनुभवी मार्गदर्शन</span></div></div>
-<div class="t-item"><span class="t-ico">🥗</span><div><b>डाइट प्लान</b><span>फ्री न्यूट्रिशन गाइड</span></div></div>
-<div class="t-item"><span class="t-ico">⭐</span><div><b>4.9 रेटिंग</b><span>18 खुश ग्राहक</span></div></div>
-</div></div>
-
-<section id="programs">
-<div class="sec-head"><div class="kicker">— हमारे प्रोग्राम —</div><h2>आपका लक्ष्य, हमारी ट्रेनिंग</h2></div>
-<div class="progs">
-<a class="prog" href="#plans"><img src="demo-img/gym/weights.jpg" alt="वेट ट्रेनिंग"><div class="pl"><b>वेट ट्रेनिंग</b><span>मसल्स बनाएं, ताकत बढ़ाएं</span></div></a>
-<a class="prog" href="#plans"><img src="demo-img/gym/cardio.jpg" alt="कार्डियो"><div class="pl"><b>कार्डियो</b><span>वजन घटाएं, स्टैमिना बढ़ाएं</span></div></a>
-<a class="prog" href="#plans"><img src="demo-img/gym/trainer.jpg" alt="पर्सनल ट्रेनिंग"><div class="pl"><b>पर्सनल ट्रेनिंग</b><span>1-ऑन-1 एक्सपर्ट कोचिंग</span></div></a>
-<a class="prog" href="#plans"><img src="demo-img/gym/hero.jpg" style="object-position:70% 50%" alt="योगा और ज़ुम्बा"><div class="pl"><b>योगा / ज़ुम्बा</b><span>फिटनेस मज़े के साथ</span></div></a>
+<section id="paths">
+<div class="sec-k">अपना रास्ता चुनें</div>
+<div class="paths">
+<a class="path" href="#contact"><div class="ph"><img src="demo-img/gym/cardio.jpg" alt="वजन घटाएं"></div><div class="pb"><b>वजन घटाएं</b><p>चर्बी घटाएं, लीन मसल बनाएं।</p><span>12 प्रोग्राम</span></div></a>
+<a class="path" href="#contact"><div class="ph"><img src="demo-img/gym/weights.jpg" alt="मसल गेन"></div><div class="pb"><b>मसल गेन</b><p>ताकत बढ़ाएं, परफॉर्मेंस बढ़ाएं।</p><span>14 प्रोग्राम</span></div></a>
+<a class="path" href="#contact"><div class="ph"><img src="demo-img/gym/yoga.jpg" alt="योगा"></div><div class="pb"><b>योगा और मोबिलिटी</b><p>लचीलापन बढ़ाएं, तनाव घटाएं।</p><span>10 प्रोग्राम</span></div></a>
+<a class="path" href="#contact"><div class="ph"><img src="demo-img/gym/nutrition.jpg" alt="न्यूट्रिशन"></div><div class="pb"><b>न्यूट्रिशन प्लान</b><p>कस्टम मील प्लान के साथ स्मार्ट खाएं।</p><span>8 प्लान</span></div></a>
+<a class="vcard" href="#" onclick="toast('सक्सेस स्टोरी वीडियो जल्द आ रहा है!');return false;"><span class="vplay">▶</span><div class="vt"><b>मज़बूत शरीर।<br>मज़बूत मन।<br>बेहतर आप।</b><p>देखें हमारे मेंबर्स कैसे सफल होते हैं।</p></div></a>
 </div>
 </section>
 
-<section id="plans">
-<div class="sec-head"><div class="kicker">— मेम्बरशिप प्लान —</div><h2>अपना प्लान चुनें</h2></div>
-<div class="plans">
-<div class="plan"><h3>मासिक</h3><div class="pr">₹800<small>/माह</small></div>
-<ul><li>सभी मशीनों का उपयोग</li><li>ग्रुप ट्रेनिंग</li><li>लॉकर सुविधा</li></ul>
-<a class="btn" style="width:100%;justify-content:center" href="https://wa.me/919000000000?text=नमस्ते!%20मुझे%20मासिक%20मेम्बरशिप%20लेनी%20है।" target="_blank">चुनें</a></div>
-<div class="plan hot"><span class="tag">सबसे लोकप्रिय</span><h3>त्रैमासिक</h3><div class="pr">₹2,000<small>/3 माह</small></div>
-<ul><li>सब कुछ मासिक वाला</li><li>फ्री डाइट प्लान</li><li>मासिक बॉडी असेसमेंट</li></ul>
-<a class="btn" style="width:100%;justify-content:center" href="https://wa.me/919000000000?text=नमस्ते!%20मुझे%20त्रैमासिक%20मेम्बरशिप%20लेनी%20है।" target="_blank">चुनें</a></div>
-<div class="plan"><h3>वार्षिक</h3><div class="pr">₹6,000<small>/साल</small></div>
-<ul><li>सब कुछ त्रैमासिक वाला</li><li>2 माह एक्स्ट्रा फ्री</li><li>पर्सनल ट्रेनर छूट</li></ul>
-<a class="btn" style="width:100%;justify-content:center" href="https://wa.me/919000000000?text=नमस्ते!%20मुझे%20वार्षिक%20मेम्बरशिप%20लेनी%20है।" target="_blank">चुनें</a></div>
-</div>
-</section>
-
-<div class="bmi" id="bmi"><h2>अपना <span>BMI</span> जानें</h2>
-<p>ऊंचाई और वजन डालें — सेकंडों में जानें आप कितने फिट हैं!</p>
-<div class="row">
-<div><label>ऊंचाई (cm)</label><input type="number" id="h" placeholder="170"></div>
-<div><label>वजन (kg)</label><input type="number" id="w" placeholder="70"></div>
-</div>
-<button class="btn" onclick="calcBMI()">BMI निकालें</button>
-<div class="bmi-res" id="bmiRes" style="margin-top:16px"></div>
-</div>
-
-<div class="trainer"><img src="demo-img/gym/trainer.jpg" alt="हेड ट्रेनर">
-<div class="tx"><div class="k">मिलिए हमारे एक्सपर्ट से</div>
-<h2 class="serif">सर्टिफाइड ट्रेनर के साथ ट्रेन करें</h2>
-<p>अनुभवी ट्रेनर आपकी बॉडी और लक्ष्य के हिसाब से पर्सनल वर्कआउट प्लान बनाते हैं — सही फॉर्म, सही डाइट, सही नतीजे।</p>
-<a class="btn" href="https://wa.me/919000000000?text=नमस्ते!%20मुझे%20पर्सनल%20ट्रेनिंग%20के%20बारे%20में%20जानना%20है।" target="_blank">पर्सनल ट्रेनिंग बुक करें</a>
+<div class="stats" id="stats"><div class="stats-card">
+<div class="sl"><span>〜</span><b>नतीजे जो<br>खुद बोलते हैं</b></div>
+<div class="stat"><div class="ic">👥</div><b>500+</b><span>खुश मेंबर्स</span></div>
+<div class="stat"><div class="ic">🎯</div><b>98%</b><span>सक्सेस रेट</span></div>
+<div class="stat"><div class="ic">🔥</div><b>25K+</b><span>वर्कआउट पूरे</span></div>
+<div class="stat"><div class="ic">⭐</div><b>4.9/5</b><span>मेंबर रेटिंग</span></div>
 </div></div>
 
-<section style="padding-top:0"><div class="cta-band">
-<h2>🔥 आज ही शुरुआत करें!</h2>
-<p>पहली ट्रायल क्लास बिल्कुल फ्री — कोई कार्ड नहीं, कोई दबाव नहीं। बस आएं और खुद फर्क देखें।</p>
-<a class="btn btn-white" href="https://wa.me/919000000000?text=नमस्ते!%20मुझे%20फ्री%20ट्रायल%20क्लास%20बुक%20करनी%20है।" target="_blank" style="font-size:17px;padding:15px 44px">फ्री ट्रायल बुक करें</a>
+<div class="cta-sec"><div class="cta-card">
+<div class="ci"></div>
+<div class="ct"><div class="k">आज ही शुरुआत करें</div>
+<h2>आपका बदलाव<br>आज से शुरू होता है</h2>
+<p>पहला कदम बढ़ाएं — सेहतमंद, मज़बूत और खुशहाल आप की ओर। पहली ट्रायल क्लास बिल्कुल फ्री!</p>
+<a class="btn" href="https://wa.me/919000000000?text=नमस्ते!%20मुझे%20फ्री%20ट्रायल%20क्लास%20बुक%20करनी%20है।" target="_blank">फ्री में शुरू करें <span class="arr">→</span></a>
 </div>
+</div></div>
 
-<div class="contact-grid" id="contact"><div class="contact-card">
+<div class="contact-sec" id="contact">
+<div class="sec-k">संपर्क करें</div>
+<div class="c-grid"><div class="c-card">
 <h3>📍 पता</h3>
 <p><strong>फिटनेस फ्रीक जिम</strong><br>बस स्टैंड, सांवरिया कॉम्प्लेक्स बेसमेंट,<br>मेन रोड, केलवा, राजस्थान 313334</p>
 <p>📞 <a href="tel:+919000000000">090000 00000</a></p>
 <p>⏰ सुबह 5 – रात 10 (सभी दिन)</p>
 <p>💬 <a href="https://wa.me/919000000000" target="_blank">व्हाट्सऐप पर संदेश भेजें</a></p>
-</div><div class="contact-card"><h3>✉️ संदेश भेजें</h3>
-<input class="ta" type="text" id="cname" placeholder="आपका नाम"><input class="ta" type="tel" id="cphone" placeholder="फोन नंबर"><textarea class="ta" id="cmsg" rows="3" placeholder="आपका संदेश..."></textarea>
-<button class="btn" style="width:100%;justify-content:center" onclick="sendWA()">व्हाट्सऐप पर भेजें</button>
+</div><div class="c-card"><h3>✉️ फ्री ट्रायल बुक करें</h3>
+<input type="text" id="cname" placeholder="आपका नाम"><input type="tel" id="cphone" placeholder="फोन नंबर">
+<button class="btn" style="width:100%;justify-content:center" onclick="sendWA()">व्हाट्सऐप पर बुक करें</button>
 </div></div>
-</section>
+</div>
 
 <footer><div class="wrap">
-<div><h4>फिटनेस फ्रीक जिम</h4><p>केलवा का भरोसेमंद जिम — आधुनिक उपकरण, एक्सपर्ट ट्रेनर, और आपका फिटनेस लक्ष्य।</p></div>
-<div><h4>प्रोग्राम</h4><a href="#programs">वेट ट्रेनिंग</a><a href="#programs">कार्डियो</a><a href="#programs">पर्सनल ट्रेनिंग</a><a href="#programs">योगा / ज़ुम्बा</a></div>
-<div><h4>लिंक</h4><a href="#plans">मेम्बरशिप</a><a href="#bmi">BMI कैलकुलेटर</a><a href="#contact">संपर्क</a></div>
+<div><h4>फिटनेस फ्रीक जिम</h4><p>केलवा का आधुनिक जिम — पर्सनल ट्रेनिंग, स्मार्ट न्यूट्रिशन और एक्सपर्ट कोचिंग।</p></div>
+<div><h4>प्रोग्राम</h4><a href="#paths">वजन घटाएं</a><a href="#paths">मसल गेन</a><a href="#paths">योगा</a><a href="#paths">न्यूट्रिशन</a></div>
+<div><h4>लिंक</h4><a href="#approach">हमारा तरीका</a><a href="#stats">सक्सेस</a><a href="#contact">संपर्क</a></div>
 <div><h4>संपर्क</h4><a href="tel:+919000000000">📞 090000 00000</a><a href="#">📍 केलवा, राजस्थान</a><a href="#">⏰ सुबह 5 – रात 10</a></div>
 </div>
 <div class="copy">© 2026 फिटनेस फ्रीक जिम — Demo website by <a href="https://www.youmika.site/webdev.html">Abhishek — Web Developer</a></div>
@@ -209,8 +215,10 @@ footer p{font-size:13.5px;max-width:280px}
 <a class="wa-float" href="https://wa.me/919000000000?text=नमस्ते!%20मुझे%20जिम%20के%20बारे%20में%20जानकारी%20चाहिए।" target="_blank">💬</a>
 <div class="toast" id="toast"></div>
 <script>
-function calcBMI(){var h=parseFloat(document.getElementById('h').value),w=parseFloat(document.getElementById('w').value),r=document.getElementById('bmiRes');if(!h||!w||h<=0||w<=0){r.innerHTML='कृपया सही ऊंचाई और वजन डालें।';return;}var bmi=w/((h/100)*(h/100));var cat=bmi<18.5?'कम वजन — मसल्स गेन पर फोकस करें! 💪':bmi<25?'बिल्कुल फिट! इसे बनाए रखें! 🔥':bmi<30?'थोड़ा अधिक — कार्डियो शुरू करें! 🏃':'अधिक वजन — ट्रेनर से प्लान बनवाएं! 🎯';r.innerHTML='आपका BMI: <b>'+bmi.toFixed(1)+'</b> — '+cat;}
-function sendWA(){var n=document.getElementById('cname').value||'नमस्ते';var p=document.getElementById('cphone').value||'';var m=document.getElementById('cmsg').value||'';window.open('https://wa.me/919000000000?text='+encodeURIComponent(n+' ('+p+'): '+m),'_blank');}
+function sendWA(){var n=document.getElementById('cname').value||'नमस्ते';var p=document.getElementById('cphone').value||'';window.open('https://wa.me/919000000000?text='+encodeURIComponent(n+' ('+p+') फ्री ट्रायल बुक करना चाहता है।'),'_blank');}
+function toast(m){var t=document.getElementById('toast');t.textContent=m;t.classList.add('show');clearTimeout(t._h);t._h=setTimeout(function(){t.classList.remove('show')},2600);}
+// animate progress ring to 78%
+(function(){var c=289,target=78,n=0,ring=document.getElementById('ring'),lbl=document.getElementById('pctN');var iv=setInterval(function(){n+=2;if(n>=target){n=target;clearInterval(iv);}ring.setAttribute('stroke-dashoffset',c-(c*n/100));lbl.textContent=n+'%';},28);})();
 </script>
 </body>
 </html>
