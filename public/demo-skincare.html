@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Glowérive — Natural Skincare | Skincare that cares, beauty that shines</title>
+<meta name="description" content="Glowérive Natural Skincare — dermatologist tested, natural ingredients, cruelty free.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600;700&family=Jost:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--teal:#0e6b66;--teal-dk:#0a4f4b;--teal-lt:#e8f4f2;--gold:#e8a33d;--ink:#1f2a28;--mut:#6b7c79;--bg:#fbfaf7}
+body{font-family:'Jost',system-ui,sans-serif;color:var(--ink);background:var(--bg);line-height:1.6}
+h1,h2,h3,.serif{font-family:'Playfair Display',Georgia,serif}
+.demo-badge{position:fixed;top:10px;right:10px;background:#d32f2f;color:#fff;font-size:11px;font-weight:700;padding:5px 12px;border-radius:20px;z-index:1000;letter-spacing:.5px}
+/* utility bar */
+.util{background:var(--teal-dk);color:#dff0ee;font-size:12.5px;padding:8px 0;letter-spacing:.3px}
+.util .wrap{max-width:1200px;margin:auto;padding:0 20px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:6px}
+.util a{color:#dff0ee;text-decoration:none;margin-left:18px}.util a:hover{color:#fff}
+/* nav */
+.nav{background:var(--teal);position:sticky;top:0;z-index:200;box-shadow:0 2px 12px rgba(0,0,0,.12)}
+.nav .wrap{max-width:1200px;margin:auto;padding:0 20px;display:flex;align-items:center;justify-content:space-between;height:68px}
+.logo{display:flex;align-items:center;gap:10px;color:#fff;text-decoration:none}
+.logo .mark{width:38px;height:38px;border-radius:50%;background:rgba(255,255,255,.14);display:flex;align-items:center;justify-content:center;font-size:20px}
+.logo b{font-family:'Playfair Display',serif;font-size:22px;font-weight:700;letter-spacing:.5px}
+.logo small{display:block;font-family:'Jost';font-size:9px;letter-spacing:4px;font-weight:400;opacity:.85}
+.links{display:flex;gap:30px;list-style:none}
+.links a{color:#fff;text-decoration:none;font-size:13.5px;letter-spacing:1.6px;font-weight:500;opacity:.92;position:relative;padding:6px 0}
+.links a:hover,.links a.on{opacity:1}
+.links a.on::after{content:"";position:absolute;left:0;right:0;bottom:0;height:2px;background:#fff;border-radius:2px}
+.icons{display:flex;gap:18px;align-items:center}
+.icons a{color:#fff;text-decoration:none;font-size:19px;position:relative}
+.cart-n{position:absolute;top:-7px;right:-9px;background:#fff;color:var(--teal-dk);font-size:10px;font-weight:700;min-width:17px;height:17px;border-radius:50%;display:flex;align-items:center;justify-content:center}
+/* hero */
+.hero{position:relative;min-height:560px;display:flex;align-items:center;overflow:hidden;background:linear-gradient(100deg,#0e6b66 0%,#149a92 45%,#7fc9c2 100%)}
+.hero-bg{position:absolute;inset:0;background:url('demo-img/skincare/hero.jpg') center right/cover no-repeat;opacity:1}
+.hero .wrap{position:relative;max-width:1200px;margin:auto;padding:70px 20px;width:100%;z-index:2}
+.eyebrow{color:#eafaf7;font-size:12px;letter-spacing:5px;margin-bottom:14px}
+.hero h1{color:#fff;font-size:clamp(38px,6vw,64px);line-height:1.12;font-weight:600;max-width:480px;margin-bottom:18px;text-shadow:0 2px 20px rgba(0,0,0,.15)}
+.hero p{color:#eef7f5;font-size:17px;max-width:420px;margin-bottom:30px;font-weight:300}
+.hero-btns{display:flex;gap:16px;align-items:center;flex-wrap:wrap}
+.btn{display:inline-flex;align-items:center;gap:10px;background:#fff;color:var(--teal-dk);padding:14px 34px;border-radius:40px;text-decoration:none;font-weight:600;font-size:14px;letter-spacing:1.5px;border:none;cursor:pointer;transition:.25s}
+.btn:hover{transform:translateY(-2px);box-shadow:0 10px 24px rgba(0,0,0,.18)}
+.btn-teal{background:var(--teal);color:#fff}
+.btn-ghost{background:transparent;color:#fff;border:1.5px solid rgba(255,255,255,.7)}
+.play{width:52px;height:52px;border-radius:50%;border:1.5px solid rgba(255,255,255,.8);display:inline-flex;align-items:center;justify-content:center;color:#fff;font-size:16px;text-decoration:none;transition:.25s}
+.play:hover{background:rgba(255,255,255,.15)}
+.watch{display:inline-flex;align-items:center;gap:12px;color:#fff;text-decoration:none;font-size:13px;letter-spacing:2px;font-weight:500}
+/* trust strip */
+.trust{max-width:1100px;margin:-46px auto 0;padding:0 20px;position:relative;z-index:3}
+.trust-card{background:#fff;border-radius:18px;box-shadow:0 14px 40px rgba(10,79,75,.14);display:grid;grid-template-columns:repeat(4,1fr);padding:26px 10px}
+.t-item{display:flex;gap:14px;align-items:center;justify-content:center;padding:6px 10px}
+.t-item + .t-item{border-left:1px solid #e7efed}
+.t-ico{width:46px;height:46px;border-radius:50%;background:var(--teal-lt);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0}
+.t-item b{display:block;font-size:14.5px}.t-item span{font-size:12px;color:var(--mut)}
+/* sections */
+section{max-width:1200px;margin:auto;padding:70px 20px 10px}
+.sec-head{text-align:center;margin-bottom:38px}
+.sec-head .kicker{font-size:12px;letter-spacing:5px;color:var(--teal);margin-bottom:8px}
+.sec-head h2{font-size:clamp(26px,4vw,36px);font-weight:600}
+.sec-head h2::before,.sec-head h2::after{content:"—";color:#cfe3e0;margin:0 14px;font-weight:300}
+/* categories */
+.cats{display:grid;grid-template-columns:repeat(6,1fr);gap:18px}
+.cat{text-align:center;text-decoration:none;color:var(--ink)}
+.cat .cir{width:120px;height:120px;border-radius:50%;margin:0 auto 12px;overflow:hidden;background:var(--teal-lt);box-shadow:0 8px 22px rgba(10,79,75,.12);transition:.3s;display:flex;align-items:center;justify-content:center}
+.cat:hover .cir{transform:translateY(-5px);box-shadow:0 14px 30px rgba(10,79,75,.2)}
+.cat .cir img{width:100%;height:100%;object-fit:cover}
+.cat b{font-size:12.5px;letter-spacing:2px}
+.cat span{display:block;font-size:12px;color:var(--teal);margin-top:2px}
+/* products */
+.prods{display:grid;grid-template-columns:repeat(4,1fr);gap:22px}
+.prod{background:#fff;border-radius:18px;overflow:hidden;box-shadow:0 8px 26px rgba(10,79,75,.09);transition:.3s;position:relative}
+.prod:hover{transform:translateY(-6px);box-shadow:0 18px 40px rgba(10,79,75,.16)}
+.prod .ph{height:250px;background:var(--teal-lt);position:relative;overflow:hidden;display:flex;align-items:center;justify-content:center}
+.prod .ph img{width:100%;height:100%;object-fit:cover}
+.badge{position:absolute;top:14px;left:14px;font-size:10.5px;font-weight:700;letter-spacing:1.2px;padding:6px 12px;border-radius:6px;color:#fff;z-index:2}
+.b-best{background:#0e6b66}.b-new{background:#2e9e97}.b-ltd{background:#7a6ff0}.b-sale{background:#e2574c}
+.prod .pb{padding:18px 18px 20px;text-align:center}
+.prod h3{font-size:17px;font-weight:600;margin-bottom:6px}
+.stars{color:var(--gold);font-size:13px;letter-spacing:2px;margin-bottom:6px}
+.stars span{color:var(--mut);letter-spacing:0}
+.price{font-size:17px;font-weight:600;margin-bottom:14px}
+.price s{color:#a9b8b5;font-weight:400;font-size:14px;margin-left:8px}
+.prod .row{display:flex;gap:10px;justify-content:center;align-items:center}
+.add{flex:1;background:var(--teal);color:#fff;border:none;border-radius:30px;padding:11px 0;font-size:12.5px;letter-spacing:1.5px;font-weight:600;cursor:pointer;transition:.25s;font-family:'Jost'}
+.add:hover{background:var(--teal-dk)}
+.heart{width:40px;height:40px;border-radius:50%;border:1.5px solid #e2ebe9;background:#fff;font-size:16px;cursor:pointer;color:#9fb3b0;transition:.25s;flex-shrink:0}
+.heart.loved{color:#e2574c;border-color:#e2574c}
+/* CSS tube */
+.tube{width:92px;height:190px;position:relative}
+.tube .tbody{position:absolute;bottom:34px;left:8px;right:8px;top:0;background:linear-gradient(135deg,#bfe3dd 0%,#8fd0c6 40%,#5fb3a8 100%);border-radius:10px 10px 4px 4px;box-shadow:inset -8px 0 14px rgba(255,255,255,.35),inset 8px 0 14px rgba(10,79,75,.12)}
+.tube .tbody::after{content:"Glowérive";position:absolute;top:44%;left:0;right:0;text-align:center;font-family:'Playfair Display';font-size:11px;color:#0a4f4b;transform:rotate(-90deg);letter-spacing:1px;opacity:.75}
+.tube .tcap{position:absolute;bottom:0;left:22px;right:22px;height:38px;background:linear-gradient(135deg,#e8e8e8,#b9c4c2);border-radius:6px 6px 10px 10px;box-shadow:0 4px 10px rgba(0,0,0,.15)}
+.tube .tband{position:absolute;bottom:34px;left:8px;right:8px;height:8px;background:#0e6b66}
+/* offer banner */
+.offer{max-width:1200px;margin:60px auto 0;padding:0 20px}
+.offer-card{border-radius:22px;overflow:hidden;background:linear-gradient(120deg,#0a4f4b 30%,#0e6b66 70%,#149a92 100%);display:grid;grid-template-columns:1fr 1.4fr 1fr;align-items:center;color:#fff;position:relative}
+.offer-card .oimg{height:210px;background:url('demo-img/skincare/serum.jpg') center/cover;opacity:.9}
+.offer-card .omid{padding:36px 30px;text-align:center}
+.offer-card .omid .k{font-size:11px;letter-spacing:5px;color:#bfe3dd;margin-bottom:8px}
+.offer-card .omid h2{font-size:clamp(24px,3.4vw,34px);font-weight:600;margin-bottom:10px}
+.offer-card .omid p{font-size:14px;color:#d7ebe8;font-weight:300}
+.offer-card .oright{padding:36px 30px;border-left:1px solid rgba(255,255,255,.18);text-align:center}
+.offer-card .oright b{letter-spacing:3px;font-size:13px}
+.offer-card .oright p{font-size:12.5px;color:#cfe7e4;margin:8px 0 16px;font-weight:300}
+.nl{display:flex;background:#fff;border-radius:30px;overflow:hidden;max-width:260px;margin:auto}
+.nl input{flex:1;border:none;padding:11px 16px;font-size:13px;font-family:'Jost';outline:none;min-width:0}
+.nl button{background:var(--teal-dk);color:#fff;border:none;padding:0 20px;font-size:12px;letter-spacing:1.5px;cursor:pointer;font-family:'Jost';font-weight:600}
+/* bottom strip */
+.strip{max-width:1200px;margin:26px auto 0;padding:0 20px}
+.strip-card{background:#fff;border-radius:16px;box-shadow:0 8px 26px rgba(10,79,75,.08);display:grid;grid-template-columns:repeat(4,1fr);padding:22px 10px}
+.s-item{display:flex;gap:12px;align-items:center;justify-content:center}
+.s-item + .s-item{border-left:1px solid #e7efed}
+.s-ico{font-size:24px}
+.s-item b{display:block;font-size:12.5px;letter-spacing:1.4px}.s-item span{font-size:12px;color:var(--mut)}
+/* footer */
+footer{background:var(--teal-dk);color:#cfe7e4;margin-top:60px}
+footer .wrap{max-width:1200px;margin:auto;padding:50px 20px 26px;display:grid;grid-template-columns:1.4fr 1fr 1fr 1fr;gap:30px}
+footer h4{color:#fff;font-size:14px;letter-spacing:2px;margin-bottom:16px;font-family:'Jost';font-weight:600}
+footer a{color:#cfe7e4;text-decoration:none;font-size:14px;display:block;margin-bottom:9px;font-weight:300}
+footer a:hover{color:#fff}
+footer p{font-size:13.5px;font-weight:300;max-width:280px}
+.copy{border-top:1px solid rgba(255,255,255,.14);text-align:center;padding:18px;font-size:12.5px;color:#a9c9c5}
+.copy a{color:#eafaf7}
+/* toast */
+.toast{position:fixed;bottom:26px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--teal-dk);color:#fff;padding:13px 28px;border-radius:40px;font-size:14px;z-index:1000;transition:.35s;box-shadow:0 12px 30px rgba(0,0,0,.25);opacity:0}
+.toast.show{transform:translateX(-50%) translateY(0);opacity:1}
+.viewall{font-size:12px;letter-spacing:2px;color:var(--teal);text-decoration:none;border:1.5px solid #cfe3e0;padding:9px 26px;border-radius:30px;font-weight:600}
+.f-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:38px}
+.f-head h2{font-size:clamp(24px,3.6vw,32px)}
+@media(max-width:900px){.links{display:none}.cats{grid-template-columns:repeat(3,1fr)}.prods{grid-template-columns:repeat(2,1fr)}.trust-card,.strip-card{grid-template-columns:repeat(2,1fr);gap:18px}.t-item + .t-item,.s-item + .s-item{border-left:none}.offer-card{grid-template-columns:1fr}.offer-card .oright{border-left:none;border-top:1px solid rgba(255,255,255,.18)}footer .wrap{grid-template-columns:1fr 1fr}}
+@media(max-width:560px){.prods{grid-template-columns:1fr}.cats{grid-template-columns:repeat(2,1fr)}}
+</style>
+</head>
+<body>
+<div class="demo-badge">DEMO PREVIEW</div>
+
+<div class="util"><div class="wrap">
+<span>🚚 Free Shipping on Orders Over $50</span>
+<span><a href="#">Track Order</a><a href="#">FAQ</a><a href="#">Store Locator</a><a href="#">Contact Us</a></span>
+</div></div>
+
+<nav class="nav"><div class="wrap">
+<a class="logo" href="#"><span class="mark">🌿</span><span><b>Glowérive</b><small>NATURAL SKINCARE</small></span></a>
+<ul class="links">
+<li><a href="#" class="on">HOME</a></li><li><a href="#shop">SHOP</a></li><li><a href="#cats">COLLECTIONS</a></li><li><a href="#">INGREDIENTS</a></li><li><a href="#">ABOUT US</a></li><li><a href="#">BLOG</a></li>
+</ul>
+<div class="icons">
+<a href="#" title="Search">⌕</a><a href="#" title="Account">👤</a>
+<a href="#" title="Cart" onclick="toast('Your cart is empty — add something you love!');return false;">🛒<span class="cart-n" id="cartN">2</span></a>
+</div>
+</div></nav>
+
+<div class="hero"><div class="hero-bg"></div><div class="wrap">
+<div class="eyebrow">NATURALLY RADIANT</div>
+<h1>Skincare that cares, beauty that shines.</h1>
+<p>Discover the perfect blend of nature and science for healthy, glowing skin every day.</p>
+<div class="hero-btns">
+<a class="btn" href="#shop">SHOP NOW &nbsp;→</a>
+<a class="watch" href="#" onclick="toast('Brand film coming soon!');return false;"><span class="play">▶</span> WATCH VIDEO</a>
+</div>
+</div></div>
+
+<div class="trust"><div class="trust-card">
+<div class="t-item"><span class="t-ico">🌿</span><div><b>Natural Ingredients</b><span>Safe &amp; Effective</span></div></div>
+<div class="t-item"><span class="t-ico">💧</span><div><b>Dermatologist Tested</b><span>For All Skin Types</span></div></div>
+<div class="t-item"><span class="t-ico">⚗️</span><div><b>Paraben &amp; Sulfate Free</b><span>Clean &amp; Gentle</span></div></div>
+<div class="t-item"><span class="t-ico">🐇</span><div><b>Cruelty Free</b><span>Never Tested on Animals</span></div></div>
+</div></div>
+
+<section id="cats">
+<div class="sec-head"><div class="kicker">— SHOP BY CATEGORY —</div></div>
+<div class="cats">
+<a class="cat" href="#shop"><span class="cir"><img src="demo-img/skincare/serum.jpg" alt="Serums"></span><b>SERUMS</b><span>Explore</span></a>
+<a class="cat" href="#shop"><span class="cir"><img src="demo-img/skincare/gelcream.jpg" alt="Moisturizers"></span><b>MOISTURIZERS</b><span>Explore</span></a>
+<a class="cat" href="#shop"><span class="cir"><img src="demo-img/skincare/nightcream.jpg" alt="Cleansers"></span><b>CLEANSERS</b><span>Explore</span></a>
+<a class="cat" href="#shop"><span class="cir"><img src="demo-img/skincare/serum.jpg" style="object-position:20% 30%" alt="Toners"></span><b>TONERS</b><span>Explore</span></a>
+<a class="cat" href="#shop"><span class="cir"><img src="demo-img/skincare/gelcream.jpg" style="object-position:70% 40%" alt="Eye Care"></span><b>EYE CARE</b><span>Explore</span></a>
+<a class="cat" href="#shop"><span class="cir"><div class="tube" style="transform:scale(.62)"><div class="tbody"></div><div class="tband"></div><div class="tcap"></div></div></span><b>SUN CARE</b><span>Explore</span></a>
+</div>
+</section>
+
+<section id="shop">
+<div class="f-head"><h2 class="serif">Featured Products</h2><a class="viewall" href="#">VIEW ALL</a></div>
+<div class="prods">
+<div class="prod"><span class="badge b-best">BEST SELLER</span>
+<div class="ph"><img src="demo-img/skincare/gelcream.jpg" alt="Hydra Glow Gel Cream"></div>
+<div class="pb"><h3>Hydra Glow Gel Cream</h3><div class="stars">★★★★★ <span>(245)</span></div>
+<div class="price">$34.00</div>
+<div class="row"><button class="add" onclick="addCart('Hydra Glow Gel Cream')">ADD TO CART →</button><button class="heart" onclick="this.classList.toggle('loved')">♡</button></div></div></div>
+<div class="prod"><span class="badge b-new">NEW</span>
+<div class="ph"><img src="demo-img/skincare/serum.jpg" alt="Radiance Boost Serum"></div>
+<div class="pb"><h3>Radiance Boost Serum</h3><div class="stars">★★★★★ <span>(189)</span></div>
+<div class="price">$42.00</div>
+<div class="row"><button class="add" onclick="addCart('Radiance Boost Serum')">ADD TO CART →</button><button class="heart" onclick="this.classList.toggle('loved')">♡</button></div></div></div>
+<div class="prod"><span class="badge b-ltd">LIMITED</span>
+<div class="ph"><img src="demo-img/skincare/nightcream.jpg" alt="Nourishing Night Restorative Cream"></div>
+<div class="pb"><h3>Nourishing Night Restorative Cream</h3><div class="stars">★★★★★ <span>(312)</span></div>
+<div class="price">$38.00</div>
+<div class="row"><button class="add" onclick="addCart('Nourishing Night Cream')">ADD TO CART →</button><button class="heart" onclick="this.classList.toggle('loved')">♡</button></div></div></div>
+<div class="prod"><span class="badge b-sale">SALE</span>
+<div class="ph"><div class="tube"><div class="tbody"></div><div class="tband"></div><div class="tcap"></div></div></div>
+<div class="pb"><h3>Daily UV Defense Sunscreen SPF 50</h3><div class="stars">★★★★☆ <span>(156)</span></div>
+<div class="price">$24.00 <s>$30.00</s></div>
+<div class="row"><button class="add" onclick="addCart('Daily UV Defense Sunscreen')">ADD TO CART →</button><button class="heart" onclick="this.classList.toggle('loved')">♡</button></div></div></div>
+</div>
+</section>
+
+<div class="offer"><div class="offer-card">
+<div class="oimg"></div>
+<div class="omid"><div class="k">SPECIAL OFFER</div><h2 class="serif">Get 20% Off<br>Your First Order</h2><p>Join our glow club &amp; unlock exclusive offers and skincare tips.</p></div>
+<div class="oright"><b>✉️ JOIN NOW</b><p>Be the first to know about new arrivals &amp; exclusive deals.</p>
+<div class="nl"><input id="nlEmail" type="email" placeholder="Email address"><button onclick="joinNl()">→</button></div></div>
+</div></div>
+
+<div class="strip"><div class="strip-card">
+<div class="s-item"><span class="s-ico">🚚</span><div><b>FREE SHIPPING</b><span>On orders over $50</span></div></div>
+<div class="s-item"><span class="s-ico">🛡️</span><div><b>SECURE PAYMENT</b><span>100% safe &amp; secure</span></div></div>
+<div class="s-item"><span class="s-ico">↩️</span><div><b>EASY RETURNS</b><span>30 days return policy</span></div></div>
+<div class="s-item"><span class="s-ico">🎧</span><div><b>CUSTOMER SUPPORT</b><span>We're here to help</span></div></div>
+</div></div>
+
+<footer><div class="wrap">
+<div><h4>Glowérive</h4><p>Natural skincare crafted with dermatologist-tested, cruelty-free formulas. Beauty that cares — for your skin and the planet.</p></div>
+<div><h4>SHOP</h4><a href="#shop">Serums</a><a href="#shop">Moisturizers</a><a href="#shop">Cleansers</a><a href="#shop">Sun Care</a></div>
+<div><h4>COMPANY</h4><a href="#">About Us</a><a href="#">Ingredients</a><a href="#">Blog</a><a href="#">Store Locator</a></div>
+<div><h4>SUPPORT</h4><a href="#">Track Order</a><a href="#">FAQ</a><a href="#">Contact Us</a><a href="#">Returns</a></div>
+</div>
+<div class="copy">© 2026 Glowérive Natural Skincare — Demo website by <a href="https://www.youmika.site/webdev.html">Abhishek — Web Developer</a></div>
+</footer>
+
+<div class="toast" id="toast"></div>
+<script>
+let cart=2;
+function addCart(name){cart++;document.getElementById('cartN').textContent=cart;toast(name+' added to cart! 🛒');}
+function toast(msg){var t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');clearTimeout(t._h);t._h=setTimeout(function(){t.classList.remove('show')},2600);}
+function joinNl(){var e=document.getElementById('nlEmail').value;if(e&&e.indexOf('@')>-1){toast('Welcome to the Glow Club! ✨ Check '+e);}else{toast('Please enter a valid email address.');}}
+</script>
+</body>
+</html>
