@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Baskin Robbins Mumbra — Mumbra's Happy Place for Ice Cream!</title>
+<meta name="description" content="Baskin Robbins Mumbra — 31 flavours, sundaes, waffles & milkshakes. 31% OFF on the 31st of every month. Open 11 AM – 2 AM.">
+<style>
+  :root{
+    --pink:#E31837; --pink-soft:#ff5c8a; --pink-light:#ffe3ec;
+    --choc:#3b2314; --choc-soft:#5c3317; --cream:#fff7f0; --white:#ffffff;
+    --gold:#ffb703;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{font-family:'Segoe UI',system-ui,-apple-system,Arial,sans-serif;background:var(--cream);color:var(--choc);line-height:1.6}
+  a{text-decoration:none}
+  .demo-badge{position:sticky;top:0;z-index:50;background:#111;color:#fff;text-align:center;font-size:13px;letter-spacing:2px;font-weight:700;padding:9px 12px;text-transform:uppercase}
+  .demo-badge span{color:#ffd166}
+  header{background:linear-gradient(135deg,var(--pink) 0%,#ff4d6d 55%,#ff7a9e 100%);color:#fff;text-align:center;padding:56px 20px 40px;position:relative;overflow:hidden}
+  header::after{content:"🍦";position:absolute;font-size:120px;opacity:.15;right:-10px;bottom:-30px;transform:rotate(-12deg)}
+  .logo{font-size:15px;letter-spacing:4px;font-weight:800;opacity:.95}
+  h1{font-size:clamp(34px,7vw,58px);line-height:1.05;margin:14px 0 8px;font-weight:900}
+  .tagline{font-size:clamp(17px,3.5vw,23px);font-weight:600;opacity:.97}
+  .hero-sub{max-width:560px;margin:14px auto 0;font-size:16px;opacity:.92}
+  .hero-img{max-width:520px;width:92%;margin:28px auto 0;border-radius:22px;box-shadow:0 18px 40px rgba(0,0,0,.28);display:block;border:5px solid #fff}
+  .cta-row{margin-top:26px;display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
+  .btn{display:inline-block;padding:14px 26px;border-radius:999px;font-weight:800;font-size:16px}
+  .btn-wa{background:#25D366;color:#fff;box-shadow:0 6px 18px rgba(0,0,0,.25)}
+  .btn-call{background:#fff;color:var(--pink)}
+  .strip{display:flex;justify-content:center;gap:10px;flex-wrap:wrap;background:var(--choc);color:#fff;padding:12px 16px;font-size:14px;font-weight:600}
+  .strip span{white-space:nowrap}
+  section{max-width:1080px;margin:0 auto;padding:52px 20px}
+  h2{font-size:clamp(26px,5vw,36px);text-align:center;color:var(--pink);font-weight:900;margin-bottom:6px}
+  .sec-sub{text-align:center;color:#7a5a44;max-width:620px;margin:0 auto 30px;font-size:16px}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:16px}
+  .card{background:#fff;border-radius:18px;padding:18px 14px;text-align:center;box-shadow:0 4px 16px rgba(59,35,20,.08);border:1px solid #f3e2d8}
+  .card .dot{width:54px;height:54px;border-radius:50%;margin:0 auto 10px;box-shadow:inset 0 -4px 8px rgba(0,0,0,.18)}
+  .card h3{font-size:16px;margin-bottom:2px}
+  .card p{font-size:13px;color:#8a6a55}
+  .price{font-weight:900;color:var(--pink);font-size:17px;margin-top:6px}
+  .price small{font-weight:600;color:#8a6a55;font-size:12px}
+  .sundae-wrap{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:20px;align-items:stretch}
+  .sundae{background:#fff;border-radius:20px;overflow:hidden;box-shadow:0 6px 20px rgba(59,35,20,.1);border:1px solid #f3e2d8}
+  .sundae img{width:100%;height:220px;object-fit:cover;display:block}
+  .sundae .body{padding:18px}
+  .sundae h3{font-size:19px}
+  .sundae p{font-size:14px;color:#8a6a55;margin:6px 0 10px}
+  .offer{background:linear-gradient(135deg,var(--pink),#ff4d6d);color:#fff;border-radius:24px;padding:36px 24px;text-align:center}
+  .offer h2{color:#fff}
+  .offer .big{font-size:clamp(40px,9vw,64px);font-weight:900;line-height:1;margin:8px 0}
+  .offer p{opacity:.95;max-width:520px;margin:0 auto 18px}
+  .offer .btn{background:#fff;color:var(--pink)}
+  .visit{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:20px}
+  .visit-card{background:#fff;border-radius:18px;padding:22px;box-shadow:0 4px 16px rgba(59,35,20,.08);border:1px solid #f3e2d8}
+  .visit-card h3{color:var(--pink);margin-bottom:8px;font-size:18px}
+  .visit-card p{font-size:15px}
+  .stars{color:var(--gold);font-size:20px;letter-spacing:2px}
+  .btn-map{display:inline-block;margin-top:12px;background:var(--pink);color:#fff;padding:11px 20px;border-radius:999px;font-weight:700;font-size:14px}
+  .btn-ig{display:inline-block;margin-top:12px;background:linear-gradient(45deg,#f09433,#e6683c,#dc2743,#cc2366,#bc1888);color:#fff;padding:11px 20px;border-radius:999px;font-weight:700;font-size:14px}
+  footer{background:var(--choc);color:#e8d5c4;text-align:center;padding:30px 20px;font-size:14px}
+  footer b{color:#fff}
+  footer .credit{margin-top:10px;font-size:13px;opacity:.8}
+  .wa-float{position:fixed;right:18px;bottom:18px;background:#25D366;color:#fff;width:58px;height:58px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:28px;box-shadow:0 8px 22px rgba(0,0,0,.3);z-index:60}
+</style>
+</head>
+<body>
+<div class="demo-badge">⚠ Demo Preview <span>— sample website, not the official Baskin Robbins site</span></div>
+
+<header>
+  <div class="logo">BASKIN ROBBINS • MUMBRA</div>
+  <h1>Mumbra's Happy Place<br>for Ice Cream! 🍦</h1>
+  <p class="tagline">31 Flavours. Premium Quality. Sundaes, Waffles &amp; Sweet Cravings.</p>
+  <p class="hero-sub">Your next scoop awaits — open till 2 AM, every single day.</p>
+  <img class="hero-img" src="demo-img/baskin-robbins/media-generation-hero-sundae-0-2dcda44f-1d21-49a2-bfb7-1577cfcce69a.webp" alt="Signature sundae at Baskin Robbins Mumbra">
+  <div class="cta-row">
+    <a class="btn btn-wa" href="https://wa.me/918591004023?text=Hi!%20I%20want%20to%20order%20ice%20cream%20from%20Baskin%20Robbins%20Mumbra.">💬 Order on WhatsApp</a>
+    <a class="btn btn-call" href="tel:+918591004023">📞 Call +91 85910 04023</a>
+  </div>
+</header>
+
+<div class="strip">
+  <span>⭐ 4.5 ★ (30 Google reviews)</span><span>•</span>
+  <span>🕐 Open 11:00 AM – 2:00 AM</span><span>•</span>
+  <span>🍨 31 Flavours</span><span>•</span>
+  <span>📍 Mumbra, Thane</span>
+</div>
+
+<section id="flavours">
+  <h2>Pick Your Favourite Flavour 🍨</h2>
+  <p class="sec-sub">Classic scoops, waffle cones &amp; cups — made fresh, served with a smile.</p>
+  <div class="grid">
+    <div class="card"><div class="dot" style="background:#ff5c8a"></div><h3>Very Berry Strawberry</h3><p>Fresh strawberries in creamy pink</p><div class="price">₹99 <small>/ single scoop</small></div></div>
+    <div class="card"><div class="dot" style="background:#5b2a16"></div><h3>Chocolate Mousse</h3><p>Rich, dark &amp; extra chocolatey</p><div class="price">₹99 <small>/ single scoop</small></div></div>
+    <div class="card"><div class="dot" style="background:#fff3d6;border:1px solid #e8d9b8"></div><h3>Classic Vanilla</h3><p>Smooth, creamy, timeless</p><div class="price">₹99 <small>/ single scoop</small></div></div>
+    <div class="card"><div class="dot" style="background:#ffb703"></div><h3>Alphonso Mango</h3><p>King of fruits, in a scoop</p><div class="price">₹99 <small>/ single scoop</small></div></div>
+    <div class="card"><div class="dot" style="background:#9be7c4"></div><h3>Mint Chocolate Chip</h3><p>Cool mint + chocolate chips</p><div class="price">₹99 <small>/ single scoop</small></div></div>
+    <div class="card"><div class="dot" style="background:#e8dcc8"></div><h3>Cookies 'n' Cream</h3><p>Crunchy cookies, creamy base</p><div class="price">₹99 <small>/ single scoop</small></div></div>
+    <div class="card"><div class="dot" style="background:#d9a05b"></div><h3>Butterscotch</h3><p>Golden caramel crunch</p><div class="price">₹99 <small>/ single scoop</small></div></div>
+    <div class="card"><div class="dot" style="background:#c98a5e"></div><h3>Pralines 'n' Cream</h3><p>Caramel praline swirls</p><div class="price">₹99 <small>/ single scoop</small></div></div>
+    <div class="card"><div class="dot" style="background:#7b2d26"></div><h3>Black Forest</h3><p>Cherry-chocolate classic</p><div class="price">₹99 <small>/ single scoop</small></div></div>
+    <div class="card"><div class="dot" style="background:#b388ff"></div><h3>Cotton Candy</h3><p>Fun, sweet &amp; colourful</p><div class="price">₹99 <small>/ single scoop</small></div></div>
+  </div>
+  <p style="text-align:center;margin-top:18px;font-weight:700">Double scoop ₹149 &nbsp;•&nbsp; Waffle cone +₹30 &nbsp;•&nbsp; Extra topping ₹25</p>
+</section>
+
+<section id="sundaes" style="padding-top:10px">
+  <h2>Sundaes, Waffles &amp; Shakes 🍧</h2>
+  <p class="sec-sub">The good stuff — loaded, drizzled and made to share (or not!).</p>
+  <div class="sundae-wrap">
+    <div class="sundae">
+      <img src="demo-img/baskin-robbins/media-generation-waffle-sundae-0-e0939cab-82b4-4c77-9e17-761051efb470.webp" alt="Waffle with ice cream">
+      <div class="body">
+        <h3>Waffle Sundae 🧇</h3>
+        <p>Warm crispy waffle, vanilla scoop, hot chocolate sauce, nuts &amp; cherry.</p>
+        <div class="price">₹199</div>
+      </div>
+    </div>
+    <div class="sundae">
+      <img src="demo-img/baskin-robbins/media-generation-milkshakes-0-2620e9ae-bbff-49ca-824b-d2e813308590.webp" alt="Thick milkshakes">
+      <div class="body">
+        <h3>Thickshakes 🥤</h3>
+        <p>Chocolate, strawberry or mango — thick, creamy, topped with whipped cream.</p>
+        <div class="price">₹179</div>
+      </div>
+    </div>
+    <div class="sundae">
+      <img src="demo-img/baskin-robbins/media-generation-scoops-0-02cfcc2c-27aa-46ff-ab46-1a03a78cbba3.webp" alt="Colourful ice cream scoops">
+      <div class="body">
+        <h3>Classic Sundae 🍒</h3>
+        <p>Three scoops, fudge, sprinkles, whipped cream &amp; a cherry on top.</p>
+        <div class="price">₹150</div>
+      </div>
+    </div>
+  </div>
+  <p style="text-align:center;margin-top:18px;color:#7a5a44">Sundaes start at just <b style="color:var(--pink)">₹150</b> — cones, cups &amp; family packs also available in store.</p>
+</section>
+
+<section style="padding-top:10px">
+  <div class="offer">
+    <h2>🎉 This Month's Offer</h2>
+    <div class="big">31% OFF</div>
+    <p><b>On the 31st of every month</b> — only at Baskin Robbins Mumbra. Mark the date, bring your friends, and make every 31st sweeter!</p>
+    <a class="btn" href="https://wa.me/918591004023?text=Hi!%20Tell%20me%20about%20the%2031%25%20OFF%20offer%20at%20Baskin%20Robbins%20Mumbra.">Claim on WhatsApp →</a>
+  </div>
+</section>
+
+<section id="visit" style="padding-top:10px">
+  <h2>Visit Us 📍</h2>
+  <p class="sec-sub">Drop by for a scoop — we're open late, every day.</p>
+  <div class="visit">
+    <div class="visit-card">
+      <h3>📍 Address</h3>
+      <p>Shop No 2, Elite Residence C,<br>Maulana Azad Road, Opp GKC Palm Riviera,<br>Mumbra, Thane 400612</p>
+      <a class="btn-map" href="https://maps.app.goo.gl/RkcBzQah1GqoKjdH9" target="_blank" rel="noopener">Get Directions →</a>
+    </div>
+    <div class="visit-card">
+      <h3>🕐 Hours &amp; Rating</h3>
+      <p><b>Open daily:</b> 11:00 AM – 2:00 AM</p>
+      <p style="margin-top:8px"><span class="stars">★★★★★</span><br><b>4.5 stars</b> — 30 Google reviews</p>
+      <p style="margin-top:8px">📞 <a href="tel:+918591004023" style="color:var(--pink);font-weight:700">+91 85910 04023</a></p>
+    </div>
+    <div class="visit-card">
+      <h3>📸 Follow Us</h3>
+      <p>Reels, new flavours &amp; offers — see what's scooping on Instagram.</p>
+      <a class="btn-ig" href="https://www.instagram.com/baskinrobbins_mumbra" target="_blank" rel="noopener">@baskinrobbins_mumbra →</a>
+      <p style="margin-top:12px;font-size:14px;color:#8a6a55">3,263 followers &amp; growing 🍦</p>
+    </div>
+  </div>
+</section>
+
+<a class="wa-float" href="https://wa.me/918591004023?text=Hi!%20I%20want%20to%20order%20ice%20cream%20from%20Baskin%20Robbins%20Mumbra." aria-label="Chat on WhatsApp">💬</a>
+
+<footer>
+  <p><b>Baskin Robbins Mumbra</b> — Mumbra's Happy Place for Ice Cream!</p>
+  <p>Shop No 2, Elite Residence C, Maulana Azad Road, Mumbra, Thane 400612 • Open 11 AM – 2 AM</p>
+  <p class="credit">Demo website by Abhishek — Youmika Digital</p>
+</footer>
+</body>
+</html>
